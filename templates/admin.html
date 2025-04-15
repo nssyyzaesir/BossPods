@@ -39,6 +39,11 @@
             </a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="#" data-page="debugLogs" id="debugLogsBtn">
+              <i class="bi bi-bug"></i> Logs de Bugs
+            </a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="/" target="_blank">
               <i class="bi bi-shop"></i> Ver Loja
             </a>
@@ -366,6 +371,69 @@
         </div>
       </div>
     </div>
+    
+    <!-- Debug Logs -->
+    <div class="page-content" id="debugLogs-page">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Logs de Debug</h2>
+        <div>
+          <button class="btn cyber-btn cyber-btn-primary me-2" id="addDebugLogBtn">
+            <i class="bi bi-plus-lg"></i> Registrar Bug
+          </button>
+          <button class="btn cyber-btn" id="clearDebugLogsBtn">
+            <i class="bi bi-trash"></i> Limpar Logs
+          </button>
+          <button class="btn cyber-btn" id="exportDebugLogsBtn">
+            <i class="bi bi-download"></i> Exportar
+          </button>
+        </div>
+      </div>
+      
+      <!-- Filtros -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <select class="form-select cyber-select" id="filtroDebugLog">
+                <option value="">Todos os Níveis</option>
+                <option value="error">Erro</option>
+                <option value="warning">Aviso</option>
+                <option value="info">Informação</option>
+                <option value="debug">Debug</option>
+              </select>
+            </div>
+            <div class="col-md-8">
+              <div class="input-group">
+                <span class="input-group-text cyber-input-icon"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control cyber-input" id="searchDebugLog" placeholder="Buscar nos logs...">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tabela de Debug Logs -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-body p-0">
+          <div class="table-responsive scanner-effect">
+            <table class="table cyber-table mb-0">
+              <thead>
+                <tr>
+                  <th>Data/Hora</th>
+                  <th>Nível</th>
+                  <th>Origem</th>
+                  <th>Mensagem</th>
+                  <th width="100">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="debugLogsList">
+                <!-- Debug logs serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal de Produto -->
@@ -557,6 +625,81 @@
         <div class="modal-footer">
           <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn cyber-btn cyber-btn-primary" id="confirmBtn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Registro de Bug -->
+  <div class="modal fade" id="debugLogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title">Registrar Bug</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="debugLogForm">
+            <div class="mb-3">
+              <label for="debugLogNivel" class="form-label">Nível</label>
+              <select class="form-select cyber-select" id="debugLogNivel" required>
+                <option value="error">Erro</option>
+                <option value="warning">Aviso</option>
+                <option value="info">Informação</option>
+                <option value="debug">Debug</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="debugLogOrigem" class="form-label">Origem</label>
+              <input type="text" class="form-control cyber-input" id="debugLogOrigem" placeholder="Ex: Login, Produto, API, etc." required>
+            </div>
+            <div class="mb-3">
+              <label for="debugLogMensagem" class="form-label">Mensagem</label>
+              <textarea class="form-control cyber-input" id="debugLogMensagem" rows="3" placeholder="Descreva o bug ou informação..." required></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="debugLogDetalhes" class="form-label">Detalhes (opcional)</label>
+              <textarea class="form-control cyber-input" id="debugLogDetalhes" rows="5" placeholder="Informações adicionais, como passos para reproduzir..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-primary" id="salvarDebugLogBtn">Registrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Detalhes de Debug Log -->
+  <div class="modal fade" id="debugLogDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title">Detalhes do Log</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Data/Hora:</label>
+            <div id="debugLogDetailsData" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nível:</label>
+            <div id="debugLogDetailsNivel" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Origem:</label>
+            <div id="debugLogDetailsOrigem" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mensagem:</label>
+            <div id="debugLogDetailsMensagem"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Detalhes:</label>
+            <pre id="debugLogDetailsJson" class="cyber-code"></pre>
+          </div>
         </div>
       </div>
     </div>

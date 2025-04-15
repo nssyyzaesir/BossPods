@@ -7,6 +7,8 @@ let filteredProdutos = [];
 let categorias = [];
 let tags = [];
 let currentTags = [];
+let debugLogs = [];
+let filteredDebugLogs = [];
 let charts = {};
 let confirmCallback = null;
 
@@ -177,6 +179,18 @@ function setupEventHandlers() {
   
   // Exportar logs
   document.getElementById('exportarLogsBtn').addEventListener('click', exportarLogs);
+  
+  // Botões de logs de debug
+  document.getElementById('debugLogsBtn').addEventListener('click', () => {
+    carregarDebugLogs();
+  });
+  
+  document.getElementById('addDebugLogBtn').addEventListener('click', abrirModalNovoDebugLog);
+  document.getElementById('salvarDebugLogBtn').addEventListener('click', salvarDebugLog);
+  document.getElementById('clearDebugLogsBtn').addEventListener('click', confirmarLimparDebugLogs);
+  document.getElementById('exportDebugLogsBtn').addEventListener('click', exportarDebugLogs);
+  document.getElementById('filtroDebugLog').addEventListener('change', filtrarDebugLogs);
+  document.getElementById('searchDebugLog').addEventListener('input', filtrarDebugLogs);
 }
 
 // Carregar todos os dados necessários
