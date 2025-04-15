@@ -726,28 +726,55 @@ const fakeAuth = {
   async login(email, password) {
     console.log('Tentando login com email:', email);
     
-    // Buscar usuário
-    const user = this.users.find(u => u.email === email && u.password === password);
-    
-    if (!user) {
-      console.error('Usuário não encontrado ou senha incorreta');
-      throw new Error('Email ou senha inválidos');
+    try {
+      // Fazer chamada para a API do backend
+      const response = await fetch('/auth/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        console.error('Erro ao fazer login:', data.error);
+        throw new Error(data.error || 'Email ou senha inválidos');
+      }
+      
+      // Encontrar usuário na lista local para ter os dados completos
+      const user = this.users.find(u => u.email === email);
+      
+      if (!user) {
+        // Criar usuário localmente se não existir
+        const newUser = {
+          uid: 'user' + Date.now(),
+          email,
+          displayName: email.split('@')[0],
+          role: data.role || 'user'
+        };
+        
+        this.users.push(newUser);
+        this.currentUser = newUser;
+      } else {
+        // Definir usuário atual
+        this.currentUser = { ...user };
+        delete this.currentUser.password;
+      }
+      
+      // Salvar no localStorage
+      this._saveCurrentUser();
+      
+      // Registrar o timestamp de login
+      localStorage.setItem('lastLoginTime', new Date().getTime().toString());
+      console.log('Timestamp de login registrado:', new Date().getTime());
+      
+      return this.currentUser;
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      throw error;
     }
-    
-    console.log('Usuário encontrado:', user.email, 'Role:', user.role);
-    
-    // Definir usuário atual
-    this.currentUser = { ...user };
-    delete this.currentUser.password;
-    
-    // Salvar no localStorage
-    this._saveCurrentUser();
-    
-    // Registrar o timestamp de login
-    localStorage.setItem('lastLoginTime', new Date().getTime().toString());
-    console.log('Timestamp de login registrado:', new Date().getTime());
-    
-    return this.currentUser;
   },
   
   async getCurrentUser() {
