@@ -211,7 +211,17 @@ async function carregarDados() {
 // Carregar produtos
 async function carregarProdutos() {
   try {
+    console.log('Carregando produtos...');
+    
+    // Verificar se firestoreProducts está disponível
+    if (typeof firestoreProducts === 'undefined' || !firestoreProducts) {
+      console.error('Erro: firestoreProducts não está definido');
+      showToast('Erro', 'Falha ao acessar o serviço de produtos. Verifique o console.', 'error');
+      return [];
+    }
+    
     allProdutos = await firestoreProducts.getAllProducts();
+    console.log('Produtos carregados:', allProdutos.length);
     
     // Ordenar por nome (padrão)
     allProdutos.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
@@ -221,7 +231,9 @@ async function carregarProdutos() {
     
   } catch (error) {
     console.error('Erro ao carregar produtos:', error);
-    throw error;
+    console.error('Detalhes do erro:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    showToast('Erro', 'Falha ao carregar produtos. Detalhes no console.', 'error');
+    return [];
   }
 }
 
@@ -1035,6 +1047,13 @@ async function salvarProduto() {
       return;
     }
     
+    // Verificar se firestoreProducts está disponível
+    if (typeof firestoreProducts === 'undefined' || !firestoreProducts) {
+      console.error('Erro: firestoreProducts não está definido');
+      showToast('Erro', 'Serviço de produtos não disponível. Verifique o console.', 'error');
+      return;
+    }
+    
     // Obter dados do formulário
     const id = document.getElementById('produtoId').value;
     const nome = document.getElementById('nome').value;
@@ -1076,37 +1095,43 @@ async function salvarProduto() {
     showLoading();
     console.log('Enviando dados para o servidor...');
     
-    // Salvar no Firestore
-    if (id) {
-      // Atualizar produto existente
-      console.log('Atualizando produto existente com ID:', id);
-      await firestoreProducts.updateProduct(id, produtoData);
-      showToast('Sucesso', 'Produto atualizado com sucesso', 'success');
-    } else {
-      // Adicionar novo produto
-      console.log('Criando novo produto');
-      const novoProduto = await firestoreProducts.addProduct(produtoData);
-      console.log('Produto criado com sucesso:', novoProduto);
-      showToast('Sucesso', 'Produto adicionado com sucesso', 'success');
+    try {
+      // Salvar no Firestore
+      if (id) {
+        // Atualizar produto existente
+        console.log('Atualizando produto existente com ID:', id);
+        await firestoreProducts.updateProduct(id, produtoData);
+        showToast('Sucesso', 'Produto atualizado com sucesso', 'success');
+      } else {
+        // Adicionar novo produto
+        console.log('Criando novo produto');
+        const novoProduto = await firestoreProducts.addProduct(produtoData);
+        console.log('Produto criado com sucesso:', novoProduto);
+        showToast('Sucesso', 'Produto adicionado com sucesso', 'success');
+      }
+      
+      // Fechar modal
+      console.log('Fechando modal...');
+      const modal = bootstrap.Modal.getInstance(document.getElementById('produtoModal'));
+      modal.hide();
+      
+      // Recarregar dados
+      console.log('Recarregando dados...');
+      await carregarDados();
+      
+      console.log('Produto salvo com sucesso!');
+    } catch (saveError) {
+      console.error('Erro durante operação de salvar:', saveError);
+      showToast('Erro', 'Falha ao salvar produto: ' + (saveError.message || 'Erro desconhecido'), 'error');
     }
-    
-    // Fechar modal
-    console.log('Fechando modal...');
-    const modal = bootstrap.Modal.getInstance(document.getElementById('produtoModal'));
-    modal.hide();
-    
-    // Recarregar dados
-    console.log('Recarregando dados...');
-    await carregarDados();
     
     // Esconder loading
     hideLoading();
-    console.log('Produto salvo com sucesso!');
     
   } catch (error) {
-    console.error('Erro ao salvar produto:', error);
+    console.error('Erro ao processar salvamento de produto:', error);
     console.error('Detalhes do erro:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    showToast('Erro', 'Falha ao salvar produto. Detalhes no console.', 'error');
+    showToast('Erro', 'Falha ao processar dados do produto. Detalhes no console.', 'error');
     hideLoading();
   }
 }
