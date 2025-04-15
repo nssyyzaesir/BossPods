@@ -195,8 +195,17 @@ const firestoreProducts = {
   
   // Adicionar um novo produto
   async addProduct(produtoData) {
+    console.log("Chamada de addProduct recebida com dados:", produtoData);
+    
     if (!localDevMode) {
+      console.log("Modo Firebase: Tentando adicionar produto ao Firestore");
       try {
+        // Validar dados mínimos necessários
+        if (!produtoData.nome) {
+          console.error("Erro: Nome do produto é obrigatório");
+          throw new Error("Nome do produto é obrigatório");
+        }
+        
         // Adicionar timestamps
         const dataWithTimestamps = {
           ...produtoData,
@@ -204,23 +213,59 @@ const firestoreProducts = {
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
+        console.log("Dados preparados com timestamps:", dataWithTimestamps);
+        
+        // Verificar conexão com Firestore
+        if (!firestoreDB) {
+          console.error("Erro: Firestore DB não está inicializado");
+          throw new Error("Firestore não inicializado. Verifique a conexão com Firebase.");
+        }
+        
         // Adicionar ao Firestore
+        console.log("Adicionando ao Firestore collection 'produtos'...");
         const docRef = await firestoreDB.collection('produtos').add(dataWithTimestamps);
+        console.log("Produto adicionado com sucesso, ID:", docRef.id);
         
         // Registrar log
         await this.registrarLog('criar', docRef.id, produtoData.nome, produtoData);
+        console.log("Log de criação registrado");
         
-        return {
+        const resultado = {
           id: docRef.id,
           ...produtoData
         };
+        console.log("Retornando resultado:", resultado);
+        return resultado;
       } catch (error) {
         console.error("Erro ao adicionar produto:", error);
+        console.error("Detalhes do erro:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
         throw error;
       }
     } else {
       // Modo de desenvolvimento local
-      return fakeProducts.addProduct(produtoData);
+      console.log("Modo local: Adicionando produto ao fakeProducts");
+      try {
+        // Validar dados mínimos necessários
+        if (!produtoData.nome) {
+          console.error("Erro: Nome do produto é obrigatório");
+          throw new Error("Nome do produto é obrigatório");
+        }
+        
+        // Verificar se fakeProducts está disponível
+        if (!fakeProducts) {
+          console.error("Erro: fakeProducts não está definido");
+          throw new Error("Sistema de produtos não está disponível");
+        }
+        
+        // Chamar método da implementação local
+        const resultado = fakeProducts.addProduct(produtoData);
+        console.log("Produto adicionado com sucesso no modo local:", resultado);
+        return resultado;
+      } catch (error) {
+        console.error("Erro ao adicionar produto no modo local:", error);
+        console.error("Detalhes do erro:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        throw error;
+      }
     }
   },
   
@@ -721,24 +766,49 @@ const fakeProducts = {
   },
   
   addProduct(produtoData) {
-    const id = 'prod' + (this.produtos.length + 1);
+    console.log("fakeProducts: Iniciando addProduct com dados:", produtoData);
     
-    const novoProduto = {
-      id,
-      ...produtoData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    this.produtos.push(novoProduto);
-    
-    // Registrar log
-    this.registrarLog('criar', id, produtoData.nome, produtoData);
-    
-    // Notificar listeners
-    this.notifyListeners();
-    
-    return novoProduto;
+    try {
+      // Validar dados mínimos
+      if (!produtoData || !produtoData.nome) {
+        const erro = new Error("Dados do produto inválidos. Nome é obrigatório.");
+        console.error("Erro na validação dos dados:", erro);
+        throw erro;
+      }
+      
+      // Gerar ID único para o produto
+      const id = 'prod' + (this.produtos.length + 1) + '_' + Date.now();
+      console.log("ID gerado para o novo produto:", id);
+      
+      // Criar objeto com dados completos do produto
+      const novoProduto = {
+        id,
+        ...produtoData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      console.log("Objeto do novo produto criado:", novoProduto);
+      
+      // Adicionar à lista de produtos
+      this.produtos.push(novoProduto);
+      console.log("Produto adicionado à lista. Total de produtos agora:", this.produtos.length);
+      
+      // Registrar log
+      console.log("Registrando log para criação do produto");
+      this.registrarLog('criar', id, produtoData.nome, produtoData);
+      
+      // Notificar listeners sobre a mudança
+      console.log("Notificando listeners sobre o novo produto");
+      this.notifyListeners();
+      
+      console.log("Produto criado com sucesso:", novoProduto);
+      return novoProduto;
+    } catch (error) {
+      console.error("Erro crítico ao adicionar produto no fakeProducts:", error);
+      console.error("Detalhes do erro:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      throw error;
+    }
   },
   
   updateProduct(id, produtoData) {

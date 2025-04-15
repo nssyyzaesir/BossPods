@@ -1071,41 +1071,72 @@ function adicionarTagAoContainer(tag) {
 // Salvar produto
 async function salvarProduto() {
   try {
-    console.log('Iniciando salvamento de produto...');
+    console.log('===== INICIANDO SALVAMENTO DE PRODUTO =====');
     
     // Validar formulário
     const form = document.getElementById('produtoForm');
     if (!form.checkValidity()) {
-      console.log('Formulário inválido');
+      console.log('Formulário inválido, exibindo mensagens de validação...');
       form.reportValidity();
       return;
     }
     
     // Verificar se firestoreProducts está disponível
     if (typeof firestoreProducts === 'undefined' || !firestoreProducts) {
-      console.error('Erro: firestoreProducts não está definido');
+      console.error('ERRO CRÍTICO: firestoreProducts não está definido');
       showToast('Erro', 'Serviço de produtos não disponível. Verifique o console.', 'error');
+      return;
+    }
+    
+    // Verificar se a API de produtos tem o método addProduct
+    if (typeof firestoreProducts.addProduct !== 'function') {
+      console.error('ERRO CRÍTICO: firestoreProducts.addProduct não é uma função');
+      showToast('Erro', 'API de produtos está configurada incorretamente. Contate o suporte.', 'error');
       return;
     }
     
     // Obter dados do formulário
     const id = document.getElementById('produtoId').value;
-    const nome = document.getElementById('nome').value;
-    const categoria = document.getElementById('categoria').value;
+    const nome = document.getElementById('nome').value.trim();
+    const categoria = document.getElementById('categoria').value.trim();
     const preco = parseFloat(document.getElementById('preco').value);
     const estoque = parseInt(document.getElementById('estoque').value);
     const em_promocao = document.getElementById('promocao').checked;
-    const descricao = document.getElementById('descricao').value;
-    const imagem = document.getElementById('imagem').value;
+    const descricao = document.getElementById('descricao').value.trim();
+    const imagem = document.getElementById('imagem').value.trim();
     const tags = currentTags;
     
-    console.log('Dados do formulário:', {
+    // Validação extra dos dados essenciais
+    if (!nome) {
+      console.error('ERRO: Nome do produto é obrigatório');
+      showToast('Erro', 'Nome do produto é obrigatório', 'error');
+      document.getElementById('nome').focus();
+      return;
+    }
+    
+    if (isNaN(preco) || preco < 0) {
+      console.error('ERRO: Preço inválido');
+      showToast('Erro', 'Preço deve ser um número positivo', 'error');
+      document.getElementById('preco').focus();
+      return;
+    }
+    
+    if (isNaN(estoque) || estoque < 0) {
+      console.error('ERRO: Estoque inválido');
+      showToast('Erro', 'Estoque deve ser um número positivo', 'error');
+      document.getElementById('estoque').focus();
+      return;
+    }
+    
+    console.log('Dados do formulário (validado):', {
       id: id || 'novo produto',
       nome,
       categoria,
       preco,
       estoque,
       em_promocao,
+      descricao: descricao ? `${descricao.substring(0, 20)}...` : '',
+      imagem: imagem || 'não informada',
       tags
     });
     
@@ -1135,12 +1166,20 @@ async function salvarProduto() {
         // Atualizar produto existente
         console.log('Atualizando produto existente com ID:', id);
         await firestoreProducts.updateProduct(id, produtoData);
+        console.log('Produto atualizado com sucesso!');
         showToast('Sucesso', 'Produto atualizado com sucesso', 'success');
       } else {
         // Adicionar novo produto
-        console.log('Criando novo produto');
+        console.log('Iniciando criação de novo produto');
+        console.log('Dados a serem enviados:', produtoData);
+        
         const novoProduto = await firestoreProducts.addProduct(produtoData);
-        console.log('Produto criado com sucesso:', novoProduto);
+        
+        if (!novoProduto || !novoProduto.id) {
+          throw new Error('Resposta inválida da API, produto não foi criado corretamente');
+        }
+        
+        console.log('Produto criado com sucesso! Detalhes:', novoProduto);
         showToast('Sucesso', 'Produto adicionado com sucesso', 'success');
       }
       
@@ -1153,21 +1192,31 @@ async function salvarProduto() {
       console.log('Recarregando dados...');
       await carregarDados();
       
-      console.log('Produto salvo com sucesso!');
+      console.log('===== PRODUTO SALVO COM SUCESSO =====');
     } catch (saveError) {
-      console.error('Erro durante operação de salvar:', saveError);
-      showToast('Erro', 'Falha ao salvar produto: ' + (saveError.message || 'Erro desconhecido'), 'error');
+      console.error('ERRO durante operação de salvar:', saveError);
+      console.error('Detalhes do erro:', JSON.stringify(saveError, Object.getOwnPropertyNames(saveError)));
+      
+      let mensagemErro = 'Falha ao salvar produto';
+      if (saveError.message) {
+        mensagemErro += ': ' + saveError.message;
+      } else {
+        mensagemErro += '. Verifique o console para mais detalhes.';
+      }
+      
+      showToast('Erro', mensagemErro, 'error');
+    } finally {
+      // Sempre esconder loading, mesmo em caso de erro
+      hideLoading();
     }
     
-    // Esconder loading
-    hideLoading();
-    
   } catch (error) {
-    console.error('Erro ao processar salvamento de produto:', error);
+    console.error('ERRO CRÍTICO ao processar salvamento de produto:', error);
     console.error('Detalhes do erro:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     showToast('Erro', 'Falha ao processar dados do produto. Detalhes no console.', 'error');
     hideLoading();
   }
+}
 }
 
 // Abrir modal de confirmação de exclusão
