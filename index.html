@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>BossPods - Painel Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<header>
+  <h1>BossPods - Painel Admin</h1>
+  <div class="stats-bar">
+    <div class="stats-item">
+      <i class="fas fa-box"></i>
+      <span id="total-produtos">0</span> Produtos
+    </div>
+    <div class="stats-item">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span id="estoque-baixo">0</span> Em estoque baixo
+    </div>
+    <div class="stats-item">
+      <i class="fas fa-history"></i>
+      <button onclick="abrirLogs()" class="btn-logs">Ver logs</button>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-filters">
+    <div class="search-container">
+      <input type="text" id="pesquisaNome" placeholder="Buscar produto por nome...">
+      <i class="fas fa-search search-icon"></i>
+    </div>
+    
+    <div class="filter-container">
+      <div class="filter-group">
+        <label>Categoria:</label>
+        <select id="filtroCategoria">
+          <option value="">Todas</option>
+          <option value="Pod">Pod</option>
+          <option value="Acessório">Acessório</option>
+          <option value="Essência">Essência</option>
+          <option value="Outro">Outros</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label>Estoque:</label>
+        <select id="filtroEstoque">
+          <option value="">Todos</option>
+          <option value="baixo">Baixo (≤ 5)</option>
+          <option value="medio">Médio (6-15)</option>
+          <option value="alto">Alto (> 15)</option>
+          <option value="zerado">Zerado</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label>Ordenar por:</label>
+        <select id="ordenacao">
+          <option value="nome-asc">Nome (A-Z)</option>
+          <option value="nome-desc">Nome (Z-A)</option>
+          <option value="preco-asc">Preço (menor-maior)</option>
+          <option value="preco-desc">Preço (maior-menor)</option>
+          <option value="estoque-asc">Estoque (menor-maior)</option>
+          <option value="estoque-desc">Estoque (maior-menor)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-buttons">
+    <button onclick="adicionarProduto()" class="btn-add"><i class="fas fa-plus"></i> Novo Produto</button>
+    <button onclick="apagarTudo()" class="btn-delete-all"><i class="fas fa-trash-alt"></i> Apagar Tudo</button>
+  </div>
+</div>
+
+<div class="auto-save-notification" id="autoSaveNotification">
+  <i class="fas fa-save"></i> Auto-salvando alterações...
+</div>
+
+<div id="admin-container" class="product-grid"></div>
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <i class="fas fa-check-circle modal-icon"></i>
+    <div id="modal-message">Alterações salvas com sucesso!</div>
+  </div>
+</div>
+
+<div id="confirmation-modal" class="modal">
+  <div class="modal-content">
+    <i class="fas fa-question-circle modal-icon warning"></i>
+    <div id="confirmation-message">Tem certeza que deseja excluir este produto?</div>
+    <div class="modal-buttons">
+      <button id="confirm-yes" class="btn-confirm">Sim, excluir</button>
+      <button id="confirm-no" class="btn-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="logModal" class="log-modal">
+  <div class="log-modal-content">
+    <h2><i class="fas fa-history"></i> Logs de Alterações</h2>
+    <div id="logList"></div>
+    <button onclick="fecharLogs()" class="btn-close-logs">Fechar</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
