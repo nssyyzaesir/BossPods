@@ -1,100 +1,40 @@
 import os
 import json
 import datetime
+import logging
 
-# Modo de desenvolvimento local, sem Firebase
+# Configurar logging
+logger = logging.getLogger(__name__)
+
+# Modo de utilização com Firebase CDN
 print("Inicializando em modo de desenvolvimento local (sem Firebase)")
 
-# Armazenamento local simulado
-local_users = {
-    'nsyzadmin@gmail.com': {
-        'uid': 'admin123',
-        'password': 'nsyzadmin123',
-        'displayName': 'Administrador NSYZ',
-        'role': 'admin',
-        'createdAt': datetime.datetime.now().isoformat(),
-        'lastLogin': None
-    },
-    'user@bosspods.com': {
-        'uid': 'user123',
-        'password': 'user123',
-        'displayName': 'Usuário Teste',
-        'role': 'user',
-        'createdAt': datetime.datetime.now().isoformat(),
-        'lastLogin': None
-    }
-}
+# Credenciais do administrador
+ADMIN_EMAIL = 'nsyzaesir@gmail.com'
+ADMIN_PASSWORD = 'nsyz123'
 
-db = None  # Simulação de banco de dados
+# Esta versão do firebase_config.py é mantida apenas para compatibilidade
+# com o código existente. A autenticação é realizada pelo Firebase Auth no frontend.
 
-# Funções auxiliares para autenticação (versão local)
+# Funções auxiliares para compatibilidade com código legado
 def create_user(email, password, display_name=None, role='user'):
-    """Cria um novo usuário no modo de desenvolvimento local"""
-    try:
-        if email in local_users:
-            return {'success': False, 'error': 'Email já está em uso'}
-        
-        uid = f"user_{len(local_users) + 1}"
-        local_users[email] = {
-            'uid': uid,
-            'password': password,
-            'displayName': display_name or email.split('@')[0],
-            'role': role,
-            'createdAt': datetime.datetime.now().isoformat(),
-            'lastLogin': None
-        }
-        
-        return {'success': True, 'uid': uid}
-    except Exception as e:
-        return {'success': False, 'error': str(e)}
+    """Compatibilidade com o código legado - não usado mais"""
+    logger.warning("Tentativa de criar usuário pelo backend. Use Firebase Auth no frontend.")
+    return {'success': False, 'error': 'Esta função foi descontinuada. Use Firebase Auth.'}
 
 def login_user(email, password):
-    """Faz login de um usuário local e retorna token simulado"""
-    try:
-        if email not in local_users:
-            return {'success': False, 'error': 'Usuário não encontrado'}
-            
-        user = local_users[email]
-        if user['password'] != password:
-            return {'success': False, 'error': 'Senha incorreta'}
-            
-        # Atualizar último login
-        user['lastLogin'] = datetime.datetime.now().isoformat()
-        
-        # Gerar token simulado
-        token = f"local_token_{user['uid']}_{datetime.datetime.now().timestamp()}"
-        
-        return {
-            'success': True, 
-            'token': token,
-            'refreshToken': f"refresh_{token}",
-            'uid': user['uid'],
-            'expiresIn': 3600,  # 1 hora
-            'email': email,
-            'role': user['role']
-        }
-    except Exception as e:
-        return {'success': False, 'error': str(e)}
+    """Compatibilidade com o código legado - não usado mais"""
+    logger.warning("Tentativa de login pelo backend. Use Firebase Auth no frontend.")
+    return {'success': False, 'error': 'Esta função foi descontinuada. Use Firebase Auth.'}
 
 def get_user_role(uid):
-    """Obter o role/papel do usuário no modo local"""
-    try:
-        for email, user_data in local_users.items():
-            if user_data.get('uid') == uid:
-                return user_data.get('role', 'user')
-        return 'user'  # default
-    except Exception as e:
-        print(f"Erro ao obter role do usuário: {e}")
-        return 'user'
+    """Compatibilidade com o código legado - retorna 'admin' se for o admin conhecido"""
+    logger.warning("Tentativa de obter role pelo backend. Use Firebase Auth no frontend.")
+    if uid == 'admin':
+        return 'admin'
+    return 'user'
 
 def verify_token(token):
-    """Verifica se um token local é válido"""
-    try:
-        # Formato do token local: local_token_uid_timestamp
-        parts = token.split('_')
-        if len(parts) >= 3 and parts[0] == 'local' and parts[1] == 'token':
-            uid = parts[2]
-            return {'success': True, 'uid': uid}
-        return {'success': False, 'error': 'Token inválido'}
-    except Exception as e:
-        return {'success': False, 'error': str(e)}
+    """Compatibilidade com o código legado - não usado mais"""
+    logger.warning("Tentativa de verificar token pelo backend. Use Firebase Auth no frontend.")
+    return {'success': False, 'error': 'Esta função foi descontinuada. Use Firebase Auth.'}

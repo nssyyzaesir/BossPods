@@ -1,4 +1,4 @@
-// Inicialização ocorre quando o DOM estiver pronto
+// Script da página de login - Versão refatorada
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Página de login carregada, aguardando inicialização...');
   
@@ -82,8 +82,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
       
-      // Mostrar mensagem pronto para login
-      showErrorMessage('Pronto para login ou criação de conta.', 'info');
+      // Verificar se há uma mensagem de erro de autenticação salva
+      const authError = localStorage.getItem('auth_error');
+      if (authError) {
+        showErrorMessage(authError, 'danger');
+        localStorage.removeItem('auth_error');
+      } else {
+        // Mostrar mensagem pronto para login
+        showErrorMessage('Pronto para login ou criação de conta.', 'info');
+      }
     } else {
       // Firebase ainda não inicializado, aguardar
       console.log("Aguardando inicialização do Firebase...");
@@ -109,6 +116,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       const email = emailInput.value.trim();
       const password = passwordInput.value;
       
+      // Validações básicas
+      if (!email || !password) {
+        showLoginError('Por favor, preencha todos os campos.');
+        return;
+      }
+      
+      // Validar formato de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showLoginError('Por favor, insira um email válido.');
+        return;
+      }
+      
+      // Validar senha
+      if (password.length < 6) {
+        showLoginError('A senha deve ter pelo menos 6 caracteres.');
+        return;
+      }
+      
       // Desabilitar botão de login
       loginBtn.disabled = true;
       
@@ -118,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('Tentando login com email:', email);
         
         try {
-          // Verificar se é o administrador
+          // Verificação especial para o administrador (email e senha fixos)
           if (email === ADMIN_EMAIL) {
             // Verificar a senha do administrador
             if (password !== ADMIN_PASSWORD) {
@@ -127,92 +153,46 @@ document.addEventListener('DOMContentLoaded', async () => {
               loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
               return;
             }
+          }
+          
+          // Fazer login no Firebase
+          await firebase.auth().signInWithEmailAndPassword(email, password);
+          console.log('Login bem-sucedido');
+          
+          // Obter usuário atual
+          const user = firebase.auth().currentUser;
+          
+          // Verificar se é o administrador para redirecionar
+          if (user.email === ADMIN_EMAIL) {
+            showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');
             
-            // Processo de login/criação para admin
-            try {
-              // Primeiro tenta fazer login
-              try {
-                await firebase.auth().signInWithEmailAndPassword(email, password);
-                console.log('Login bem-sucedido com conta admin existente');
-              } catch (loginError) {
-                console.log('Falha no login do admin, tentando criar conta:', loginError);
-                
-                // Se houver erro de credenciais inválidas ou usuário não encontrado, criar conta
-                if (loginError.code === 'auth/user-not-found' || 
-                    loginError.code === 'auth/wrong-password' || 
-                    loginError.code === 'auth/internal-error') {
-                  
-                  // Criar conta de admin
-                  await firebase.auth().createUserWithEmailAndPassword(email, password);
-                  console.log('Conta de admin criada com sucesso');
-                  
-                  // Configurar perfil
-                  if (firebase.auth().currentUser) {
-                    await firebase.auth().currentUser.updateProfile({
-                      displayName: 'Administrador NSYZ'
-                    });
-                    
-                    // Criar documento no Firestore para o admin
-                    await firebase.firestore().collection('users').doc(firebase.auth().currentUser.uid).set({
-                      email: email,
-                      displayName: 'Administrador NSYZ',
-                      role: 'admin',
-                      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    console.log('Perfil de admin configurado com sucesso');
-                  } else {
-                    console.error('Usuário não está definido após criação da conta');
-                    throw new Error('Falha ao configurar perfil de administrador');
-                  }
-                } else {
-                  // Se for outro tipo de erro, relançar
-                  throw loginError;
-                }
-              }
-              
-              // Se chegou aqui, login ou criação foi bem-sucedida
-              console.log('Login de administrador bem-sucedido');
-              showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');
-              
-              // Redirecionar para o painel admin
-              setTimeout(() => {
-                window.location.href = '/admin';
-              }, 1000);
-              
-            } catch (error) {
-              console.error('Erro crítico ao criar/logar admin:', error);
-              showLoginError('Falha no acesso administrativo: ' + error.message);
-            }
+            // Redirecionar para o painel admin
+            setTimeout(() => {
+              window.location.href = '/admin';
+            }, 1000);
           } else {
-            // Login normal para outros usuários
-            try {
-              await firebase.auth().signInWithEmailAndPassword(email, password);
-              
-              console.log('Login de usuário normal bem-sucedido');
-              showNotification('Login realizado', 'Bem-vindo à loja BOSSPODS', 'success');
-              
-              // Redirecionar para a loja
-              setTimeout(() => {
-                window.location.href = '/loja';
-              }, 1000);
-            } catch (error) {
-              console.error('Erro ao fazer login de usuário normal:', error);
-              
-              if (error.code === 'auth/user-not-found') {
-                showLoginError('Usuário não encontrado. Crie uma conta primeiro.');
-              } else if (error.code === 'auth/wrong-password') {
-                showLoginError('Senha incorreta');
-              } else {
-                showLoginError('Erro ao fazer login: ' + error.message);
-              }
-            }
+            showNotification('Login realizado', 'Bem-vindo à loja BOSSPODS', 'success');
+            
+            // Redirecionar para a loja
+            setTimeout(() => {
+              window.location.href = '/loja';
+            }, 1000);
           }
         } catch (error) {
-          console.error('Erro geral ao processar login:', error);
-          showLoginError('Erro ao processar login: ' + error.message);
-        } finally {
-          // Reabilitar botão de login
+          console.error('Erro ao fazer login:', error);
+          
+          // Tratar erros específicos
+          if (error.code === 'auth/user-not-found') {
+            showLoginError('Usuário não encontrado. Crie uma conta primeiro.');
+          } else if (error.code === 'auth/wrong-password') {
+            showLoginError('Senha incorreta. Tente novamente.');
+          } else if (error.code === 'auth/too-many-requests') {
+            showLoginError('Muitas tentativas falhas. Tente novamente mais tarde.');
+          } else {
+            showLoginError('Erro ao fazer login: ' + error.message);
+          }
+          
+          // Reabilitar botão
           loginBtn.disabled = false;
           loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
         }
@@ -232,16 +212,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
           }
           
-          // Criar usuário no Firebase
-          await firebase.auth().createUserWithEmailAndPassword(email, password);
+          // Validação adicional para o nome
+          if (displayName && displayName.length < 3) {
+            showLoginError('O nome deve ter pelo menos 3 caracteres.');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
+            return;
+          }
           
-          // Atualizar perfil
-          await firebase.auth().currentUser.updateProfile({
-            displayName: displayName || email.split('@')[0]
-          });
+          // Criar usuário no Firebase
+          const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+          
+          // Atualizar perfil com o nome
+          if (displayName) {
+            await userCredential.user.updateProfile({
+              displayName: displayName
+            });
+          }
           
           // Criar documento do usuário no Firestore
-          await firebase.firestore().collection('users').doc(firebase.auth().currentUser.uid).set({
+          await firebase.firestore().collection('users').doc(userCredential.user.uid).set({
             email: email,
             displayName: displayName || email.split('@')[0],
             role: 'user',
@@ -251,17 +241,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           console.log('Conta criada com sucesso');
           
           // Mostrar mensagem de sucesso
-          showNotification('Conta criada', 'Sua conta foi criada com sucesso. Você já está logado.', 'success');
+          showNotification('Conta criada', 'Sua conta foi criada com sucesso. Você será redirecionado para a loja.', 'success');
           
-          // Redirecionar para a loja
+          // Redirecionar para a loja após alguns segundos
           setTimeout(() => {
             window.location.href = '/loja';
-          }, 1000);
-          
+          }, 1500);
         } catch (error) {
           console.error('Erro ao criar conta:', error);
           
-          // Verificar o tipo de erro
+          // Tratar erros específicos
           if (error.code === 'auth/email-already-in-use') {
             showLoginError('Este email já está registrado. Tente fazer login ou use outro email.');
           } else if (error.code === 'auth/invalid-email') {
@@ -271,8 +260,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           } else {
             showLoginError('Erro ao criar conta: ' + error.message);
           }
-        } finally {
-          // Reabilitar botão de login
+          
+          // Reabilitar botão
           loginBtn.disabled = false;
           loginBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
         }
@@ -290,6 +279,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       let icon = 'exclamation-triangle-fill';
       if (type === 'info') {
         icon = 'info-circle-fill';
+      } else if (type === 'success') {
+        icon = 'check-circle-fill';
       }
       
       errorMessages.innerHTML = `
@@ -304,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Mostrar erro de login
   function showLoginError(message = 'Ocorreu um erro ao fazer login') {
     // Mostrar toast de notificação
-    showNotification('Erro de login', message, 'error');
+    showNotification('Erro', message, 'error');
     
     // Exibir mensagem de erro
     showErrorMessage(message, 'danger');
