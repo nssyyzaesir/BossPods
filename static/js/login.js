@@ -2,12 +2,20 @@
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Página de login carregada, aguardando inicialização...');
   
-  // Elementos do DOM
+  // Elementos do DOM para Login
   const loginForm = document.getElementById('loginForm');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   const loginBtn = document.getElementById('loginBtn');
   const errorMessages = document.getElementById('errorMessages');
+  
+  // Elementos do DOM para Registro
+  const registerForm = document.getElementById('registerForm');
+  const registerNameInput = document.getElementById('registerName');
+  const registerEmailInput = document.getElementById('registerEmail');
+  const registerPasswordInput = document.getElementById('registerPassword');
+  const confirmPasswordInput = document.getElementById('confirmPassword');
+  const registerBtn = document.getElementById('registerBtn');
   
   // Inicialmente mostrar mensagem de carregamento
   showErrorMessage('Conectando ao serviço de autenticação...', 'info');
@@ -131,6 +139,76 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   } else {
     console.error('Formulário de login não encontrado!');
+  }
+  
+  // Configurar evento de submit do formulário de registro
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      console.log('Formulário de registro enviado');
+      
+      // Verificar se Firebase está pronto
+      if (typeof firebaseInitialized === 'undefined' || !firebaseInitialized) {
+        showErrorMessage('Firebase ainda não foi inicializado. Aguarde ou recarregue a página.', 'danger');
+        return;
+      }
+      
+      // Desabilitar botão de registro
+      registerBtn.disabled = true;
+      registerBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Registrando...';
+      
+      // Obter valores do formulário
+      const name = registerNameInput.value.trim();
+      const email = registerEmailInput.value.trim();
+      const password = registerPasswordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+      
+      // Validar senhas
+      if (password !== confirmPassword) {
+        showErrorMessage('As senhas não conferem', 'danger');
+        registerBtn.disabled = false;
+        registerBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
+        return;
+      }
+      
+      try {
+        // Registrar usuário
+        console.log('Chamando API de registro');
+        const user = await firebaseAuthAPI.register(email, password, name);
+        console.log('Registro bem-sucedido:', user);
+        
+        // Mostrar mensagem de sucesso
+        showNotification('Conta criada', 'Sua conta foi criada com sucesso! Faça login para continuar.', 'success');
+        
+        // Limpar formulário
+        registerForm.reset();
+        
+        // Trocar para a aba de login
+        document.getElementById('login-tab').click();
+        
+      } catch (error) {
+        console.error('Erro de registro:', error);
+        
+        // Tratar erros específicos
+        let errorMessage = 'Erro ao criar conta. Tente novamente.';
+        
+        if (error.code === 'auth/email-already-in-use') {
+          errorMessage = 'Este email já está em uso.';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'Email inválido.';
+        } else if (error.code === 'auth/weak-password') {
+          errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
+        }
+        
+        showErrorMessage(errorMessage, 'danger');
+      } finally {
+        // Reabilitar botão de registro
+        registerBtn.disabled = false;
+        registerBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
+      }
+    });
+  } else {
+    console.error('Formulário de registro não encontrado!');
   }
   
   // Funções auxiliares

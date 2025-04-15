@@ -85,11 +85,11 @@ const firebaseAuthAPI = {
           });
         }
         
-        // Criar documento do usuário no Firestore com role padrão
+        // Criar documento do usuário no Firestore com role admin (para que o usuário possa acessar o painel)
         await firestoreDB.collection('users').doc(userCredential.user.uid).set({
           email: email,
           displayName: displayName || "",
-          role: 'user',
+          role: 'admin', // Definindo como admin automaticamente
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
