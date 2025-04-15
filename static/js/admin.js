@@ -1611,3 +1611,289 @@ function formatarDataArquivo(data) {
   
   return `${ano}${mes}${dia}_${hora}${minuto}`;
 }
+
+// ===== Funções para Debug Logs =====
+
+// Carregar logs de debug
+function carregarDebugLogs() {
+  try {
+    console.log('Carregando logs de debug...');
+    
+    // Verificar se já temos os logs no localStorage
+    const logsString = localStorage.getItem('debugLogs');
+    
+    if (logsString) {
+      try {
+        debugLogs = JSON.parse(logsString);
+        console.log('Logs de debug carregados do localStorage:', debugLogs.length);
+      } catch (e) {
+        console.error('Erro ao parsear logs do localStorage:', e);
+        debugLogs = [];
+      }
+    } else {
+      console.log('Nenhum log de debug encontrado no localStorage');
+      debugLogs = [];
+    }
+    
+    // Ordenar por data (mais recentes primeiro)
+    debugLogs.sort((a, b) => new Date(b.data) - new Date(a.data));
+    
+    // Aplicar filtros (isso também atualiza a exibição)
+    filtrarDebugLogs();
+    
+  } catch (error) {
+    console.error('Erro ao carregar logs de debug:', error);
+    showToast('Erro', 'Falha ao carregar logs de debug. Detalhes no console.', 'error');
+  }
+}
+
+// Filtrar logs de debug
+function filtrarDebugLogs() {
+  // Obter valores dos filtros
+  const busca = document.getElementById('searchDebugLog').value.toLowerCase();
+  const nivel = document.getElementById('filtroDebugLog').value;
+  
+  // Filtrar logs
+  filteredDebugLogs = debugLogs.filter(log => {
+    // Filtro por nível
+    if (nivel && log.nivel !== nivel) {
+      return false;
+    }
+    
+    // Busca em campos de texto
+    if (busca) {
+      const mensagemMatch = (log.mensagem || '').toLowerCase().includes(busca);
+      const origemMatch = (log.origem || '').toLowerCase().includes(busca);
+      const detalhesMatch = (log.detalhes || '').toLowerCase().includes(busca);
+      
+      if (!mensagemMatch && !origemMatch && !detalhesMatch) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+  
+  // Renderizar logs filtrados
+  renderizarDebugLogs(filteredDebugLogs);
+}
+
+// Renderizar logs de debug
+function renderizarDebugLogs(logs) {
+  const tbody = document.getElementById('debugLogsList');
+  tbody.innerHTML = '';
+  
+  logs.forEach(log => {
+    const tr = document.createElement('tr');
+    
+    // Data
+    const tdData = document.createElement('td');
+    tdData.textContent = formatarData(new Date(log.data));
+    tr.appendChild(tdData);
+    
+    // Nível
+    const tdNivel = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = `log-badge ${log.nivel}`;
+    badge.textContent = getNivelText(log.nivel);
+    tdNivel.appendChild(badge);
+    tr.appendChild(tdNivel);
+    
+    // Origem
+    const tdOrigem = document.createElement('td');
+    tdOrigem.textContent = log.origem || 'N/A';
+    tr.appendChild(tdOrigem);
+    
+    // Mensagem
+    const tdMensagem = document.createElement('td');
+    tdMensagem.textContent = log.mensagem || '';
+    tr.appendChild(tdMensagem);
+    
+    // Ações
+    const tdAcoes = document.createElement('td');
+    const detailsBtn = document.createElement('span');
+    detailsBtn.className = 'log-details-btn';
+    detailsBtn.innerHTML = '<i class="bi bi-info-circle"></i> Detalhes';
+    detailsBtn.addEventListener('click', () => {
+      abrirDetalhesDebugLog(log);
+    });
+    
+    tdAcoes.appendChild(detailsBtn);
+    tr.appendChild(tdAcoes);
+    
+    tbody.appendChild(tr);
+  });
+  
+  // Se não há logs
+  if (logs.length === 0) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.className = 'text-center';
+    td.textContent = 'Nenhum log de debug encontrado';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+}
+
+// Obter texto do nível
+function getNivelText(nivel) {
+  switch (nivel) {
+    case 'error':
+      return 'Erro';
+    case 'warning':
+      return 'Aviso';
+    case 'info':
+      return 'Info';
+    case 'debug':
+      return 'Debug';
+    default:
+      return nivel;
+  }
+}
+
+// Abrir modal para novo log de debug
+function abrirModalNovoDebugLog() {
+  // Limpar formulário
+  document.getElementById('debugLogForm').reset();
+  document.getElementById('debugLogNivel').value = 'error';
+  document.getElementById('debugLogOrigem').value = '';
+  document.getElementById('debugLogMensagem').value = '';
+  document.getElementById('debugLogDetalhes').value = '';
+  
+  // Mostrar modal
+  const modal = new bootstrap.Modal(document.getElementById('debugLogModal'));
+  modal.show();
+}
+
+// Salvar log de debug
+function salvarDebugLog() {
+  try {
+    // Validar formulário
+    const form = document.getElementById('debugLogForm');
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    
+    // Obter dados do formulário
+    const nivel = document.getElementById('debugLogNivel').value;
+    const origem = document.getElementById('debugLogOrigem').value;
+    const mensagem = document.getElementById('debugLogMensagem').value;
+    const detalhes = document.getElementById('debugLogDetalhes').value;
+    
+    // Criar objeto de log
+    const log = {
+      id: Date.now().toString(),
+      data: new Date().toISOString(),
+      nivel,
+      origem,
+      mensagem,
+      detalhes
+    };
+    
+    console.log('Registrando novo log de debug:', log);
+    
+    // Adicionar ao array
+    debugLogs.unshift(log);
+    
+    // Salvar no localStorage
+    localStorage.setItem('debugLogs', JSON.stringify(debugLogs));
+    
+    // Fechar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('debugLogModal'));
+    modal.hide();
+    
+    // Atualizar lista
+    filtrarDebugLogs();
+    
+    showToast('Sucesso', 'Log registrado com sucesso', 'success');
+    
+  } catch (error) {
+    console.error('Erro ao salvar log de debug:', error);
+    showToast('Erro', 'Falha ao registrar log. Tente novamente.', 'error');
+  }
+}
+
+// Abrir detalhes de log de debug
+function abrirDetalhesDebugLog(log) {
+  // Preencher dados do modal
+  document.getElementById('debugLogDetailsData').textContent = formatarData(new Date(log.data));
+  document.getElementById('debugLogDetailsNivel').textContent = getNivelText(log.nivel);
+  document.getElementById('debugLogDetailsOrigem').textContent = log.origem || 'N/A';
+  document.getElementById('debugLogDetailsMensagem').textContent = log.mensagem || '';
+  
+  // Mostrar detalhes
+  const detalhesJson = document.getElementById('debugLogDetailsJson');
+  if (log.detalhes) {
+    detalhesJson.textContent = log.detalhes;
+  } else {
+    detalhesJson.textContent = 'Nenhum detalhe disponível';
+  }
+  
+  // Mostrar modal
+  const modal = new bootstrap.Modal(document.getElementById('debugLogDetailsModal'));
+  modal.show();
+}
+
+// Confirmar limpeza de logs de debug
+function confirmarLimparDebugLogs() {
+  document.getElementById('confirmModalTitle').textContent = 'Confirmar Ação';
+  document.getElementById('confirmModalText').textContent = 'Tem certeza que deseja limpar todos os logs de debug? Esta ação não pode ser desfeita.';
+  document.getElementById('confirmBtn').className = 'btn cyber-btn cyber-btn-danger';
+  document.getElementById('confirmBtn').textContent = 'Limpar';
+  
+  // Definir callback
+  confirmCallback = limparDebugLogs;
+  
+  // Mostrar modal
+  const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+  modal.show();
+}
+
+// Limpar logs de debug
+function limparDebugLogs() {
+  try {
+    // Limpar array
+    debugLogs = [];
+    
+    // Limpar localStorage
+    localStorage.removeItem('debugLogs');
+    
+    // Atualizar interface
+    filtrarDebugLogs();
+    
+    showToast('Sucesso', 'Logs de debug limpos com sucesso', 'success');
+    
+  } catch (error) {
+    console.error('Erro ao limpar logs de debug:', error);
+    showToast('Erro', 'Falha ao limpar logs. Tente novamente.', 'error');
+  }
+}
+
+// Exportar logs de debug
+function exportarDebugLogs() {
+  try {
+    // Exportar como JSON
+    const jsonData = JSON.stringify(debugLogs, null, 2);
+    
+    // Criar blob e link de download
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    // Criar link e simular clique
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `debug_logs_${formatarDataArquivo(new Date())}.json`;
+    a.click();
+    
+    // Liberar URL
+    URL.revokeObjectURL(url);
+    
+    showToast('Sucesso', 'Logs de debug exportados com sucesso', 'success');
+    
+  } catch (error) {
+    console.error('Erro ao exportar logs de debug:', error);
+    showToast('Erro', 'Falha ao exportar logs. Tente novamente.', 'error');
+  }
+}

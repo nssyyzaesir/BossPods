@@ -281,3 +281,40 @@
   box-shadow: 0 0 8px var(--primary-color);
   border-color: var(--primary-color-light);
 }
+
+/* Estilos para os logs de debug */
+.log-badge.error {
+  background-color: rgba(255, 45, 108, 0.2);
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+.log-badge.warning {
+  background-color: rgba(255, 184, 46, 0.2);
+  border-color: var(--warning-color);
+  color: var(--warning-color);
+}
+
+.log-badge.info {
+  background-color: rgba(0, 184, 255, 0.2);
+  border-color: var(--info-color);
+  color: var(--info-color);
+}
+
+.log-badge.debug {
+  background-color: rgba(51, 255, 192, 0.2);
+  border-color: var(--success-color);
+  color: var(--success-color);
+}
+
+.cyber-code {
+  background-color: var(--bg-darkest);
+  border: 1px solid var(--card-border);
+  padding: 1rem;
+  border-radius: 0.25rem;
+  color: var(--text-color);
+  font-family: monospace;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
+}
