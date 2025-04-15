@@ -400,6 +400,49 @@ function adicionarProduto() {
   }
 }
 
+// Edit product - open modal with product data
+function editarProduto(id) {
+  const produto = produtos.find(p => p.id === id);
+  
+  if (!produto) {
+    showModal('Erro ao editar: produto não encontrado.', 'x-circle', 'text-danger');
+    return;
+  }
+  
+  // Fill form with product data
+  document.getElementById('modalTitle').textContent = 'Editar Produto';
+  document.getElementById('productId').value = produto.id;
+  document.getElementById('productName').value = produto.nome;
+  document.getElementById('productPrice').value = produto.preco;
+  document.getElementById('productStock').value = produto.estoque;
+  document.getElementById('productImage').value = produto.imagem;
+  document.getElementById('productCategory').value = produto.categoria;
+  
+  // Handle tags
+  const tagsArray = produto.tags || [];
+  const tags = typeof tagsArray === 'string' ? JSON.parse(tagsArray) : tagsArray;
+  document.getElementById('productTags').value = tags.join(', ');
+  renderTagsFromInput(document.getElementById('productTags').value);
+  
+  // Handle promotion
+  document.getElementById('productPromotion').checked = produto.em_promocao || false;
+  
+  // Show image preview if exists
+  const previewContainer = document.getElementById('imagePreview');
+  const previewImg = previewContainer.querySelector('img');
+  
+  if (produto.imagem) {
+    previewImg.src = produto.imagem;
+    previewContainer.classList.remove('d-none');
+  } else {
+    previewContainer.classList.add('d-none');
+  }
+  
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('productModal'));
+  modal.show();
+}
+
 // Save product (update)
 function salvar(id) {
   const produtoAtual = produtos.find(p => p.id === id);
