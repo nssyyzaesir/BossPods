@@ -6,39 +6,73 @@ let loginBtn = document.getElementById('loginBtn');
 
 // Inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Página de login carregada, verificando autenticação...');
+  console.log('Página de login carregada, aguardando inicialização do Firebase...');
   
   // Limpar qualquer sessão existente no localStorage
   localStorage.removeItem('currentUser');
   localStorage.removeItem('lastLoginTime');
   console.log('Sessão existente removida para garantir novo login');
   
-  // Verificar se já está logado
-  firebaseAuthAPI.getCurrentUser().then(user => {
-    console.log('Verificação inicial de usuário:', user);
-    if (user) {
-      console.log('Usuário já autenticado:', user.email);
-      // Verificar se o usuário é admin
-      firebaseAuthAPI.isAdmin(user).then(isAdmin => {
-        console.log('Verificação se usuário é admin:', isAdmin);
-        if (isAdmin) {
-          // Redirecionar para dashboard
-          console.log('Usuário é admin, redirecionando para dashboard');
-          redirectToDashboard();
-        } else {
-          // Logout (usuário não é admin)
-          console.log('Usuário não é admin, realizando logout');
-          firebaseAuthAPI.logout().then(() => {
-            showLoginError('Você não tem permissão para acessar o painel de administração');
+  // Verificar se o Firebase foi inicializado
+  let firebaseCheckInterval = setInterval(() => {
+    if (typeof firebaseInitialized !== 'undefined' && firebaseInitialized) {
+      clearInterval(firebaseCheckInterval);
+      console.log('Firebase inicializado, verificando autenticação...');
+      
+      // Mostrar mensagem informativa
+      const errorMessages = document.getElementById('errorMessages');
+      if (errorMessages) {
+        errorMessages.innerHTML = `
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            Conectando ao serviço de autenticação...
+          </div>
+        `;
+      }
+      
+      // Verificar se já está logado
+      firebaseAuthAPI.getCurrentUser().then(user => {
+        console.log('Verificação inicial de usuário:', user);
+        if (user) {
+          console.log('Usuário já autenticado:', user.email);
+          // Verificar se o usuário é admin
+          firebaseAuthAPI.isAdmin(user).then(isAdmin => {
+            console.log('Verificação se usuário é admin:', isAdmin);
+            if (isAdmin) {
+              // Redirecionar para dashboard
+              console.log('Usuário é admin, redirecionando para dashboard');
+              redirectToDashboard();
+            } else {
+              // Logout (usuário não é admin)
+              console.log('Usuário não é admin, realizando logout');
+              firebaseAuthAPI.logout().then(() => {
+                showLoginError('Você não tem permissão para acessar o painel de administração');
+              });
+            }
           });
+        } else {
+          console.log('Nenhum usuário autenticado, aguardando login');
+          
+          // Limpar mensagem de info e mostrar formulário pronto
+          const errorMessages = document.getElementById('errorMessages');
+          if (errorMessages) {
+            errorMessages.innerHTML = `
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                Pronto para login. Digite suas credenciais de administrador.
+              </div>
+            `;
+          }
         }
+      }).catch(error => {
+        console.error('Erro ao verificar autenticação inicial:', error);
+        showLoginError('Erro ao verificar autenticação: ' + error.message);
       });
     } else {
-      console.log('Nenhum usuário autenticado, aguardando login');
+      // Firebase ainda não inicializado, aguardar
+      console.log("Aguardando inicialização do Firebase...");
     }
-  }).catch(error => {
-    console.error('Erro ao verificar autenticação inicial:', error);
-  });
+  }, 500);
   
   // Configurar evento de submit do formulário
   loginForm.addEventListener('submit', async (e) => {
@@ -104,7 +138,21 @@ function redirectToDashboard() {
 
 // Mostrar erro de login
 function showLoginError(message = 'Ocorreu um erro ao fazer login') {
+  // Mostrar toast de notificação
   showNotification('Erro de login', message, 'error');
+  
+  // Exibir mensagem de erro também na área de errorMessages
+  const errorMessages = document.getElementById('errorMessages');
+  if (errorMessages) {
+    errorMessages.innerHTML = `
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        ${message}
+      </div>
+    `;
+  }
+  
+  // Limpar senha
   passwordInput.value = '';
 }
 
