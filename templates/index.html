@@ -2,22 +2,54 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a12">
+  <meta name="msapplication-navbutton-color" content="#0a0a12">
   <title>BOSSPODS | Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/static/css/styles.css">
   <style>
+    :root {
+      --safe-area-inset-top: env(safe-area-inset-top, 0px);
+      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+      --app-height: 100%;
+      --primary-glow-color: rgba(184, 51, 255, 0.5);
+      --secondary-glow-color: rgba(0, 184, 255, 0.3);
+    }
+    
+    html {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-size: 16px;
+    }
+    
     body {
-      height: 100vh;
+      height: 100%;
+      width: 100%;
       overflow: hidden;
       position: relative;
       margin: 0;
+      padding: 0;
       background: var(--bg-dark);
+      overscroll-behavior: none; /* Evita efeito de rebote em iOS */
+      -webkit-tap-highlight-color: transparent; /* Remove destacar toque em iOS */
+      font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+      cursor: default;
+      font-variant-numeric: tabular-nums;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     .grid-bg {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
@@ -26,30 +58,37 @@
                         linear-gradient(90deg, rgba(10, 10, 20, 0.8) 1px, transparent 1px);
       background-size: 30px 30px;
       z-index: 1;
+      opacity: 0.7;
     }
     
     .global-glow {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: radial-gradient(circle at 50% 25%, rgba(184, 51, 255, 0.15), transparent 70%);
+      background: 
+        radial-gradient(circle at 25% 25%, var(--primary-glow-color), transparent 50%),
+        radial-gradient(circle at 75% 75%, var(--secondary-glow-color), transparent 50%);
       z-index: 2;
+      pointer-events: none;
     }
     
     .login-screen {
       position: relative;
       z-index: 3;
-      height: 100vh;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-direction: column;
+      padding-top: var(--safe-area-inset-top);
+      padding-bottom: var(--safe-area-inset-bottom);
     }
     
     .login-container {
       max-width: 800px;
+      width: 100%;
       margin: 0 auto;
       padding: 0 20px;
     }
@@ -64,22 +103,27 @@
     .login-options {
       display: flex;
       justify-content: center;
-      gap: 2rem;
-      margin-top: 2rem;
+      gap: 2.5rem;
+      margin-top: 3rem;
+      flex-wrap: wrap; /* Permite quebra em telas menores */
+      padding: 0.5rem;
     }
     
     .login-option {
       text-align: center;
-      width: 140px;
+      width: 120px;
       opacity: 0.75;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       color: var(--text-light);
       text-decoration: none;
+      margin-bottom: 1rem;
+      -webkit-tap-highlight-color: transparent; /* Remove destacar toque em iOS */
+      position: relative;
     }
     
-    .login-option:hover {
+    .login-option:hover, .login-option:active, .login-option:focus {
       opacity: 1;
-      transform: translateY(-5px);
+      transform: translateY(-8px);
       color: var(--primary-color-light);
     }
     
@@ -92,40 +136,82 @@
       border-radius: 50%;
       background-color: rgba(0, 0, 0, 0.3);
       border: 1px solid var(--card-border);
-      margin-bottom: 1rem;
-      font-size: 1.8rem;
+      margin-bottom: 0.8rem;
+      font-size: 1.5rem;
       color: inherit;
+      transition: all 0.3s ease;
+      -webkit-touch-callout: none; /* Impede menu de contexto no iOS */
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .option-icon::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .login-option:hover .option-icon::after, 
+    .login-option:active .option-icon::after, 
+    .login-option:focus .option-icon::after {
+      opacity: 1;
+    }
+    
+    .login-option:hover .option-icon, 
+    .login-option:active .option-icon,
+    .login-option:focus .option-icon {
+      background-color: rgba(184, 51, 255, 0.1);
+      border-color: var(--primary-color-light);
+      box-shadow: 
+        0 0 15px var(--primary-glow-color),
+        inset 0 0 10px rgba(184, 51, 255, 0.2);
+      transform: scale(1.05);
+    }
+    
+    .login-option .option-label {
+      font-weight: 500;
+      margin-top: 0.5rem;
       transition: all 0.3s ease;
     }
     
-    .login-option:hover .option-icon {
-      background-color: rgba(184, 51, 255, 0.1);
-      border-color: var(--primary-color-light);
-      box-shadow: 0 0 15px rgba(184, 51, 255, 0.5);
+    .login-option:hover .option-label,
+    .login-option:active .option-label,
+    .login-option:focus .option-label {
+      text-shadow: 0 0 5px var(--primary-glow-color);
     }
     
     .login-footer {
       margin-top: 3rem;
       text-align: center;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text-dark);
+      padding-bottom: calc(1rem + var(--safe-area-inset-bottom)); /* Espaço adicional para notch */
     }
     
     .login-logo {
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
       position: relative;
     }
     
     .login-logo h1 {
       font-size: 4rem;
-      font-weight: 900;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      margin-bottom: 0.5rem;
     }
     
     .login-logo p {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: var(--text-dark);
       letter-spacing: 4px;
       text-transform: uppercase;
+      font-weight: 500;
     }
     
     .scanner-line {
@@ -138,6 +224,7 @@
       animation: scan 4s linear infinite;
       opacity: 0.6;
       z-index: 2;
+      pointer-events: none; /* Garante que não bloqueie interações */
     }
     
     @keyframes scan {
@@ -150,20 +237,19 @@
     }
     
     .cyber-panel {
-      position: absolute;
-      top: 0;
-      right: 0;
-      padding: 20px;
-      z-index: 4;
+      position: fixed;
+      top: calc(15px + var(--safe-area-inset-top)); /* Respeitando notch em iOS */
+      right: 15px;
+      z-index: 10;
       display: flex;
-      gap: 1rem;
+      gap: 0.8rem;
     }
     
     .circle-button {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
-      background-color: rgba(0, 0, 0, 0.3);
+      background-color: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--card-border);
       display: flex;
       align-items: center;
@@ -171,23 +257,28 @@
       color: var(--text-dark);
       transition: all 0.3s;
       text-decoration: none;
+      -webkit-tap-highlight-color: transparent; /* Remove destacar toque em iOS */
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
     }
     
-    .circle-button:hover {
+    .circle-button:hover, .circle-button:active, .circle-button:focus {
       background-color: rgba(184, 51, 255, 0.1);
       border-color: var(--primary-color-light);
       color: var(--primary-color-light);
       box-shadow: 0 0 10px rgba(184, 51, 255, 0.3);
+      transform: scale(1.05);
     }
     
     .animated-bg-effect {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
       z-index: 0;
       overflow: hidden;
+      pointer-events: none; /* Garante que não bloqueie interações */
     }
     
     .animated-bg-effect span {
@@ -283,6 +374,174 @@
         opacity: 0;
       }
     }
+    
+    /* Cursor personalizado apenas para desktop */
+    @media (pointer: fine) {
+      body {
+        cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='%23b833ff' opacity='0.5'/></svg>") 8 8, auto;
+      }
+      
+      a, button, .login-option {
+        cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' stroke='%23b833ff' stroke-width='2' fill='transparent'/></svg>") 12 12, pointer;
+      }
+    }
+    
+    /* Estilo específico para PCs */
+    @media (min-width: 992px) {
+      .login-logo h1 {
+        font-size: 5rem;
+      }
+      
+      .login-options {
+        gap: 3rem;
+      }
+      
+      .login-option {
+        width: 140px;
+      }
+      
+      .option-icon {
+        width: 90px;
+        height: 90px;
+        font-size: 2rem;
+      }
+      
+      /* Efeito hover apenas para dispositivos não-touch */
+      .login-option:hover {
+        transform: translateY(-10px) scale(1.05);
+      }
+      
+      .login-option:hover .option-icon {
+        box-shadow: 
+          0 0 25px var(--primary-glow-color),
+          inset 0 0 15px rgba(184, 51, 255, 0.3);
+      }
+    }
+    
+    /* Media Queries para tablets */
+    @media (min-width: 768px) and (max-width: 991px) {
+      .login-logo h1 {
+        font-size: 4rem;
+      }
+      
+      .option-icon {
+        width: 80px;
+        height: 80px;
+        font-size: 1.8rem;
+      }
+    }
+    
+    /* Media Queries para dispositivos móveis */
+    @media (max-width: 767px) {
+      .login-logo h1 {
+        font-size: 3rem;
+      }
+      
+      .login-logo p {
+        font-size: 0.9rem;
+        letter-spacing: 3px;
+      }
+      
+      .login-options {
+        gap: 1.5rem;
+        margin-top: 2rem;
+      }
+      
+      .login-option {
+        width: 100px;
+      }
+      
+      .option-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.4rem;
+      }
+      
+      .cyber-panel {
+        top: calc(10px + var(--safe-area-inset-top));
+        right: 10px;
+      }
+      
+      .circle-button {
+        width: 38px;
+        height: 38px;
+        font-size: 0.9rem;
+      }
+    }
+    
+    /* Media Queries para dispositivos muito pequenos */
+    @media (max-width: 360px) {
+      .login-logo h1 {
+        font-size: 2.5rem;
+      }
+      
+      .login-logo p {
+        font-size: 0.8rem;
+        letter-spacing: 2px;
+      }
+      
+      .login-options {
+        gap: 1rem;
+      }
+      
+      .login-option {
+        width: 80px;
+      }
+      
+      .option-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+      }
+      
+      .cyber-panel {
+        top: calc(5px + var(--safe-area-inset-top));
+        right: 5px;
+        gap: 0.5rem;
+      }
+      
+      .circle-button {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+      }
+    }
+    
+    /* Adaptações específicas para dispositivos iOS */
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .login-screen {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      
+      .cyber-panel {
+        top: calc(15px + env(safe-area-inset-top));
+        right: calc(15px + env(safe-area-inset-right, 0px));
+      }
+      
+      .login-footer {
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+      }
+    }
+    
+    /* Animações específicas para desktop */
+    @media (prefers-reduced-motion: no-preference) {
+      .login-logo h1 {
+        animation: textGlow 3s ease-in-out infinite alternate;
+      }
+      
+      @keyframes textGlow {
+        0% {
+          text-shadow: 0 0 5px rgba(255, 255, 255, 0.3),
+                       0 0 10px rgba(184, 51, 255, 0.2);
+        }
+        100% {
+          text-shadow: 0 0 10px rgba(255, 255, 255, 0.4),
+                       0 0 20px rgba(184, 51, 255, 0.4),
+                       0 0 30px rgba(184, 51, 255, 0.2);
+        }
+      }
+    }
   </style>
 </head>
 <body>
@@ -296,13 +555,13 @@
 
   <!-- Painel de navegação -->
   <div class="cyber-panel">
-    <a href="/login" class="circle-button">
+    <a href="/login" class="circle-button" aria-label="Login de administrador">
       <i class="bi bi-person-badge"></i>
     </a>
-    <a href="#" class="circle-button">
+    <a href="#" class="circle-button" aria-label="Informações">
       <i class="bi bi-info-circle"></i>
     </a>
-    <a href="#" class="circle-button">
+    <a href="#" class="circle-button" aria-label="Ajuda">
       <i class="bi bi-question-circle"></i>
     </a>
   </div>
@@ -318,25 +577,25 @@
       
       <!-- Opções de login -->
       <div class="login-options">
-        <a href="/loja" class="login-option">
+        <a href="/loja" class="login-option" aria-label="Acessar loja online">
           <div class="option-icon">
             <i class="bi bi-shop"></i>
           </div>
-          <div>Loja Online</div>
+          <div class="option-label">Loja Online</div>
         </a>
         
-        <a href="/login" class="login-option">
+        <a href="/login" class="login-option" aria-label="Acessar painel administrativo">
           <div class="option-icon">
             <i class="bi bi-person-lock"></i>
           </div>
-          <div>Painel Admin</div>
+          <div class="option-label">Painel Admin</div>
         </a>
         
-        <a href="/carrinho" class="login-option">
+        <a href="/carrinho" class="login-option" aria-label="Ver seu carrinho de compras">
           <div class="option-icon">
             <i class="bi bi-cart3"></i>
           </div>
-          <div>Meu Carrinho</div>
+          <div class="option-label">Meu Carrinho</div>
         </a>
       </div>
       
@@ -352,20 +611,55 @@
   </div>
 
   <script>
-    // Animação simples para elementos da página
+    // Animação para elementos da página
     document.addEventListener('DOMContentLoaded', () => {
-      const fadeInElements = document.querySelectorAll('.login-logo, .login-options, .login-footer');
+      // Verificar se o navegador não recomenda motion-reduced
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       
-      fadeInElements.forEach((el, index) => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        el.style.transition = 'all 0.8s ease';
+      if (!prefersReducedMotion) {
+        const fadeInElements = document.querySelectorAll('.login-logo, .login-options, .login-footer');
         
-        setTimeout(() => {
-          el.style.opacity = '1';
-          el.style.transform = 'translateY(0)';
-        }, 300 + (index * 200));
-      });
+        fadeInElements.forEach((el, index) => {
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(20px)';
+          el.style.transition = 'all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+          
+          setTimeout(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+          }, 300 + (index * 200));
+        });
+      }
+      
+      // Corrigir altura em dispositivos móveis
+      function setAppHeight() {
+        const doc = document.documentElement;
+        doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+      }
+      
+      window.addEventListener('resize', setAppHeight);
+      window.addEventListener('orientationchange', setAppHeight);
+      setAppHeight();
+      
+      // Impedir comportamento de scroll/bounce em dispositivos touch
+      document.body.addEventListener('touchmove', function(e) {
+        if (e.target === document.documentElement) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+      
+      // Melhor suporte para toque em dispositivos iOS
+      document.addEventListener('touchstart', function() {}, {passive: true});
+      
+      // Suporte para Android e correções específicas
+      if (/Android/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('android-device');
+      }
+      
+      // Suporte para dispositivos iOS
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('ios-device');
+      }
     });
   </script>
 </body>
