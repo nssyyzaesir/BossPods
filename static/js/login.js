@@ -6,27 +6,39 @@ let loginBtn = document.getElementById('loginBtn');
 
 // Inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('Página de login carregada, verificando autenticação...');
+  
   // Verificar se já está logado
   firebaseAuthAPI.getCurrentUser().then(user => {
+    console.log('Verificação inicial de usuário:', user);
     if (user) {
+      console.log('Usuário já autenticado:', user.email);
       // Verificar se o usuário é admin
       firebaseAuthAPI.isAdmin(user).then(isAdmin => {
+        console.log('Verificação se usuário é admin:', isAdmin);
         if (isAdmin) {
           // Redirecionar para dashboard
+          console.log('Usuário é admin, redirecionando para dashboard');
           redirectToDashboard();
         } else {
           // Logout (usuário não é admin)
+          console.log('Usuário não é admin, realizando logout');
           firebaseAuthAPI.logout().then(() => {
             showLoginError('Você não tem permissão para acessar o painel de administração');
           });
         }
       });
+    } else {
+      console.log('Nenhum usuário autenticado, aguardando login');
     }
+  }).catch(error => {
+    console.error('Erro ao verificar autenticação inicial:', error);
   });
   
   // Configurar evento de submit do formulário
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    console.log('Formulário de login enviado');
     
     // Desabilitar botão de login
     loginBtn.disabled = true;
@@ -35,22 +47,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Obter valores do formulário
     const email = emailInput.value.trim();
     const password = passwordInput.value;
+    console.log('Tentando login com email:', email);
     
     try {
       // Tentar fazer login
+      console.log('Chamando API de login');
       const user = await firebaseAuthAPI.login(email, password);
+      console.log('Login bem-sucedido:', user);
       
       // Verificar se o usuário é admin
+      console.log('Verificando se usuário é admin');
       const isAdmin = await firebaseAuthAPI.isAdmin(user);
+      console.log('Resultado da verificação admin:', isAdmin);
       
       if (isAdmin) {
         // Mostrar mensagem de sucesso
+        console.log('Usuário é admin, redirecionando para dashboard');
         showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');
+        
+        // Verificar novamente se o usuário está salvo corretamente
+        const currentUser = await firebaseAuthAPI.getCurrentUser();
+        console.log('Verificação pós-login:', currentUser);
         
         // Redirecionar para o dashboard após um pequeno delay
         setTimeout(redirectToDashboard, 500);
       } else {
         // Logout (usuário não é admin)
+        console.log('Usuário não é admin, realizando logout');
         await firebaseAuthAPI.logout();
         
         // Mostrar erro

@@ -14,6 +14,9 @@ let firestoreDB = null;
 let firebaseAuth = null;
 let localDevMode = true; // Forçar modo de desenvolvimento local por enquanto
 
+// Verificar se estamos em modo de desenvolvimento local 
+console.log("Utilizando modo de desenvolvimento local para autenticação e armazenamento");
+
 // Deixando comentado para futuro uso real com Firebase
 // try {
 //   // Inicializar Firebase
