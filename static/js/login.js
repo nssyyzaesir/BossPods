@@ -155,9 +155,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
           }
           
-          // Fazer login no Firebase
-          await firebase.auth().signInWithEmailAndPassword(email, password);
-          console.log('Login bem-sucedido');
+          // Fazer login usando a API unificada, se disponível
+          if (typeof window.auth !== 'undefined' && typeof firebaseAuthAPI !== 'undefined') {
+            await firebaseAuthAPI.login(email, password);
+            console.log('Login bem-sucedido via firebaseAuthAPI');
+          } else {
+            // Fallback para método direto
+            await firebase.auth().signInWithEmailAndPassword(email, password);
+            console.log('Login bem-sucedido via firebase.auth()');
+          }
           
           // Obter usuário atual
           const user = firebase.auth().currentUser;
@@ -220,23 +226,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
           }
           
-          // Criar usuário no Firebase
-          const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+          // Criar usuário usando a API unificada, se disponível
+          let userCredential;
           
-          // Atualizar perfil com o nome
-          if (displayName) {
-            await userCredential.user.updateProfile({
-              displayName: displayName
+          if (typeof window.auth !== 'undefined' && typeof firebaseAuthAPI !== 'undefined') {
+            userCredential = await firebaseAuthAPI.register(email, password, displayName);
+            console.log('Conta criada com sucesso via firebaseAuthAPI');
+          } else {
+            // Fallback para método direto
+            userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+            
+            // Atualizar perfil com o nome
+            if (displayName) {
+              await userCredential.user.updateProfile({
+                displayName: displayName
+              });
+            }
+            
+            // Criar documento do usuário no Firestore
+            await firebase.firestore().collection('users').doc(userCredential.user.uid).set({
+              email: email,
+              displayName: displayName || email.split('@')[0],
+              role: 'user',
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
+            
+            console.log('Conta criada com sucesso via firebase.auth()');
           }
-          
-          // Criar documento do usuário no Firestore
-          await firebase.firestore().collection('users').doc(userCredential.user.uid).set({
-            email: email,
-            displayName: displayName || email.split('@')[0],
-            role: 'user',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
           
           console.log('Conta criada com sucesso');
           

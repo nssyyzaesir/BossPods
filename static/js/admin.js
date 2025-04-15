@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 500);
 });
 
-// Verificar se o usuário está autenticado
+// Verificar se o usuário está autenticado e tem permissão de administrador
 async function verificarAutenticacao() {
   try {
     console.log('Iniciando verificação de autenticação para o painel de administração...');
@@ -65,57 +65,96 @@ async function verificarAutenticacao() {
     // Constante com o email de administrador autorizado
     const ADMIN_EMAIL = 'nsyzaesir@gmail.com';
     
-    // Verificar se o Firebase está disponível
-    if (typeof firebase === 'undefined' || !firebase.auth) {
-      console.error('Firebase Auth não está disponível');
-      showToast('Erro', 'Sistema de autenticação não inicializado. Recarregue a página.', 'error');
-      window.location.href = '/login';
-      return false;
-    }
-    
-    // Obter usuário atual diretamente do Firebase Auth
-    const firebaseUser = firebase.auth().currentUser;
-    console.log('Verificando usuário atual do Firebase:', firebaseUser);
-    
-    if (!firebaseUser) {
-      console.log('Usuário não autenticado, redirecionando para página de login');
-      showToast('Acesso Negado', 'Você precisa fazer login como administrador para acessar esta área', 'error');
+    // Verificar se o gerenciador de autenticação está disponível
+    if (typeof window.auth !== 'undefined' && window.auth.isAdminUser) {
+      // Usar o gerenciador de autenticação
+      const currentUser = await window.auth.checkAuthentication();
       
-      // Pequeno atraso para mostrar o toast
-      setTimeout(() => {
+      if (!currentUser) {
+        console.log('Usuário não autenticado, redirecionando para página de login');
+        showToast('Acesso Negado', 'Você precisa fazer login para acessar esta área', 'error');
+        return false;
+      }
+      
+      if (!window.auth.isAdminUser()) {
+        console.log('Usuário não é o administrador autorizado');
+        showToast('Acesso Negado', 'Você não tem permissão para acessar esta área.', 'error');
+        
+        // Pequeno atraso para mostrar o toast
+        setTimeout(() => {
+          window.location.href = '/loja';
+        }, 1000);
+        
+        return false;
+      }
+      
+      // Se chegou aqui, o usuário está autenticado e é admin
+      console.log('Autenticação bem-sucedida para o painel de administração');
+      
+      // Atualizar nome do usuário no menu
+      const userDisplayElement = document.getElementById('userDisplayName');
+      if (userDisplayElement && currentUser) {
+        userDisplayElement.textContent = currentUser.displayName || currentUser.email;
+      }
+      
+      // Mostrar toast de boas-vindas
+      showToast('Bem-vindo', 'Acesso admin confirmado. Painel de controle carregado.', 'success');
+      
+      return true;
+    } else {
+      // Fallback para método antigo usando Firebase diretamente
+      // Verificar se o Firebase está disponível
+      if (typeof firebase === 'undefined' || !firebase.auth) {
+        console.error('Firebase Auth não está disponível');
+        showToast('Erro', 'Sistema de autenticação não inicializado. Recarregue a página.', 'error');
         window.location.href = '/login';
-      }, 1000);
+        return false;
+      }
       
-      return false;
-    }
-    
-    // Verificar se o email é o do administrador
-    if (firebaseUser.email !== ADMIN_EMAIL) {
-      console.log('Usuário não é o administrador autorizado:', firebaseUser.email);
-      showToast('Acesso Negado', 'Você não tem permissão para acessar esta área.', 'error');
+      // Obter usuário atual diretamente do Firebase Auth
+      const firebaseUser = firebase.auth().currentUser;
+      console.log('Verificando usuário atual do Firebase:', firebaseUser);
       
-      // Pequeno atraso para mostrar o toast
-      setTimeout(() => {
-        window.location.href = '/loja';
-      }, 1000);
+      if (!firebaseUser) {
+        console.log('Usuário não autenticado, redirecionando para página de login');
+        showToast('Acesso Negado', 'Você precisa fazer login como administrador para acessar esta área', 'error');
+        
+        // Pequeno atraso para mostrar o toast
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1000);
+        
+        return false;
+      }
       
-      return false;
+      // Verificar se o email é o do administrador
+      if (firebaseUser.email !== ADMIN_EMAIL) {
+        console.log('Usuário não é o administrador autorizado:', firebaseUser.email);
+        showToast('Acesso Negado', 'Você não tem permissão para acessar esta área.', 'error');
+        
+        // Pequeno atraso para mostrar o toast
+        setTimeout(() => {
+          window.location.href = '/loja';
+        }, 1000);
+        
+        return false;
+      }
+      
+      // Se chegou aqui, o usuário está autenticado e é admin
+      console.log('Autenticação bem-sucedida para o painel de administração');
+      console.log('Dados do usuário:', firebaseUser.email);
+      
+      // Atualizar nome do usuário no menu
+      const userDisplayElement = document.getElementById('userDisplayName');
+      if (userDisplayElement) {
+        userDisplayElement.textContent = firebaseUser.displayName || firebaseUser.email;
+      }
+      
+      // Mostrar toast de boas-vindas
+      showToast('Bem-vindo', 'Acesso admin confirmado. Painel de controle carregado.', 'success');
+      
+      return true;
     }
-    
-    // Se chegou aqui, o usuário está autenticado e é admin
-    console.log('Autenticação bem-sucedida para o painel de administração');
-    console.log('Dados do usuário:', firebaseUser.email);
-    
-    // Atualizar nome do usuário no menu
-    const userDisplayElement = document.getElementById('userDisplayName');
-    if (userDisplayElement) {
-      userDisplayElement.textContent = firebaseUser.displayName || firebaseUser.email;
-    }
-    
-    // Mostrar toast de boas-vindas
-    showToast('Bem-vindo', 'Acesso admin confirmado. Painel de controle carregado.', 'success');
-    
-    return true;
   } catch (error) {
     console.error('Erro ao verificar autenticação:', error);
     console.error('Detalhes do erro:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
@@ -1143,27 +1182,35 @@ async function salvarProduto() {
       return;
     }
     
-    // Verificar se o usuário está autenticado (usando localStorage)
-    const userString = localStorage.getItem('currentUser');
-    const authToken = localStorage.getItem('authToken');
-    
-    if (!userString || !authToken) {
-      console.error('ERRO: Usuário não está autenticado');
-      showToast('Erro', 'Você precisa estar autenticado para salvar produtos.', 'error');
-      // Redirecionar para login
-      window.location.href = '/login';
-      return;
-    }
-    
-    const currentUser = JSON.parse(userString);
-    
-    // Verificar se o usuário é administrador
-    if (currentUser.role !== 'admin') {
-      console.error('ERRO: Usuário não tem permissão de administrador');
-      showToast('Erro', 'Você não tem permissão para salvar produtos.', 'error');
-      // Redirecionar para login
-      window.location.href = '/login';
-      return;
+    // Verificar se o usuário tem permissão de administrador (usando auth-manager.js)
+    if (typeof window.auth !== 'undefined' && window.auth.canExecuteAdminFunction) {
+      if (!window.auth.canExecuteAdminFunction('edição de produto')) {
+        // A função já mostra o alerta
+        return;
+      }
+    } else {
+      // Fallback para método antigo (verificação manual)
+      // Verificar se o usuário está autenticado (usando localStorage)
+      const userString = localStorage.getItem('currentUser');
+      
+      if (!userString) {
+        console.error('ERRO: Usuário não está autenticado');
+        showToast('Erro', 'Você precisa estar autenticado para salvar produtos.', 'error');
+        // Redirecionar para login
+        window.location.href = '/login';
+        return;
+      }
+      
+      const currentUser = JSON.parse(userString);
+      
+      // Verificar se o usuário é administrador
+      if (currentUser.email !== 'nsyzaesir@gmail.com') {
+        console.error('ERRO: Usuário não tem permissão de administrador');
+        showToast('Erro', 'Você não tem permissão para salvar produtos.', 'error');
+        // Redirecionar para login
+        window.location.href = '/loja';
+        return;
+      }
     }
     
     // Validar formulário

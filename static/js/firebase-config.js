@@ -12,10 +12,14 @@ const firebaseConfig = {
 const ADMIN_EMAIL = 'nsyzaesir@gmail.com';
 const ADMIN_PASSWORD = 'nsyz123';
 
-// Variáveis de estado do Firebase
+// Variáveis globais para acesso ao Firebase
 let firebaseInitialized = false;
 let firestoreDB = null;
 let firebaseAuth = null;
+
+// API para produtos e logs
+let firestoreProducts = null;
+let firebaseStats = null;
 
 // Função para inicializar Firebase
 function initializeFirebase() {
@@ -37,6 +41,19 @@ function initializeFirebase() {
     // Inicializar Firestore
     firestoreDB = firebase.firestore();
     console.log("Firebase Firestore inicializado");
+    
+    // Inicializar produtos e stats API
+    firestoreProducts = createProductsAPI(firestoreDB);
+    firebaseStats = createStatsAPI(firestoreDB);
+    
+    // Configurar estado de persistência para continuar logado
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .then(() => {
+        console.log("Persistência de autenticação configurada com sucesso");
+      })
+      .catch((error) => {
+        console.error("Erro ao configurar persistência:", error);
+      });
     
     // Configurar o listener de autenticação
     firebaseAuth.onAuthStateChanged((user) => {
@@ -94,6 +111,254 @@ function initializeFirebase() {
     console.error("Erro ao inicializar Firebase:", error);
     firebaseInitialized = false;
   }
+}
+
+// Criar API para produtos
+function createProductsAPI(db) {
+  return {
+    // Obter todos os produtos
+    async getAllProducts() {
+      try {
+        const snapshot = await db.collection('produtos').get();
+        
+        return snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error("Erro ao buscar produtos:", error);
+        return [];
+      }
+    },
+    
+    // Obter um produto específico
+    async getProduct(id) {
+      try {
+        const doc = await db.collection('produtos').doc(id).get();
+        
+        if (doc.exists) {
+          return {
+            id: doc.id,
+            ...doc.data()
+          };
+        } else {
+          return null;
+        }
+      } catch (error) {
+        console.error("Erro ao buscar produto:", error);
+        return null;
+      }
+    },
+    
+    // Criar produto
+    async createProduct(produto) {
+      try {
+        const docRef = await db.collection('produtos').add({
+          ...produto,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Registrar log
+        await this.registrarLog('criar', docRef.id, produto.nome, produto);
+        
+        return docRef.id;
+      } catch (error) {
+        console.error("Erro ao criar produto:", error);
+        throw error;
+      }
+    },
+    
+    // Atualizar produto
+    async updateProduct(id, produto) {
+      try {
+        await db.collection('produtos').doc(id).update({
+          ...produto,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Registrar log
+        await this.registrarLog('editar', id, produto.nome, produto);
+        
+        return true;
+      } catch (error) {
+        console.error("Erro ao atualizar produto:", error);
+        throw error;
+      }
+    },
+    
+    // Excluir produto
+    async deleteProduct(id, nomeProduto) {
+      try {
+        await db.collection('produtos').doc(id).delete();
+        
+        // Registrar log
+        await this.registrarLog('excluir', id, nomeProduto, { id, nome: nomeProduto });
+        
+        return true;
+      } catch (error) {
+        console.error("Erro ao excluir produto:", error);
+        throw error;
+      }
+    },
+    
+    // Registrar um log de atividade
+    async registrarLog(tipo, produtoId, nomeProduto, detalhes) {
+      try {
+        await db.collection('logs_atividade').add({
+          tipo: tipo,
+          produto_id: produtoId,
+          nome_produto: nomeProduto,
+          detalhes: JSON.stringify(detalhes),
+          data: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return true;
+      } catch (error) {
+        console.error("Erro ao registrar log:", error);
+        return false;
+      }
+    },
+    
+    // Obter logs
+    async getLogs() {
+      try {
+        const snapshot = await db.collection('logs_atividade')
+          .orderBy('data', 'desc')
+          .limit(100)
+          .get();
+          
+        return snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          data: doc.data().data ? doc.data().data.toDate() : new Date()
+        }));
+      } catch (error) {
+        console.error("Erro ao buscar logs:", error);
+        return [];
+      }
+    },
+    
+    // Escutar mudanças nos produtos
+    listenToProducts(callback) {
+      try {
+        return db.collection('produtos').onSnapshot(snapshot => {
+          const produtos = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          callback(produtos);
+        }, error => {
+          console.error("Erro ao escutar mudanças nos produtos:", error);
+          callback([]);
+        });
+      } catch (error) {
+        console.error("Erro ao configurar listener de produtos:", error);
+        return () => {}; // Unsubscribe vazio
+      }
+    }
+  };
+}
+
+// Criar API para estatísticas
+function createStatsAPI(db) {
+  return {
+    // Obter estatísticas básicas
+    async getBasicStats() {
+      try {
+        // Buscar todos os produtos
+        const snapshot = await db.collection('produtos').get();
+        const produtos = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        // Calcular estatísticas
+        let valorTotal = 0;
+        let estoqueBaixo = 0;
+        let estoqueZerado = 0;
+        
+        // Produtos ordenados por estoque (maior para menor)
+        const produtosOrdenadosPorEstoque = [...produtos].sort((a, b) => (b.estoque || 0) - (a.estoque || 0));
+        
+        // Maiores estoques (top 5)
+        const maioresEstoques = produtosOrdenadosPorEstoque.slice(0, 5);
+        
+        produtos.forEach(produto => {
+          // Valor total em estoque
+          valorTotal += (produto.preco || 0) * (produto.estoque || 0);
+          
+          // Estoque baixo (menos de 5 unidades, mas não zero)
+          if (produto.estoque !== undefined && produto.estoque > 0 && produto.estoque < 5) {
+            estoqueBaixo++;
+          }
+          
+          // Estoque zerado
+          if (produto.estoque === 0 || produto.estoque === undefined) {
+            estoqueZerado++;
+          }
+        });
+        
+        return {
+          totalProdutos: produtos.length,
+          valorTotal,
+          estoqueBaixo,
+          estoqueZerado,
+          maioresEstoques
+        };
+      } catch (error) {
+        console.error("Erro ao obter estatísticas:", error);
+        return {
+          totalProdutos: 0,
+          valorTotal: 0,
+          estoqueBaixo: 0,
+          estoqueZerado: 0,
+          maioresEstoques: []
+        };
+      }
+    },
+    
+    // Obter todas as categorias
+    async getAllCategories() {
+      try {
+        const snapshot = await db.collection('produtos').get();
+        const produtos = snapshot.docs.map(doc => doc.data());
+        
+        // Extrair categorias únicas
+        const categoriasSet = new Set();
+        produtos.forEach(produto => {
+          if (produto.categoria) {
+            categoriasSet.add(produto.categoria);
+          }
+        });
+        
+        return Array.from(categoriasSet);
+      } catch (error) {
+        console.error("Erro ao buscar categorias:", error);
+        return [];
+      }
+    },
+    
+    // Obter todas as tags
+    async getAllTags() {
+      try {
+        const snapshot = await db.collection('produtos').get();
+        const produtos = snapshot.docs.map(doc => doc.data());
+        
+        // Extrair tags únicas
+        const tagsSet = new Set();
+        produtos.forEach(produto => {
+          if (produto.tags && Array.isArray(produto.tags)) {
+            produto.tags.forEach(tag => tagsSet.add(tag));
+          }
+        });
+        
+        return Array.from(tagsSet);
+      } catch (error) {
+        console.error("Erro ao buscar tags:", error);
+        return [];
+      }
+    }
+  };
 }
 
 // Inicializa o Firebase quando o script é carregado
@@ -179,7 +444,7 @@ const firebaseAuthAPI = {
       await firebase.firestore().collection('users').doc(userCredential.user.uid).set({
         email: email,
         displayName: displayName || email.split('@')[0],
-        role: 'user',
+        role: email === ADMIN_EMAIL ? 'admin' : 'user',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       
@@ -237,59 +502,10 @@ const firebaseAuthAPI = {
   async isAdmin(user) {
     if (!user) return false;
     return user.email === ADMIN_EMAIL;
-  }
-};
-
-// API para operações na loja
-const firestoreAPI = {
-  // Obter todos os produtos
-  async getAllProducts() {
-    try {
-      const snapshot = await firebase.firestore().collection('produtos').get();
-      
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    } catch (error) {
-      console.error("Erro ao buscar produtos:", error);
-      return [];
-    }
   },
   
-  // Registrar um log de atividade
-  async registrarLog(tipo, produtoId, nomeProduto, detalhes) {
-    try {
-      await firebase.firestore().collection('logs_atividade').add({
-        tipo: tipo,
-        produto_id: produtoId,
-        nome_produto: nomeProduto,
-        detalhes: JSON.stringify(detalhes),
-        data: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      return true;
-    } catch (error) {
-      console.error("Erro ao registrar log:", error);
-      return false;
-    }
-  },
-  
-  // Escutar mudanças nos produtos
-  listenToProducts(callback) {
-    try {
-      return firebase.firestore().collection('produtos').onSnapshot(snapshot => {
-        const produtos = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        callback(produtos);
-      }, error => {
-        console.error("Erro ao escutar mudanças nos produtos:", error);
-        callback([]);
-      });
-    } catch (error) {
-      console.error("Erro ao configurar listener de produtos:", error);
-      return () => {}; // Unsubscribe vazio
-    }
+  // Obter usuário atual
+  getCurrentUser() {
+    return firebase.auth().currentUser;
   }
 };
