@@ -135,11 +135,12 @@
                 <p class="text-muted">Digite suas credenciais para acessar o painel.</p>
               </div>
               
+              <!-- Formulário de login -->
               <form id="loginForm">
                 <!-- Email -->
                 <div class="form-group">
                   <label for="email" class="form-label">Email</label>
-                  <input type="email" class="form-control cyber-input glow-input" id="email" placeholder="nsyz@gmail.com" required>
+                  <input type="email" class="form-control cyber-input glow-input" id="email" placeholder="email@exemplo.com" required>
                   <i class="bi bi-envelope form-control-icon"></i>
                 </div>
                 
@@ -148,6 +149,13 @@
                   <label for="password" class="form-label">Senha</label>
                   <input type="password" class="form-control cyber-input glow-input" id="password" required>
                   <i class="bi bi-lock form-control-icon"></i>
+                </div>
+                
+                <!-- Nome para registro (inicialmente oculto) -->
+                <div class="form-group d-none" id="displayNameGroup">
+                  <label for="displayName" class="form-label">Nome</label>
+                  <input type="text" class="form-control cyber-input glow-input" id="displayName">
+                  <i class="bi bi-person form-control-icon"></i>
                 </div>
                 
                 <!-- Lembrar / Esqueci senha -->
@@ -161,10 +169,21 @@
                   <a href="#" class="text-purple">Esqueci minha senha</a>
                 </div>
                 
-                <!-- Botão de login -->
-                <button type="submit" class="btn cyber-btn cyber-btn-primary w-100" id="loginBtn">
-                  <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
-                </button>
+                <!-- Botões de ação -->
+                <div class="d-grid gap-2">
+                  <!-- Botão de login -->
+                  <button type="submit" class="btn cyber-btn cyber-btn-primary w-100" id="loginBtn">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                  </button>
+                  
+                  <!-- Botão de criar conta -->
+                  <button type="button" class="btn cyber-btn cyber-btn-outline w-100" id="createAccountBtn">
+                    <i class="bi bi-person-plus me-1"></i> Criar Conta
+                  </button>
+                </div>
+                
+                <!-- Modo de formulário -->
+                <input type="hidden" id="formMode" value="login">
                 
                 <!-- Alerta de acesso restrito -->
                 <div class="alert alert-warning mt-4">

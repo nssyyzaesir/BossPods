@@ -375,8 +375,8 @@ function enviarPedidoWhatsApp() {
   // Codificar mensagem para URL
   const mensagemCodificada = encodeURIComponent(mensagem);
   
-  // Número de telefone da loja (substitua pelo número real)
-  const numeroLoja = '5511999999999';
+  // Número de telefone da loja (número solicitado)
+  const numeroLoja = '5518998184171';
   
   // Criar URL do WhatsApp
   const whatsappUrl = `https://wa.me/${numeroLoja}?text=${mensagemCodificada}`;
@@ -386,6 +386,13 @@ function enviarPedidoWhatsApp() {
   
   // Mostrar mensagem de sucesso
   showToast('Pedido enviado', 'Seu pedido foi enviado para o WhatsApp da loja', 'success');
+  
+  // Limpar o carrinho após o envio
+  setTimeout(() => {
+    if (confirm('Deseja limpar o carrinho após o envio do pedido?')) {
+      limparCarrinho();
+    }
+  }, 1000);
 }
 
 // Abrir modal de confirmação

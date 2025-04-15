@@ -74,7 +74,7 @@ async function checkAuthentication() {
     
     if (!user.email || !AUTH_CONFIG.ADMIN_EMAILS.includes(user.email)) {
       console.log('Tentativa de acesso não autorizada:', user.email);
-      alert('Acesso negado. Apenas o administrador autorizado pode acessar o painel.');
+      alert('Você não tem permissão para acessar esta área');
       // Remover dados de autenticação
       localStorage.removeItem('currentUser');
       localStorage.removeItem('lastLoginTime'); 
