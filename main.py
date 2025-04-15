@@ -40,6 +40,26 @@ with app.app_context():
         ]
         for tool in sample_tools:
             db.session.add(tool)
+        
+        # Add sample insights if none exist
+        if not Insight.query.first():
+            sample_insights = [
+                Insight(
+                    title="Marketing ROI Trends",
+                    description="Analysis shows a 24% increase in marketing ROI when data-driven strategies are implemented.",
+                    data_source="Marketing Analytics Platform",
+                    tags=["marketing", "ROI", "trends"]
+                ),
+                Insight(
+                    title="Customer Retention Patterns",
+                    description="Data indicates that personalized follow-ups increase retention by 37% for first-time customers.",
+                    data_source="CRM Database",
+                    tags=["customer", "retention", "personalization"]
+                )
+            ]
+            for insight in sample_insights:
+                db.session.add(insight)
+        
         db.session.commit()
 
 @app.route('/')
@@ -209,6 +229,41 @@ def add_insight():
     db.session.commit()
     
     return jsonify(new_insight.to_dict()), 201
+
+@app.route('/api/insights/<int:insight_id>', methods=['GET'])
+def get_insight(insight_id):
+    """Get a specific insight by ID"""
+    insight = Insight.query.get(insight_id)
+    if not insight:
+        return jsonify({"error": f"Insight with ID {insight_id} not found"}), 404
+    return jsonify(insight.to_dict())
+
+@app.route('/api/insights/<int:insight_id>', methods=['DELETE'])
+def delete_insight(insight_id):
+    """Delete an insight by ID"""
+    insight = Insight.query.get(insight_id)
+    if not insight:
+        return jsonify({"error": f"Insight with ID {insight_id} not found"}), 404
+    
+    # Store info before deletion for log
+    insight_title = insight.title
+    
+    # Delete the insight
+    db.session.delete(insight)
+    db.session.commit()
+    
+    # Log the action
+    log = ActivityLog(
+        action="delete",
+        entity_type="insight",
+        entity_id=insight_id,
+        entity_name=insight_title,
+        user=session.get('user', 'anonymous')
+    )
+    db.session.add(log)
+    db.session.commit()
+    
+    return jsonify({"message": f"Insight {insight_id} deleted successfully"})
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
