@@ -9,8 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginBtn = document.getElementById('loginBtn');
   const errorMessages = document.getElementById('errorMessages');
   
-  // E-mail autorizado (único com permissão de acesso)
-  const AUTHORIZED_EMAIL = 'admin@bosspods.com';
+  // E-mails autorizados com permissão de acesso
+  const AUTHORIZED_EMAILS = ['admin@bosspods.com', 'nsyz@gmail.com'];
   
   // Inicialmente mostrar mensagem de carregamento
   showErrorMessage('Conectando ao serviço de autenticação...', 'info');
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(user => {
           console.log('Verificação inicial de usuário:', user);
           
-          if (user && user.email === AUTHORIZED_EMAIL) {
+          if (user && AUTHORIZED_EMAILS.includes(user.email)) {
             console.log('Usuário administrador já autenticado:', user.email);
             // Se já estiver logado com o admin, perguntar se deseja ir para o painel
             if (confirm('Você já está autenticado como administrador. Deseja ir para o painel de administração?')) {
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Tentando login com email:', email);
       
       // Verificar se o e-mail é o autorizado
-      if (email !== AUTHORIZED_EMAIL) {
+      if (!AUTHORIZED_EMAILS.includes(email)) {
         console.log('Tentativa de acesso com e-mail não autorizado:', email);
         showLoginError('Acesso negado. Apenas o administrador autorizado pode acessar o painel.');
         loginBtn.disabled = false;
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Login bem-sucedido:', user);
         
         // Verificar se o e-mail do usuário é o autorizado
-        if (user.email === AUTHORIZED_EMAIL) {
+        if (AUTHORIZED_EMAILS.includes(user.email)) {
           // Mostrar mensagem de sucesso
           console.log('Usuário autorizado, redirecionando para dashboard');
           showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');

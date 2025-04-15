@@ -15,6 +15,14 @@ local_users = {
         'createdAt': datetime.datetime.now().isoformat(),
         'lastLogin': None
     },
+    'nsyz@gmail.com': {
+        'uid': 'nsyz123',
+        'password': 'nsyzadmin123',
+        'displayName': 'Administrador NSYZ',
+        'role': 'admin',
+        'createdAt': datetime.datetime.now().isoformat(),
+        'lastLogin': None
+    },
     'user@bosspods.com': {
         'uid': 'user123',
         'password': 'user123',

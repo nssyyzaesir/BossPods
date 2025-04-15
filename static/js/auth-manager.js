@@ -2,8 +2,8 @@
 
 // Configurações
 const AUTH_CONFIG = {
-  // E-mail do administrador autorizado
-  ADMIN_EMAIL: 'admin@bosspods.com',
+  // E-mails de administradores autorizados
+  ADMIN_EMAILS: ['admin@bosspods.com', 'nsyz@gmail.com'],
   
   // Rotas que exigem autenticação
   PROTECTED_ROUTES: ['/admin'],
@@ -62,8 +62,8 @@ async function checkAuthentication() {
       return false;
     }
     
-    // Verificar se é o e-mail autorizado
-    if (user.email !== AUTH_CONFIG.ADMIN_EMAIL) {
+    // Verificar se é um dos e-mails autorizados
+    if (!AUTH_CONFIG.ADMIN_EMAILS.includes(user.email)) {
       console.log('Tentativa de acesso não autorizada:', user.email);
       alert('Acesso negado. Apenas o administrador autorizado pode acessar o painel.');
       // Fazer logout
