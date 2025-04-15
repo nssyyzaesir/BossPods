@@ -119,10 +119,9 @@ def api_login():
         # Gerar token de sessão local
         token = generate_token(user_data)
         
-        # Armazenar token na sessão
-        session['token'] = token
-        
-        return jsonify({'success': True, 'role': result['role']})
+        # Em vez de armazenar na sessão, retornamos o token para o frontend
+        # O frontend irá armazenar no localStorage
+        return jsonify({'success': True, 'role': result['role'], 'token': token})
     else:
         return jsonify({'success': False, 'error': 'Email ou senha incorretos'}), 401
 

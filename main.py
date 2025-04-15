@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # Criar a aplicação Flask
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get("SESSION_SECRET", "dev_secret_key")
+app.secret_key = os.environ.get("SESSION_SECRET", "dev_secret_key")
 
 # Registrar o blueprint de autenticação
 app.register_blueprint(auth_bp, url_prefix='/auth')

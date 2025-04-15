@@ -743,25 +743,22 @@ const fakeAuth = {
         throw new Error(data.error || 'Email ou senha inválidos');
       }
       
-      // Encontrar usuário na lista local para ter os dados completos
-      const user = this.users.find(u => u.email === email);
-      
-      if (!user) {
-        // Criar usuário localmente se não existir
-        const newUser = {
-          uid: 'user' + Date.now(),
-          email,
-          displayName: email.split('@')[0],
-          role: data.role || 'user'
-        };
-        
-        this.users.push(newUser);
-        this.currentUser = newUser;
-      } else {
-        // Definir usuário atual
-        this.currentUser = { ...user };
-        delete this.currentUser.password;
+      // Salvar o token recebido do servidor
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+        console.log('Token de autenticação salvo');
       }
+      
+      // Criar objeto de usuário com os dados da resposta
+      const newUser = {
+        uid: 'user' + Date.now(),
+        email,
+        displayName: email.split('@')[0],
+        role: data.role || 'user'
+      };
+      
+      // Definir usuário atual
+      this.currentUser = newUser;
       
       // Salvar no localStorage
       this._saveCurrentUser();
@@ -796,9 +793,10 @@ const fakeAuth = {
     // Remover do localStorage
     this._saveCurrentUser();
     
-    // Remover timestamp de login
+    // Remover timestamp de login e token
     localStorage.removeItem('lastLoginTime');
-    console.log('Timestamp de login removido');
+    localStorage.removeItem('authToken');
+    console.log('Timestamp de login e token removidos');
     
     return true;
   }
