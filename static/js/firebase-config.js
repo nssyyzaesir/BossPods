@@ -12,7 +12,7 @@ const firebaseConfig = {
 let firebaseInitialized = false;
 let firestoreDB = null;
 let firebaseAuth = null;
-let localDevMode = false; // Não forçando mais o modo de desenvolvimento local
+let localDevMode = true; // Ativando modo de desenvolvimento local devido a problemas de configuração do Firebase
 let currentUser = null;
 let authInitialized = false;
 let dbInitialized = false;
@@ -58,7 +58,8 @@ try {
   // Marcar como inicializado
   firebaseInitialized = true;
   dbInitialized = true;
-  localDevMode = false;
+  // Manter modo de desenvolvimento local devido a problemas de configuração do Firebase
+  // localDevMode = false;
   
   console.log("Firebase completamente inicializado com sucesso");
 } catch (error) {
@@ -634,8 +635,8 @@ const fakeAuth = {
     },
     {
       uid: 'admin456',
-      email: 'gmail@nsyz',
-      password: 'admin123',
+      email: 'nsyz@gmail.com',
+      password: 'nsyz123',
       displayName: 'Novo Administrador',
       role: 'admin'
     },
