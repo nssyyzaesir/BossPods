@@ -1,6 +1,8 @@
 // Global variables
 let carrinho = [];
+let serverMode = true;
 const WhatsAppPhone = "5511999999999"; // Número do WhatsApp para envio do pedido
+const apiUrl = '/api';
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', function() {

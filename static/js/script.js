@@ -6,7 +6,7 @@ let currentSortField = 'nome';
 let currentSortOrder = 'asc';
 
 // Variables for AJAX
-let serverMode = false; // Set to false for localStorage mode, true for server mode
+let serverMode = true; // Set to true for server mode with PostgreSQL backend
 const apiUrl = '/api';
 
 // Variáveis para controle de notificações

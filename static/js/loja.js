@@ -1,6 +1,7 @@
 // Global variables
 let produtos = [];
 let carrinho = [];
+let serverMode = true;
 const apiUrl = '/api';
 
 // DOM Ready
