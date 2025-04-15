@@ -1,6 +1,23 @@
 // Inicialização ocorre quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   console.log('Página de login carregada, aguardando inicialização...');
+  
+  // Forçar logout para garantir início limpo
+  try {
+    // Limpar localStorage por segurança
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('lastLoginTime');
+    
+    // Se Firebase já estiver carregado, fazer logout
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+      console.log("Forçando logout para garantir tela de login limpa...");
+      await firebase.auth().signOut();
+      console.log("Logout forçado realizado com sucesso");
+    }
+  } catch (error) {
+    console.error("Erro ao fazer logout inicial:", error);
+  }
   
   // Elementos do DOM para Login
   const loginForm = document.getElementById('loginForm');

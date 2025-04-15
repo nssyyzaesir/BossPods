@@ -105,8 +105,34 @@ function initializeFirebase() {
   }
 }
 
-// Inicializar Firebase imediatamente
-initializeFirebase();
+// Forçar reset de autenticação para garantir login limpo
+(async function() {
+  try {
+    // Limpar localStorage por segurança
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('lastLoginTime');
+    
+    // Inicializar Firebase
+    initializeFirebase();
+    
+    // Forçar logout para garantir tela de login limpa
+    // Pequeno atraso para garantir que o Firebase foi inicializado
+    setTimeout(async () => {
+      if (firebase && firebase.auth) {
+        try {
+          console.log("Forçando logout para garantir reset do sistema...");
+          await firebase.auth().signOut();
+          console.log("Logout forçado realizado com sucesso");
+        } catch (error) {
+          console.error("Erro ao fazer logout forçado:", error);
+        }
+      }
+    }, 1000);
+  } catch (error) {
+    console.error("Erro ao inicializar com logout:", error);
+  }
+})();
 
 // API Firebase Auth
 const firebaseAuthAPI = {
