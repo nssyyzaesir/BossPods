@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
 from app import app, db
 from models import Produto, LogAtividade
 import os
@@ -9,8 +9,18 @@ import io
 
 @app.route('/')
 def index():
-    """Render the main admin interface"""
-    return render_template('index.html')
+    """Render the public store"""
+    return render_template('loja.html')
+    
+@app.route('/admin')
+def admin():
+    """Render the admin interface"""
+    return render_template('admin.html')
+    
+@app.route('/carrinho')
+def carrinho():
+    """Render the shopping cart"""
+    return render_template('carrinho.html')
 
 @app.route('/api/produtos', methods=['GET'])
 def get_produtos():

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrinho de Compras | BOSSPODS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="cyber-bg">
+  <div class="container py-4">
+    <!-- Header -->
+    <header class="mb-4 text-center">
+      <div class="glow-container mb-3">
+        <h1 class="neon-text mb-0">Carrinho de Compras</h1>
+      </div>
+      <p class="cyber-text">Finalize seu pedido em alguns cliques!</p>
+    </header>
+
+    <!-- Cart Content -->
+    <div class="cyber-card main-card mb-4">
+      <div class="cyber-card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Itens no Carrinho</h5>
+        <a href="/" class="btn cyber-btn-sm cyber-btn-outline">
+          <i class="bi bi-arrow-left"></i> Continuar Comprando
+        </a>
+      </div>
+      <div class="cyber-card-body">
+        <div id="cartItems">
+          <!-- Cart items will be loaded here dynamically -->
+          <div class="text-center py-5" id="emptyCartMessage">
+            <i class="bi bi-cart-x" style="font-size: 4rem; color: var(--primary-glow);"></i>
+            <p class="mt-3 mb-4">Seu carrinho está vazio</p>
+            <a href="/" class="btn cyber-btn cyber-btn-primary">Ver Produtos</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Checkout Panel -->
+    <div class="cyber-card checkout-card mb-4" id="checkoutPanel" style="display: none;">
+      <div class="cyber-card-body">
+        <div class="row">
+          <div class="col-md-6 mb-4 mb-md-0">
+            <h5 class="neon-text-small mb-3">Resumo do Pedido</h5>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal:</span>
+              <span id="subtotalValue">R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Itens:</span>
+              <span id="itemCount">0</span>
+            </div>
+            <hr class="cyber-divider">
+            <div class="d-flex justify-content-between mb-3">
+              <span class="fw-bold">Total:</span>
+              <span class="fw-bold neon-text-small" id="totalValue">R$ 0,00</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h5 class="neon-text-small mb-3">Finalizar Compra</h5>
+            <p class="mb-3">Clique no botão abaixo para enviar seu pedido pelo WhatsApp:</p>
+            <button id="sendOrderBtn" class="btn cyber-btn cyber-btn-primary w-100">
+              <i class="bi bi-whatsapp"></i> Enviar Pedido pelo WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clear Cart Confirmation -->
+    <div class="text-center mb-4" id="clearCartContainer" style="display: none;">
+      <button id="clearCartBtn" class="btn cyber-btn cyber-btn-danger">
+        <i class="bi bi-trash"></i> Limpar Carrinho
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-5 pt-5 pb-3 text-center text-muted">
+      <div class="row">
+        <div class="col-md-4 mb-3 mb-md-0">
+          <h5 class="neon-text-small">BOSSPODS</h5>
+          <p>Os melhores pods para sua experiência de vape.</p>
+        </div>
+        <div class="col-md-4 mb-3 mb-md-0">
+          <h5 class="neon-text-small">Links</h5>
+          <ul class="list-unstyled">
+            <li><a href="/" class="cyber-link">Início</a></li>
+            <li><a href="/carrinho" class="cyber-link">Carrinho</a></li>
+            <li><a href="#" id="adminLink" class="cyber-link">Admin</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h5 class="neon-text-small">Contato</h5>
+          <ul class="list-unstyled">
+            <li><i class="bi bi-whatsapp me-2"></i> (11) 99999-9999</li>
+            <li><i class="bi bi-envelope me-2"></i> contato@bosspods.com</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-4">
+        <p>© 2025 BOSSPODS. Todos os direitos reservados.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmationModalLabel">Confirmação</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="confirmationMessage">
+          Tem certeza que deseja remover este item?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-danger" id="confirmButton">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="notificationToast" class="toast cyber-toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <strong class="me-auto" id="toastTitle">Notificação</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body" id="toastMessage">
+        Item removido do carrinho!
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/static/js/carrinho.js"></script>
+</body>
+</html>
