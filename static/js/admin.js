@@ -62,31 +62,42 @@ async function verificarAutenticacao() {
   try {
     console.log('Iniciando verificação de autenticação para o painel de administração...');
     
-    // Usar o novo sistema de autenticação
-    const isAuthenticated = await checkAuthentication();
+    // Verificar autenticação usando localStorage
+    const userString = localStorage.getItem('currentUser');
+    const authToken = localStorage.getItem('authToken');
     
-    if (!isAuthenticated) {
-      console.log('Falha na autenticação, o usuário será redirecionado');
-      return; // O redirecionamento será tratado pelo auth-manager.js
+    if (!userString || !authToken) {
+      console.log('Usuário não autenticado, redirecionando para página de login');
+      window.location.href = '/login';
+      return false;
+    }
+    
+    const userData = JSON.parse(userString);
+    
+    // Verificar se é administrador
+    if (userData.role !== 'admin') {
+      console.log('Usuário não tem permissão de administrador, redirecionando para página de login');
+      window.location.href = '/login';
+      return false;
     }
     
     // Se chegou aqui, o usuário está autenticado e é admin
     console.log('Autenticação bem-sucedida para o painel de administração');
+    console.log('Dados do usuário:', userData);
     
-    // Obter usuário atual para atualizar nome no menu
-    const user = await firebaseAuthAPI.getCurrentUser();
-    if (user) {
-      // Atualizar nome do usuário no menu
-      const userDisplayElement = document.getElementById('userDisplayName');
-      if (userDisplayElement) {
-        userDisplayElement.textContent = user.displayName || user.email;
-      }
+    // Atualizar nome do usuário no menu
+    const userDisplayElement = document.getElementById('userDisplayName');
+    if (userDisplayElement) {
+      userDisplayElement.textContent = userData.displayName || userData.email;
     }
     
+    return true;
   } catch (error) {
     console.error('Erro ao verificar autenticação:', error);
     console.error('Detalhes do erro:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     showToast('Erro', 'Falha ao verificar autenticação. Tente novamente. Detalhes no console.', 'error');
+    window.location.href = '/login';
+    return false;
   }
 }
 
@@ -122,11 +133,18 @@ function setupNavigation() {
 // Configurar manipuladores de eventos
 function setupEventHandlers() {
   // Botão de logout
-  document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+  document.getElementById('logoutBtn').addEventListener('click', (e) => {
     e.preventDefault();
     
     try {
-      await firebaseAuthAPI.logout();
+      // Limpar localStorage
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authTimestamp');
+      
+      console.log('Logout realizado com sucesso');
+      
+      // Redirecionar para login
       window.location.href = '/login';
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
