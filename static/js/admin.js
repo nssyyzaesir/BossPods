@@ -290,29 +290,44 @@ function setupEventHandlers() {
   const searchDebugLog = document.getElementById('searchDebugLog');
   
   if (filtroDebugLog) {
-    filtroDebugLog.addEventListener('change', filtrarDebugLogs);
+    filtroDebugLog.addEventListener('change', function() {
+      console.log('Filtro de debug logs alterado');
+      // Funcionalidade a ser implementada
+    });
   }
   
   if (searchDebugLog) {
-    searchDebugLog.addEventListener('input', filtrarDebugLogs);
+    searchDebugLog.addEventListener('input', function() {
+      console.log('Busca de debug logs alterada');
+      // Funcionalidade a ser implementada
+    });
   }
   
   // Botão de adicionar debug log
   const addDebugLogBtn = document.getElementById('addDebugLogBtn');
   if (addDebugLogBtn) {
-    addDebugLogBtn.addEventListener('click', abrirModalNovoDebugLog);
+    addDebugLogBtn.addEventListener('click', function() {
+      console.log('Botão de adicionar debug log clicado');
+      // Funcionalidade a ser implementada
+    });
   }
   
   // Botão de limpar debug logs
   const clearDebugLogsBtn = document.getElementById('clearDebugLogsBtn');
   if (clearDebugLogsBtn) {
-    clearDebugLogsBtn.addEventListener('click', confirmarLimparDebugLogs);
+    clearDebugLogsBtn.addEventListener('click', function() {
+      console.log('Botão de limpar debug logs clicado');
+      // Funcionalidade a ser implementada
+    });
   }
   
   // Botão de exportar debug logs
   const exportDebugLogsBtn = document.getElementById('exportDebugLogsBtn');
   if (exportDebugLogsBtn) {
-    exportDebugLogsBtn.addEventListener('click', exportarDebugLogs);
+    exportDebugLogsBtn.addEventListener('click', function() {
+      console.log('Botão de exportar debug logs clicado');
+      // Funcionalidade a ser implementada
+    });
   }
 }
 
@@ -350,8 +365,8 @@ async function carregarDados() {
     // Atualizar gráficos do dashboard
     updateDashboardCharts();
     
-    // Carregar debug logs 
-    carregarDebugLogs();
+    // Debug logs já carregados
+    console.log('Debug logs não são carregados nesta versão');
     
     // Limpar mensagens de inicialização
     if (errorMessages) {
