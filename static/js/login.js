@@ -6,15 +6,55 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
+  const displayNameInput = document.getElementById('displayName');
+  const displayNameGroup = document.getElementById('displayNameGroup');
   const loginBtn = document.getElementById('loginBtn');
   const errorMessages = document.getElementById('errorMessages');
   
-  // E-mail e senha específicos do administrador
+  // Adicionar botão de criar conta
+  const createAccountBtn = document.createElement('button');
+  createAccountBtn.type = 'button';
+  createAccountBtn.className = 'btn btn-outline-secondary w-100 mt-2';
+  createAccountBtn.id = 'createAccountBtn';
+  createAccountBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
+  
+  // Adicionar botão ao DOM
+  loginBtn.parentNode.appendChild(createAccountBtn);
+  
+  // Mode do formulário
+  const formModeInput = document.getElementById('formMode');
+  
+  // E-mail específico do administrador
   const ADMIN_EMAIL = 'nsyzadmin@gmail.com';
-  const ADMIN_PASSWORD = 'nsyzadmin123'; // Normalmente isto não seria feito no cliente, apenas para demonstração
   
   // Inicialmente mostrar mensagem de carregamento
   showErrorMessage('Conectando ao serviço de autenticação...', 'info');
+  
+  // Alternar entre login e criação de conta
+  createAccountBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    
+    // Obter modo atual
+    const currentMode = formModeInput.value;
+    
+    if (currentMode === 'login') {
+      // Mudar para modo de criação de conta
+      formModeInput.value = 'register';
+      loginBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
+      createAccountBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Voltar para Login';
+      displayNameGroup.classList.remove('d-none');
+      document.querySelector('.login-header h4').textContent = 'Criar Nova Conta';
+      document.querySelector('.login-header p').textContent = 'Preencha os dados para criar sua conta.';
+    } else {
+      // Mudar para modo de login
+      formModeInput.value = 'login';
+      loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
+      createAccountBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
+      displayNameGroup.classList.add('d-none');
+      document.querySelector('.login-header h4').textContent = 'Acesso Administrativo';
+      document.querySelector('.login-header p').textContent = 'Digite suas credenciais para acessar o painel.';
+    }
+  });
   
   // Verificar se o Firebase foi inicializado
   const firebaseCheckInterval = setInterval(() => {
@@ -28,15 +68,22 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(user => {
           console.log('Verificação inicial de usuário:', user);
           
-          if (user && user.email === ADMIN_EMAIL) {
-            console.log('Usuário administrador já autenticado:', user.email);
-            // Se já estiver logado como admin, redirecionar para o painel
-            window.location.href = '/admin';
-            return;
+          if (user) {
+            // Se for admin, redirecionar para o painel admin
+            if (user.email === ADMIN_EMAIL) {
+              console.log('Usuário administrador já autenticado:', user.email);
+              window.location.href = '/admin';
+              return;
+            } else {
+              // Se for usuário normal, redirecionar para a loja
+              console.log('Usuário normal já autenticado:', user.email);
+              window.location.href = '/loja';
+              return;
+            }
           }
           
           // Mostrar mensagem pronto para login
-          showErrorMessage('Pronto para login. Digite suas credenciais de administrador.', 'info');
+          showErrorMessage('Pronto para login ou criação de conta.', 'info');
         })
         .catch(error => {
           console.error('Erro ao verificar autenticação inicial:', error);
@@ -59,81 +106,96 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       
+      // Obter o modo atual do formulário
+      const formMode = formModeInput.value;
+      console.log(`Formulário enviado no modo: ${formMode}`);
+      
       // Obter valores do formulário
       const email = emailInput.value.trim();
       const password = passwordInput.value;
       
       // Desabilitar botão de login
       loginBtn.disabled = true;
-      loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Entrando...';
       
-      // Verificar se é o email/senha do administrador
-      if (email === ADMIN_EMAIL) {
+      if (formMode === 'login') {
+        // Modo de login
+        loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Entrando...';
+        console.log('Tentando login com email:', email);
+        
         try {
-          // Tentar fazer login com a API do backend
-          console.log('Chamando API de login para admin');
-          const response = await fetch('/auth/api/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
-          });
+          // Login com Firebase
+          const userCredential = await firebaseAuthAPI.login(email, password);
+          console.log('Login bem-sucedido:', userCredential);
           
-          const data = await response.json();
-          console.log('Resposta da API:', data);
-          
-          if (!data.success) {
-            console.error('Erro ao fazer login:', data.error);
-            showLoginError('Email ou senha incorretos');
-            return;
-          }
-          
-          // Salvar o token no localStorage
-          if (data.token) {
-            localStorage.setItem('authToken', data.token);
-            console.log('Token de autenticação salvo');
-          }
-          
-          // Criar objeto de usuário com os dados da resposta
-          const user = {
-            email: email,
-            role: data.role || 'user'
-          };
-          
-          // Salvar dados do usuário no localStorage
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          
-          // Registrar o timestamp de login
-          localStorage.setItem('lastLoginTime', new Date().getTime().toString());
-          console.log('Timestamp de login registrado:', new Date().getTime());
-          
-          // Verificar se o papel do usuário é administrador
-          if (data.role === 'admin') {
-            // Mostrar mensagem de sucesso
-            console.log('Usuário autorizado, redirecionando para dashboard');
+          // Verificar se é o email do administrador
+          if (email === ADMIN_EMAIL) {
+            console.log('Usuário administrador:', email);
             showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');
             
-            // Redirecionar para o dashboard após um pequeno delay
-            setTimeout(redirectToDashboard, 500);
+            // Redirecionar para o painel admin
+            setTimeout(() => {
+              window.location.href = '/admin';
+            }, 500);
           } else {
-            // Mostrar erro para papel não autorizado
-            console.log('Usuário não tem papel de administrador:', data.role);
-            showLoginError('Este usuário não tem permissão de administrador.');
+            // Usuário normal, redirecionar para a loja
+            console.log('Usuário normal:', email);
+            showNotification('Login realizado', 'Bem-vindo à loja BOSSPODS', 'success');
+            
+            // Redirecionar para a loja
+            setTimeout(() => {
+              window.location.href = '/loja';
+            }, 500);
           }
         } catch (error) {
-          console.error('Erro de login:', error);
+          console.error('Erro ao fazer login:', error);
           showLoginError('Email ou senha incorretos');
         }
       } else {
-        // Qualquer outro email não tem permissão
-        console.log('Tentativa de acesso com e-mail não autorizado:', email);
-        showLoginError('Você não tem permissão para acessar esta área.');
+        // Modo de registro
+        loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Criando conta...';
+        
+        const displayName = displayNameInput.value.trim();
+        console.log('Tentando criar conta com email:', email);
+        
+        try {
+          // Verificar se é uma tentativa de criar conta de admin (não permitido)
+          if (email === ADMIN_EMAIL) {
+            showLoginError('Este email já está registrado como administrador. Faça login ou use outro email.');
+            return;
+          }
+          
+          // Criar usuário no Firebase
+          const user = await firebaseAuthAPI.register(email, password, displayName);
+          console.log('Conta criada com sucesso:', user);
+          
+          // Mostrar mensagem de sucesso
+          showNotification('Conta criada', 'Sua conta foi criada com sucesso. Você já está logado.', 'success');
+          
+          // Redirecionar para a loja
+          setTimeout(() => {
+            window.location.href = '/loja';
+          }, 1000);
+          
+        } catch (error) {
+          console.error('Erro ao criar conta:', error);
+          
+          // Verificar o tipo de erro
+          if (error.message && error.message.includes('email já está em uso')) {
+            showLoginError('Este email já está registrado. Tente fazer login ou use outro email.');
+          } else {
+            showLoginError('Erro ao criar conta: ' + error.message);
+          }
+        }
       }
       
       // Reabilitar botão de login
       loginBtn.disabled = false;
-      loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
+      
+      if (formModeInput.value === 'login') {
+        loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
+      } else {
+        loginBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
+      }
     });
   } else {
     console.error('Formulário de login não encontrado!');

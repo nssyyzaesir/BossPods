@@ -46,12 +46,28 @@ try {
     // Atualizar estado
     if (user) {
       console.log("Usuário autenticado:", user.email);
+      
+      // Verificar se é o admin baseado no email
+      const isAdmin = user.email === 'nsyzadmin@gmail.com';
+      
       localStorage.setItem('currentUser', JSON.stringify({
         uid: user.uid,
         email: user.email,
-        displayName: user.displayName
+        displayName: user.displayName,
+        isAdmin: isAdmin
       }));
       localStorage.setItem('lastLoginTime', new Date().getTime());
+      
+      // Se for admin, verificar se está na página de login e redirecionar para admin
+      if (isAdmin && window.location.pathname === '/login') {
+        window.location.href = '/admin';
+      }
+      
+      // Se estiver tentando acessar admin e não for admin, bloquear
+      if (!isAdmin && window.location.pathname === '/admin') {
+        alert('Você não tem permissão para acessar esta área.');
+        window.location.href = '/loja';
+      }
     }
   });
   
@@ -139,21 +155,8 @@ const firebaseAuthAPI = {
   async isAdmin(user) {
     if (!user) return false;
     
-    if (!localDevMode) {
-      try {
-        const userDoc = await firestoreDB.collection('users').doc(user.uid).get();
-        if (userDoc.exists) {
-          return userDoc.data().role === 'admin';
-        }
-        return false;
-      } catch (error) {
-        console.error("Erro ao verificar role do usuário:", error);
-        return false;
-      }
-    } else {
-      // Modo de desenvolvimento local
-      return fakeAuth.isUserAdmin(user.uid);
-    }
+    // Verificação direta por e-mail do administrador
+    return user.email === 'nsyzadmin@gmail.com';
   },
   
   // Fazer logout
@@ -188,6 +191,12 @@ const firestoreProducts = {
     if (!currentUser) {
       console.error("Usuário não autenticado");
       throw new Error("Usuário não autenticado. Faça login novamente.");
+    }
+    
+    // Verificar se é administrador
+    if (currentUser.email !== 'nsyzadmin@gmail.com') {
+      console.error("Usuário não é administrador");
+      throw new Error("Você não tem permissão para realizar esta operação.");
     }
   },
   
