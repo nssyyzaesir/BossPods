@@ -1,268 +1,425 @@
-// Global variables
-let carrinho = [];
-let serverMode = true;
-const WhatsAppPhone = "5511999999999"; // Número do WhatsApp para envio do pedido
-const apiUrl = '/api';
+// Variáveis globais
+let carrinhoItems = [];
+let cupomAplicado = null;
 
-// DOM Ready
-document.addEventListener('DOMContentLoaded', function() {
+// Cupons de desconto disponíveis
+const cuponsDisponiveis = {
+  'BOSSPODS10': { percentual: 10, mensagem: '10% de desconto' },
+  'CYBER20': { percentual: 20, mensagem: '20% de desconto' },
+  'FRETEGRATIS': { percentual: 0, frete: true, mensagem: 'Frete grátis' },
+  'WELCOME25': { percentual: 25, mensagem: '25% de desconto para primeira compra' }
+};
+
+// Inicialização quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', () => {
   // Carregar carrinho do localStorage
   carregarCarrinho();
   
-  // Configurar eventos
-  document.getElementById('clearCartBtn').addEventListener('click', function() {
-    abrirConfirmacao('Tem certeza que deseja limpar o carrinho?', limparCarrinho);
-  });
-  
-  document.getElementById('sendOrderBtn').addEventListener('click', enviarPedidoWhatsApp);
-  
-  // Admin link
-  document.getElementById('adminLink').addEventListener('click', function(e) {
-    e.preventDefault();
-    window.location.href = '/admin';
-  });
+  // Configurar manipuladores de eventos
+  setupEventHandlers();
 });
 
-// Funções
+// Carregar carrinho do localStorage
 function carregarCarrinho() {
-  const carrinhoSalvo = localStorage.getItem('carrinho');
+  const carrinhoSalvo = localStorage.getItem('bosspods_carrinho');
   
   if (carrinhoSalvo) {
-    carrinho = JSON.parse(carrinhoSalvo);
-    renderizarCarrinho();
+    try {
+      carrinhoItems = JSON.parse(carrinhoSalvo);
+      renderizarCarrinho();
+    } catch (e) {
+      console.error('Erro ao carregar carrinho:', e);
+      carrinhoItems = [];
+      localStorage.setItem('bosspods_carrinho', JSON.stringify(carrinhoItems));
+      mostrarMensagemCarrinhoVazio();
+    }
   } else {
+    carrinhoItems = [];
+    localStorage.setItem('bosspods_carrinho', JSON.stringify(carrinhoItems));
     mostrarMensagemCarrinhoVazio();
   }
 }
 
+// Salvar carrinho no localStorage
 function salvarCarrinho() {
-  localStorage.setItem('carrinho', JSON.stringify(carrinho));
+  localStorage.setItem('bosspods_carrinho', JSON.stringify(carrinhoItems));
 }
 
-function renderizarCarrinho() {
-  const container = document.getElementById('cartItems');
+// Configurar manipuladores de eventos
+function setupEventHandlers() {
+  // Botão de limpar carrinho
+  document.getElementById('limparCarrinhoBtn').addEventListener('click', () => {
+    abrirConfirmacao(
+      'Tem certeza que deseja limpar o carrinho?',
+      limparCarrinho
+    );
+  });
   
-  if (carrinho.length === 0) {
+  // Botão de aplicar cupom
+  document.getElementById('aplicarCupomBtn').addEventListener('click', () => {
+    const cupom = document.getElementById('cupomInput').value.trim().toUpperCase();
+    
+    if (!cupom) {
+      showToast('Atenção', 'Digite um código de cupom', 'warning');
+      return;
+    }
+    
+    if (cupomAplicado) {
+      showToast('Atenção', 'Você já aplicou um cupom neste pedido', 'warning');
+      return;
+    }
+    
+    if (cuponsDisponiveis[cupom]) {
+      cupomAplicado = {
+        codigo: cupom,
+        ...cuponsDisponiveis[cupom]
+      };
+      
+      // Atualizar resumo do pedido
+      atualizarResumoPedido();
+      
+      showToast('Cupom aplicado', cuponsDisponiveis[cupom].mensagem, 'success');
+    } else {
+      showToast('Cupom inválido', 'Este código de cupom não existe ou expirou', 'error');
+    }
+  });
+  
+  // Botão de enviar pedido por WhatsApp
+  document.getElementById('pedidoWhatsAppBtn').addEventListener('click', () => {
+    const modal = new bootstrap.Modal(document.getElementById('whatsappModal'));
+    modal.show();
+  });
+  
+  // Botão de enviar no modal do WhatsApp
+  document.getElementById('enviarWhatsAppBtn').addEventListener('click', () => {
+    const form = document.getElementById('whatsappForm');
+    
+    // Validar formulário
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    
+    // Fechar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('whatsappModal'));
+    modal.hide();
+    
+    // Enviar pedido
+    enviarPedidoWhatsApp();
+  });
+  
+  // Botão de confirmação genérico
+  document.getElementById('confirmBtn').addEventListener('click', function() {
+    // A função de callback é definida dinamicamente em abrirConfirmacao()
+    if (this.dataset.callback) {
+      const callback = window[this.dataset.callback];
+      if (typeof callback === 'function') {
+        callback();
+      }
+      
+      // Fechar modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+      modal.hide();
+    }
+  });
+}
+
+// Renderizar carrinho
+function renderizarCarrinho() {
+  // Verificar se o carrinho está vazio
+  if (carrinhoItems.length === 0) {
     mostrarMensagemCarrinhoVazio();
     return;
   }
   
-  let html = '';
-  let subtotal = 0;
-  let totalItens = 0;
+  // Mostrar conteúdo do carrinho
+  document.getElementById('carrinhoVazio').classList.add('d-none');
+  document.getElementById('carrinhoContent').classList.remove('d-none');
   
-  carrinho.forEach((item, index) => {
-    const produto = item.produto;
-    const valorTotal = produto.preco * item.quantidade;
-    subtotal += valorTotal;
-    totalItens += item.quantidade;
-    
-    html += `
-      <div class="cyber-card mb-3">
-        <div class="cyber-card-body">
-          <div class="row align-items-center">
-            <div class="col-md-2 col-sm-3 mb-3 mb-md-0">
-              <img src="${produto.imagem || '/static/img/no-image.png'}" alt="${produto.nome}" class="img-fluid rounded">
-            </div>
-            <div class="col-md-4 col-sm-9 mb-3 mb-md-0">
-              <h5>${produto.nome}</h5>
-              <p class="mb-0 text-muted">
-                <small>
-                  ${produto.categoria ? `Categoria: ${produto.categoria}` : ''}
-                  ${produto.em_promocao ? '<span class="cyber-badge cyber-badge-discount ms-2">PROMOÇÃO</span>' : ''}
-                </small>
-              </p>
-            </div>
-            <div class="col-6 col-md-2 text-md-center">
-              <p class="mb-1">Preço:</p>
-              <h6>R$ ${produto.preco.toFixed(2)}</h6>
-            </div>
-            <div class="col-6 col-md-2 text-md-center">
-              <p class="mb-1">Quantidade:</p>
-              <div class="input-group cart-quantity">
-                <button class="btn cyber-btn-sm cyber-btn-outline btn-decrease" data-index="${index}">-</button>
-                <input type="number" class="form-control cyber-input text-center quantity-input" value="${item.quantidade}" min="1" data-index="${index}">
-                <button class="btn cyber-btn-sm cyber-btn-outline btn-increase" data-index="${index}">+</button>
-              </div>
-            </div>
-            <div class="col-md-2 text-md-end mt-3 mt-md-0">
-              <button class="btn cyber-btn-sm cyber-btn-danger btn-remove" data-index="${index}">
-                <i class="bi bi-trash"></i> Remover
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  });
-  
-  container.innerHTML = html;
-  
-  // Mostrar painel de checkout
-  document.getElementById('checkoutPanel').style.display = 'block';
-  document.getElementById('clearCartContainer').style.display = 'block';
-  document.getElementById('emptyCartMessage').style.display = 'none';
-  
-  // Atualizar valores
-  document.getElementById('subtotalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
-  document.getElementById('totalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
-  document.getElementById('itemCount').textContent = totalItens;
-  
-  // Adicionar eventos aos botões
-  document.querySelectorAll('.btn-decrease').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const index = parseInt(this.getAttribute('data-index'));
-      diminuirQuantidade(index);
-    });
-  });
-  
-  document.querySelectorAll('.btn-increase').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const index = parseInt(this.getAttribute('data-index'));
-      aumentarQuantidade(index);
-    });
-  });
-  
-  document.querySelectorAll('.quantity-input').forEach(input => {
-    input.addEventListener('change', function() {
-      const index = parseInt(this.getAttribute('data-index'));
-      atualizarQuantidade(index, parseInt(this.value));
-    });
-  });
-  
-  document.querySelectorAll('.btn-remove').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const index = parseInt(this.getAttribute('data-index'));
-      abrirConfirmacao('Tem certeza que deseja remover este item?', () => removerItem(index));
-    });
-  });
-}
-
-function mostrarMensagemCarrinhoVazio() {
-  document.getElementById('cartItems').innerHTML = `
-    <div class="text-center py-5" id="emptyCartMessage">
-      <i class="bi bi-cart-x" style="font-size: 4rem; color: var(--primary-glow);"></i>
-      <p class="mt-3 mb-4">Seu carrinho está vazio</p>
-      <a href="/" class="btn cyber-btn cyber-btn-primary">Ver Produtos</a>
-    </div>
-  `;
-  
-  document.getElementById('checkoutPanel').style.display = 'none';
-  document.getElementById('clearCartContainer').style.display = 'none';
-}
-
-function aumentarQuantidade(index) {
-  if (index >= 0 && index < carrinho.length) {
-    carrinho[index].quantidade += 1;
-    salvarCarrinho();
-    renderizarCarrinho();
-  }
-}
-
-function diminuirQuantidade(index) {
-  if (index >= 0 && index < carrinho.length) {
-    if (carrinho[index].quantidade > 1) {
-      carrinho[index].quantidade -= 1;
-      salvarCarrinho();
-      renderizarCarrinho();
-    } else {
-      abrirConfirmacao('Deseja remover este item do carrinho?', () => removerItem(index));
-    }
-  }
-}
-
-function atualizarQuantidade(index, quantidade) {
-  if (index >= 0 && index < carrinho.length) {
-    if (quantidade > 0) {
-      carrinho[index].quantidade = quantidade;
-      salvarCarrinho();
-      renderizarCarrinho();
-    } else {
-      abrirConfirmacao('Deseja remover este item do carrinho?', () => removerItem(index));
-    }
-  }
-}
-
-function removerItem(index) {
-  if (index >= 0 && index < carrinho.length) {
-    carrinho.splice(index, 1);
-    salvarCarrinho();
-    renderizarCarrinho();
-    
-    if (carrinho.length === 0) {
-      mostrarMensagemCarrinhoVazio();
-    }
-    
-    mostrarNotificacao('Item removido', 'O item foi removido do carrinho.');
-  }
-}
-
-function limparCarrinho() {
-  carrinho = [];
-  salvarCarrinho();
-  mostrarMensagemCarrinhoVazio();
-  mostrarNotificacao('Carrinho limpo', 'Todos os itens foram removidos do carrinho.');
-}
-
-function enviarPedidoWhatsApp() {
-  if (carrinho.length === 0) return;
-  
-  let mensagem = "*Novo Pedido BOSSPODS*\n\n";
+  // Limpar tabela
+  const tbody = document.getElementById('carrinhoItems');
+  tbody.innerHTML = '';
   
   // Adicionar itens
-  mensagem += "*Produtos:*\n";
-  carrinho.forEach((item, index) => {
-    mensagem += `${index + 1}. *${item.produto.nome}*\n`;
-    mensagem += `   - Quantidade: ${item.quantidade}\n`;
-    mensagem += `   - Preço unitário: R$ ${item.produto.preco.toFixed(2)}\n`;
-    mensagem += `   - Subtotal: R$ ${(item.produto.preco * item.quantidade).toFixed(2)}\n\n`;
+  carrinhoItems.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    
+    // Imagem
+    const tdImg = document.createElement('td');
+    const img = document.createElement('img');
+    img.className = 'cart-product-img';
+    img.src = item.imagem || 'https://via.placeholder.com/50?text=BOSSPODS';
+    img.alt = item.nome || 'Produto';
+    tdImg.appendChild(img);
+    tr.appendChild(tdImg);
+    
+    // Nome e categoria
+    const tdNome = document.createElement('td');
+    const nome = document.createElement('div');
+    nome.className = 'product-title';
+    nome.textContent = item.nome || 'Produto sem nome';
+    
+    const categoria = document.createElement('div');
+    categoria.className = 'product-category';
+    categoria.textContent = item.categoria || 'Sem categoria';
+    
+    tdNome.appendChild(nome);
+    tdNome.appendChild(categoria);
+    tr.appendChild(tdNome);
+    
+    // Preço
+    const tdPreco = document.createElement('td');
+    tdPreco.className = 'product-price';
+    tdPreco.textContent = `R$ ${(item.preco || 0).toFixed(2).replace('.', ',')}`;
+    tr.appendChild(tdPreco);
+    
+    // Quantidade
+    const tdQtd = document.createElement('td');
+    const quantityControl = document.createElement('div');
+    quantityControl.className = 'quantity-control';
+    
+    const btnMinus = document.createElement('button');
+    btnMinus.className = 'quantity-btn';
+    btnMinus.innerHTML = '<i class="bi bi-dash"></i>';
+    btnMinus.disabled = item.quantidade <= 1;
+    btnMinus.addEventListener('click', () => diminuirQuantidade(index));
+    quantityControl.appendChild(btnMinus);
+    
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'quantity-input';
+    input.value = item.quantidade;
+    input.min = 1;
+    input.addEventListener('change', (e) => atualizarQuantidade(index, parseInt(e.target.value)));
+    quantityControl.appendChild(input);
+    
+    const btnPlus = document.createElement('button');
+    btnPlus.className = 'quantity-btn';
+    btnPlus.innerHTML = '<i class="bi bi-plus"></i>';
+    btnPlus.addEventListener('click', () => aumentarQuantidade(index));
+    quantityControl.appendChild(btnPlus);
+    
+    tdQtd.appendChild(quantityControl);
+    tr.appendChild(tdQtd);
+    
+    // Subtotal
+    const tdSubtotal = document.createElement('td');
+    tdSubtotal.className = 'product-subtotal';
+    const subtotal = (item.preco || 0) * (item.quantidade || 0);
+    tdSubtotal.textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+    tr.appendChild(tdSubtotal);
+    
+    // Remover
+    const tdRemover = document.createElement('td');
+    const btnRemover = document.createElement('button');
+    btnRemover.className = 'remove-btn';
+    btnRemover.innerHTML = '<i class="bi bi-x-lg"></i>';
+    btnRemover.setAttribute('title', 'Remover item');
+    btnRemover.addEventListener('click', () => removerItem(index));
+    tdRemover.appendChild(btnRemover);
+    tr.appendChild(tdRemover);
+    
+    tbody.appendChild(tr);
   });
   
-  // Adicionar total
-  const valorTotal = carrinho.reduce((total, item) => total + (item.produto.preco * item.quantidade), 0);
-  mensagem += "*Valor Total:* R$ " + valorTotal.toFixed(2);
-  
-  // Adicionar mensagem para cliente preencher os dados
-  mensagem += "\n\n*Dados para Entrega:*\n";
-  mensagem += "Nome: \n";
-  mensagem += "Endereço: \n";
-  mensagem += "Telefone: \n";
-  mensagem += "Método de Pagamento: ";
-  
-  // Encodar mensagem para URL
-  const mensagemCodificada = encodeURIComponent(mensagem);
-  
-  // Gerar link do WhatsApp
-  const linkWhatsApp = `https://wa.me/${WhatsAppPhone}?text=${mensagemCodificada}`;
-  
-  // Abrir link
-  window.open(linkWhatsApp, '_blank');
+  // Atualizar resumo do pedido
+  atualizarResumoPedido();
 }
 
-function abrirConfirmacao(mensagem, callback) {
-  document.getElementById('confirmationMessage').textContent = mensagem;
+// Atualizar resumo do pedido
+function atualizarResumoPedido() {
+  // Calcular subtotal
+  const subtotal = carrinhoItems.reduce((total, item) => {
+    return total + (item.preco || 0) * (item.quantidade || 0);
+  }, 0);
   
-  // Limpar eventos anteriores para evitar duplicação
-  const btnConfirm = document.getElementById('confirmButton');
-  const novoBtn = btnConfirm.cloneNode(true);
-  btnConfirm.parentNode.replaceChild(novoBtn, btnConfirm);
+  // Atualizar subtotal
+  document.getElementById('subtotalResumo').textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
   
-  // Adicionar novo evento
-  document.getElementById('confirmButton').addEventListener('click', function() {
-    callback();
-    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
-    modal.hide();
+  // Calcular desconto
+  let desconto = 0;
+  if (cupomAplicado && cupomAplicado.percentual > 0) {
+    desconto = (subtotal * cupomAplicado.percentual) / 100;
+    
+    // Mostrar linha de desconto
+    document.getElementById('descontoRow').classList.remove('d-none');
+    document.getElementById('descontoResumo').textContent = `- R$ ${desconto.toFixed(2).replace('.', ',')}`;
+  } else {
+    // Esconder linha de desconto
+    document.getElementById('descontoRow').classList.add('d-none');
+  }
+  
+  // Calcular total
+  const total = subtotal - desconto;
+  
+  // Atualizar total
+  document.getElementById('totalResumo').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+}
+
+// Mostrar mensagem de carrinho vazio
+function mostrarMensagemCarrinhoVazio() {
+  document.getElementById('carrinhoVazio').classList.remove('d-none');
+  document.getElementById('carrinhoContent').classList.add('d-none');
+}
+
+// Aumentar quantidade
+function aumentarQuantidade(index) {
+  if (index >= 0 && index < carrinhoItems.length) {
+    carrinhoItems[index].quantidade++;
+    salvarCarrinho();
+    renderizarCarrinho();
+  }
+}
+
+// Diminuir quantidade
+function diminuirQuantidade(index) {
+  if (index >= 0 && index < carrinhoItems.length && carrinhoItems[index].quantidade > 1) {
+    carrinhoItems[index].quantidade--;
+    salvarCarrinho();
+    renderizarCarrinho();
+  }
+}
+
+// Atualizar quantidade
+function atualizarQuantidade(index, quantidade) {
+  if (index >= 0 && index < carrinhoItems.length) {
+    // Verificar se a quantidade é válida
+    if (isNaN(quantidade) || quantidade < 1) {
+      quantidade = 1;
+    }
+    
+    carrinhoItems[index].quantidade = quantidade;
+    salvarCarrinho();
+    renderizarCarrinho();
+  }
+}
+
+// Remover item
+function removerItem(index) {
+  if (index >= 0 && index < carrinhoItems.length) {
+    const itemRemovido = carrinhoItems[index];
+    
+    carrinhoItems.splice(index, 1);
+    salvarCarrinho();
+    renderizarCarrinho();
+    
+    showToast('Item removido', `${itemRemovido.nome} foi removido do carrinho`, 'success');
+  }
+}
+
+// Limpar carrinho
+function limparCarrinho() {
+  carrinhoItems = [];
+  cupomAplicado = null;
+  salvarCarrinho();
+  renderizarCarrinho();
+  
+  showToast('Carrinho limpo', 'Todos os itens foram removidos do carrinho', 'success');
+}
+
+// Enviar pedido via WhatsApp
+function enviarPedidoWhatsApp() {
+  // Obter informações do cliente
+  const nome = document.getElementById('nomeCliente').value;
+  const telefone = document.getElementById('telefoneCliente').value;
+  const email = document.getElementById('emailCliente').value;
+  const endereco = document.getElementById('enderecoCliente').value;
+  const observacoes = document.getElementById('obsCliente').value;
+  
+  // Calcular valores
+  const subtotal = carrinhoItems.reduce((total, item) => {
+    return total + (item.preco || 0) * (item.quantidade || 0);
+  }, 0);
+  
+  let desconto = 0;
+  if (cupomAplicado && cupomAplicado.percentual > 0) {
+    desconto = (subtotal * cupomAplicado.percentual) / 100;
+  }
+  
+  const total = subtotal - desconto;
+  
+  // Criar mensagem
+  let mensagem = `*Novo Pedido BOSSPODS*\n\n`;
+  mensagem += `*Dados do Cliente:*\n`;
+  mensagem += `Nome: ${nome}\n`;
+  mensagem += `Telefone: ${telefone}\n`;
+  
+  if (email) {
+    mensagem += `Email: ${email}\n`;
+  }
+  
+  mensagem += `Endereço: ${endereco}\n\n`;
+  
+  mensagem += `*Itens do Pedido:*\n`;
+  
+  carrinhoItems.forEach((item, index) => {
+    const subtotalItem = (item.preco || 0) * (item.quantidade || 0);
+    mensagem += `${index + 1}. ${item.nome} x${item.quantidade} - R$ ${subtotalItem.toFixed(2).replace('.', ',')}\n`;
   });
   
-  // Abrir modal
-  const modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+  mensagem += `\n*Resumo:*\n`;
+  mensagem += `Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
+  
+  if (desconto > 0) {
+    mensagem += `Desconto: R$ ${desconto.toFixed(2).replace('.', ',')} (${cupomAplicado.codigo})\n`;
+  }
+  
+  mensagem += `*Total: R$ ${total.toFixed(2).replace('.', ',')}*\n\n`;
+  
+  if (observacoes) {
+    mensagem += `*Observações:*\n${observacoes}\n\n`;
+  }
+  
+  mensagem += `Obrigado por comprar na BOSSPODS!`;
+  
+  // Codificar mensagem para URL
+  const mensagemCodificada = encodeURIComponent(mensagem);
+  
+  // Número de telefone da loja (substitua pelo número real)
+  const numeroLoja = '5511999999999';
+  
+  // Criar URL do WhatsApp
+  const whatsappUrl = `https://wa.me/${numeroLoja}?text=${mensagemCodificada}`;
+  
+  // Abrir WhatsApp em nova janela
+  window.open(whatsappUrl, '_blank');
+  
+  // Mostrar mensagem de sucesso
+  showToast('Pedido enviado', 'Seu pedido foi enviado para o WhatsApp da loja', 'success');
+}
+
+// Abrir modal de confirmação
+function abrirConfirmacao(mensagem, callback) {
+  document.getElementById('confirmModalText').textContent = mensagem;
+  
+  // Armazenar nome da função de callback no botão
+  document.getElementById('confirmBtn').dataset.callback = callback.name;
+  
+  // Mostrar modal
+  const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
   modal.show();
 }
 
-function mostrarNotificacao(titulo, mensagem) {
-  document.getElementById('toastTitle').textContent = titulo;
-  document.getElementById('toastMessage').textContent = mensagem;
+// Mostrar notificação
+function showToast(title, message, type = 'info') {
+  const toastEl = document.getElementById('toast');
+  const titleEl = document.getElementById('toastTitle');
+  const messageEl = document.getElementById('toastMessage');
   
-  const toast = new bootstrap.Toast(document.getElementById('notificationToast'));
+  titleEl.textContent = title;
+  messageEl.textContent = message;
+  
+  // Remover classes anteriores
+  toastEl.className = 'toast cyber-toast';
+  
+  // Adicionar classe de acordo com o tipo
+  if (type === 'success') {
+    toastEl.classList.add('cyber-toast-success');
+  } else if (type === 'error') {
+    toastEl.classList.add('cyber-toast-error');
+  }
+  
+  // Mostrar toast
+  const toast = new bootstrap.Toast(toastEl);
   toast.show();
 }

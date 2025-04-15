@@ -1,0 +1,245 @@
+/* Estilos específicos para a página de carrinho */
+
+/* Título principal */
+.neon-text {
+  margin-bottom: 1.5rem;
+}
+
+/* Tabela de carrinho */
+.table-responsive {
+  overflow-x: auto;
+}
+
+/* Imagem do produto no carrinho */
+.cart-product-img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--card-border);
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Nome do produto */
+.product-title {
+  font-weight: 500;
+}
+
+.product-category {
+  font-size: 0.8rem;
+  color: var(--text-dark);
+}
+
+/* Preço */
+.product-price {
+  color: var(--primary-color-light);
+  font-weight: 500;
+}
+
+/* Controle de quantidade */
+.quantity-control {
+  width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.quantity-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  color: var(--text-light);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.quantity-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.quantity-btn:disabled {
+  color: var(--text-dark);
+  cursor: not-allowed;
+}
+
+.quantity-input {
+  width: 40px;
+  text-align: center;
+  border: none;
+  background-color: transparent;
+  color: var(--text-light);
+  -moz-appearance: textfield;
+}
+
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Subtotal */
+.product-subtotal {
+  font-weight: 600;
+  color: var(--primary-color-light);
+}
+
+/* Botão de remover */
+.remove-btn {
+  color: var(--text-dark);
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  transition: color 0.2s;
+  cursor: pointer;
+}
+
+.remove-btn:hover {
+  color: var(--danger-color);
+}
+
+/* Resumo do pedido */
+#totalResumo {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+/* Desconto aplicado */
+#descontoResumo {
+  color: var(--success-color);
+}
+
+/* Cupom de desconto */
+#cupomInput {
+  border-right: none;
+}
+
+#aplicarCupomBtn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* Botão WhatsApp */
+.cyber-btn-primary.cyber-btn-whatsapp {
+  background-color: #25d366;
+  border-color: #25d366;
+}
+
+.cyber-btn-primary.cyber-btn-whatsapp:hover {
+  background-color: #128C7E;
+  border-color: #128C7E;
+}
+
+/* Métodos de pagamento */
+.payment-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.payment-method {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  font-size: 1.5rem;
+  color: var(--text-dark);
+  transition: all 0.3s;
+}
+
+.payment-method:hover {
+  background-color: rgba(184, 51, 255, 0.1);
+  color: var(--primary-color-light);
+  box-shadow: 0 0 8px rgba(184, 51, 255, 0.3);
+  border-color: var(--primary-color);
+}
+
+/* Efeitos especiais */
+.cyber-btn-primary:focus {
+  box-shadow: 0 0 0 0.25rem rgba(184, 51, 255, 0.25);
+}
+
+.cyber-card.empty-cart-card {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.empty-cart-icon {
+  font-size: 5rem;
+  color: var(--text-dark);
+  margin-bottom: 1rem;
+}
+
+/* Botão de checkout */
+.btn-checkout {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-checkout::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, 
+    rgba(184, 51, 255, 0.1), 
+    rgba(0, 184, 255, 0.1), 
+    rgba(184, 51, 255, 0.1));
+  opacity: 0;
+  z-index: -1;
+  animation: shine 2s infinite;
+}
+
+.btn-checkout:hover::after {
+  opacity: 1;
+}
+
+@keyframes shine {
+  0% {
+    opacity: 0.2;
+    transform: translateX(-100%);
+  }
+  60% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateX(100%);
+  }
+}
+
+/* Responsividade */
+@media (max-width: 767px) {
+  .cyber-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .quantity-control {
+    width: 100px;
+  }
+  
+  .quantity-input {
+    width: 30px;
+  }
+}

@@ -1,205 +1,105 @@
-// Versão simplificada para login local no modo de desenvolvimento
-// DOM Ready
-document.addEventListener('DOMContentLoaded', function() {
-  // Verificar se o usuário já está logado (pelo cookie/sessão)
-  fetch('/auth/api/verify-token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({})
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.valid) {
-      // Usuário já está logado, redirecionar para o dashboard
-      redirectToDashboard();
-    }
-  })
-  .catch(error => {
-    console.log('Usuário não está logado');
-  });
-  
-  // Configurar eventos do formulário de login
-  document.getElementById('loginForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const rememberMe = document.getElementById('rememberMe').checked;
-    
-    // Fazer login direto com backend
-    fetch('/auth/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        email: email, 
-        password: password,
-        remember_me: rememberMe
-      })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        // Login bem-sucedido
-        showNotification('Login bem-sucedido', 'Redirecionando para o painel...', 'success');
-        
-        // Pequeno delay para mostrar a notificação
-        setTimeout(() => {
+// Variáveis globais
+let loginForm = document.getElementById('loginForm');
+let emailInput = document.getElementById('email');
+let passwordInput = document.getElementById('password');
+let loginBtn = document.getElementById('loginBtn');
+
+// Inicialização quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', () => {
+  // Verificar se já está logado
+  firebaseAuthAPI.getCurrentUser().then(user => {
+    if (user) {
+      // Verificar se o usuário é admin
+      firebaseAuthAPI.isAdmin(user).then(isAdmin => {
+        if (isAdmin) {
+          // Redirecionar para dashboard
           redirectToDashboard();
-        }, 1000);
+        } else {
+          // Logout (usuário não é admin)
+          firebaseAuthAPI.logout().then(() => {
+            showLoginError('Você não tem permissão para acessar o painel de administração');
+          });
+        }
+      });
+    }
+  });
+  
+  // Configurar evento de submit do formulário
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Desabilitar botão de login
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Entrando...';
+    
+    // Obter valores do formulário
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    
+    try {
+      // Tentar fazer login
+      const user = await firebaseAuthAPI.login(email, password);
+      
+      // Verificar se o usuário é admin
+      const isAdmin = await firebaseAuthAPI.isAdmin(user);
+      
+      if (isAdmin) {
+        // Mostrar mensagem de sucesso
+        showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');
+        
+        // Redirecionar para o dashboard após um pequeno delay
+        setTimeout(redirectToDashboard, 500);
       } else {
-        throw new Error(data.error || 'Erro ao processar login');
+        // Logout (usuário não é admin)
+        await firebaseAuthAPI.logout();
+        
+        // Mostrar erro
+        showLoginError('Você não tem permissão para acessar o painel de administração');
       }
-    })
-    .catch((error) => {
-      console.error('Erro no login:', error);
-      showLoginError();
-    });
-  });
-  
-  // Mostrar/ocultar formulário de recuperação de senha
-  document.getElementById('forgotPassword').addEventListener('click', function(e) {
-    e.preventDefault();
-    document.querySelector('.login-card').classList.add('d-none');
-    document.querySelector('.recovery-card').classList.remove('d-none');
-  });
-  
-  // Voltar para o login
-  document.getElementById('backToLogin').addEventListener('click', function() {
-    document.querySelector('.recovery-card').classList.add('d-none');
-    document.querySelector('.login-card').classList.remove('d-none');
-  });
-  
-  // Mostrar/ocultar formulário de registro
-  document.getElementById('registerLink').addEventListener('click', function(e) {
-    e.preventDefault();
-    document.querySelector('.login-card').classList.add('d-none');
-    document.querySelector('.register-card').classList.remove('d-none');
-  });
-  
-  // Voltar para o login do registro
-  document.getElementById('backToLogin2').addEventListener('click', function() {
-    document.querySelector('.register-card').classList.add('d-none');
-    document.querySelector('.login-card').classList.remove('d-none');
-  });
-  
-  // Envio do formulário de recuperação de senha
-  document.getElementById('recoveryForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('recoveryEmail').value;
-    
-    // Simulação de recuperação de senha no modo local
-    showNotification('Email enviado', 'Em modo de desenvolvimento, as senhas são fixas. Use admin@bosspods.com / admin123 ou user@bosspods.com / user123', 'success');
-    document.querySelector('.recovery-card').classList.add('d-none');
-    document.querySelector('.login-card').classList.remove('d-none');
-  });
-  
-  // Envio do formulário de registro
-  document.getElementById('registerForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const name = document.getElementById('registerName').value;
-    const email = document.getElementById('registerEmail').value;
-    const password = document.getElementById('registerPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    
-    // Verificar se as senhas coincidem
-    if (password !== confirmPassword) {
-      showNotification('Erro', 'As senhas não coincidem.', 'error');
-      return;
+    } catch (error) {
+      console.error('Erro de login:', error);
+      
+      // Mostrar mensagem de erro
+      showLoginError('Email ou senha incorretos');
     }
     
-    // Criar usuário via API
-    fetch('/auth/api/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name: name,
-        email: email,
-        password: password
-      })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        showNotification('Conta criada', 'Sua conta foi criada com sucesso!', 'success');
-        
-        // Voltar para a tela de login
-        document.querySelector('.register-card').classList.add('d-none');
-        document.querySelector('.login-card').classList.remove('d-none');
-        
-        // Limpar formulário
-        document.getElementById('registerForm').reset();
-      } else {
-        throw new Error(data.error || 'Erro ao finalizar registro');
-      }
-    })
-    .catch((error) => {
-      console.error('Erro no registro:', error);
-      showNotification('Erro', 'Não foi possível criar a conta: ' + error.message, 'error');
-    });
-  });
-  
-  // Alternar visibilidade da senha
-  document.querySelector('.toggle-password').addEventListener('click', function() {
-    const passwordInput = document.getElementById('password');
-    const icon = this.querySelector('i');
-    
-    if (passwordInput.type === 'password') {
-      passwordInput.type = 'text';
-      icon.classList.remove('bi-eye-slash-fill');
-      icon.classList.add('bi-eye-fill');
-    } else {
-      passwordInput.type = 'password';
-      icon.classList.remove('bi-eye-fill');
-      icon.classList.add('bi-eye-slash-fill');
-    }
+    // Reabilitar botão de login
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Entrar';
   });
 });
 
-// Funções auxiliares
+// Redirecionar para o dashboard
 function redirectToDashboard() {
   window.location.href = '/admin';
 }
 
-function showLoginError() {
-  const loginAlert = document.getElementById('login-alert');
-  loginAlert.classList.remove('d-none');
-  
-  // Adicionar animação de shake
-  const loginForm = document.getElementById('loginForm');
-  loginForm.classList.add('shake-error');
-  
-  // Remover classe de animação após a animação terminar
-  setTimeout(() => {
-    loginForm.classList.remove('shake-error');
-  }, 600);
+// Mostrar erro de login
+function showLoginError(message = 'Ocorreu um erro ao fazer login') {
+  showNotification('Erro de login', message, 'error');
+  passwordInput.value = '';
 }
 
+// Mostrar notificação
 function showNotification(title, message, type = 'info') {
-  const toastTitle = document.getElementById('toastTitle');
-  const toastMessage = document.getElementById('toastMessage');
-  const toastElement = document.getElementById('notificationToast');
+  const toastEl = document.getElementById('toast');
+  const titleEl = document.getElementById('toastTitle');
+  const messageEl = document.getElementById('toastMessage');
   
-  // Definir conteúdo
-  toastTitle.textContent = title;
-  toastMessage.textContent = message;
+  titleEl.textContent = title;
+  messageEl.textContent = message;
   
-  // Definir classe baseada no tipo (info, success, error)
-  toastElement.className = 'toast cyber-toast';
+  // Remover classes anteriores
+  toastEl.className = 'toast cyber-toast';
+  
+  // Adicionar classe de acordo com o tipo
   if (type === 'success') {
-    toastElement.classList.add('cyber-toast-success');
+    toastEl.classList.add('cyber-toast-success');
   } else if (type === 'error') {
-    toastElement.classList.add('cyber-toast-error');
+    toastEl.classList.add('cyber-toast-error');
   }
   
   // Mostrar toast
-  const toast = new bootstrap.Toast(toastElement);
+  const toast = new bootstrap.Toast(toastEl);
   toast.show();
 }

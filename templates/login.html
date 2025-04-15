@@ -3,140 +3,175 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | BOSSPODS</title>
+  <title>BOSSPODS | Login</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/static/css/styles.css">
-  <link rel="stylesheet" href="/static/css/login.css">
+  <style>
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .login-card {
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    
+    .login-logo {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .login-footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: var(--text-dark);
+      font-size: 0.9rem;
+    }
+    
+    .glow-input {
+      transition: all 0.3s;
+    }
+    
+    .glow-input:focus {
+      box-shadow: 0 0 15px rgba(184, 51, 255, 0.5);
+    }
+    
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, 
+        transparent, 
+        var(--primary-color), 
+        var(--secondary-color),
+        var(--primary-color),
+        transparent);
+      z-index: 2;
+    }
+    
+    .login-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, 
+        transparent, 
+        var(--card-border), 
+        transparent);
+      z-index: 2;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    
+    .form-label {
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .form-control-icon {
+      position: absolute;
+      right: 12px;
+      top: 38px;
+      color: var(--text-dark);
+    }
+    
+    .scanner-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--primary-color), transparent);
+      animation: scan 2s linear infinite;
+      opacity: 0.6;
+      z-index: 1;
+    }
+    
+    @keyframes scan {
+      0% {
+        top: 0;
+      }
+      100% {
+        top: 100%;
+      }
+    }
+  </style>
 </head>
 <body class="cyber-bg">
-  <div class="container py-5">
-    <div class="row justify-content-center">
-      <div class="col-md-6 col-lg-5">
-        <div class="text-center mb-4">
-          <div class="glow-container">
-            <h1 class="neon-text">BOSSPODS</h1>
-          </div>
-          <p class="cyber-text">Sistema Avançado de Gestão</p>
-        </div>
-        
-        <div class="cyber-card login-card">
-          <div class="cyber-card-header text-center">
-            <h3 class="mb-0">Acesso Restrito</h3>
-          </div>
-          <div class="cyber-card-body">
-            <div id="login-alert" class="alert alert-danger d-none" role="alert">
-              Email ou senha incorretos. Tente novamente.
+
+  <div class="login-container">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <div class="login-card cyber-card position-relative">
+            <div class="cyber-card-body p-4">
+              
+              <div class="login-logo">
+                <h1 class="neon-text">BOSS<span class="text-purple">PODS</span></h1>
+                <p class="text-muted">Painel de Administração</p>
+              </div>
+              
+              <div class="scanner-line"></div>
+              
+              <form id="loginForm">
+                <!-- Email -->
+                <div class="form-group">
+                  <label for="email" class="form-label">Email</label>
+                  <input type="email" class="form-control cyber-input glow-input" id="email" required>
+                  <i class="bi bi-envelope form-control-icon"></i>
+                </div>
+                
+                <!-- Senha -->
+                <div class="form-group">
+                  <label for="password" class="form-label">Senha</label>
+                  <input type="password" class="form-control cyber-input glow-input" id="password" required>
+                  <i class="bi bi-lock form-control-icon"></i>
+                </div>
+                
+                <!-- Lembrar / Esqueci senha -->
+                <div class="d-flex justify-content-between mb-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="rememberMe">
+                    <label class="form-check-label" for="rememberMe">
+                      Lembrar-me
+                    </label>
+                  </div>
+                  <a href="#" class="text-purple">Esqueci minha senha</a>
+                </div>
+                
+                <!-- Botão de login -->
+                <button type="submit" class="btn cyber-btn cyber-btn-primary w-100" id="loginBtn">
+                  <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
+                </button>
+              </form>
+              
+              <div class="login-footer">
+                <p>Desenvolvimento v1.0 - BOSSPODS © 2025</p>
+                <a href="/" class="text-purple">← Voltar para a loja</a>
+              </div>
             </div>
-            
-            <form id="loginForm">
-              <div class="mb-4">
-                <div class="input-group">
-                  <span class="input-group-text cyber-input-icon"><i class="bi bi-person-fill"></i></span>
-                  <input type="email" class="form-control cyber-input" id="email" placeholder="Email" required>
-                </div>
-              </div>
-              
-              <div class="mb-4">
-                <div class="input-group">
-                  <span class="input-group-text cyber-input-icon"><i class="bi bi-lock-fill"></i></span>
-                  <input type="password" class="form-control cyber-input" id="password" placeholder="Senha" required>
-                  <span class="input-group-text cyber-input-icon toggle-password" title="Mostrar/Esconder Senha">
-                    <i class="bi bi-eye-slash-fill"></i>
-                  </span>
-                </div>
-              </div>
-              
-              <div class="d-flex justify-content-between align-items-center mb-4">
-                <div class="form-check">
-                  <input class="form-check-input cyber-checkbox" type="checkbox" id="rememberMe">
-                  <label class="form-check-label" for="rememberMe">Lembrar-me</label>
-                </div>
-                <a href="#" class="cyber-link" id="forgotPassword">Esqueceu a senha?</a>
-              </div>
-              
-              <button type="submit" class="btn cyber-btn cyber-btn-primary w-100 py-2">
-                <i class="bi bi-box-arrow-in-right me-2"></i> Entrar
-              </button>
-              
-              <div class="text-center mt-4">
-                <p class="mb-0">Não tem uma conta? <a href="#" class="cyber-link" id="registerLink">Cadastre-se</a></p>
-              </div>
-            </form>
-          </div>
-        </div>
-        
-        <div class="cyber-card recovery-card mt-4 d-none">
-          <div class="cyber-card-header text-center">
-            <h4 class="mb-0">Recuperar Senha</h4>
-          </div>
-          <div class="cyber-card-body">
-            <p class="text-center mb-3">Digite seu email para receber um link de recuperação de senha.</p>
-            
-            <form id="recoveryForm">
-              <div class="mb-3">
-                <div class="input-group">
-                  <span class="input-group-text cyber-input-icon"><i class="bi bi-envelope-fill"></i></span>
-                  <input type="email" class="form-control cyber-input" id="recoveryEmail" placeholder="Email" required>
-                </div>
-              </div>
-              
-              <div class="d-grid gap-2">
-                <button type="submit" class="btn cyber-btn cyber-btn-secondary">Enviar</button>
-                <button type="button" class="btn cyber-btn cyber-btn-outline" id="backToLogin">Voltar</button>
-              </div>
-            </form>
-          </div>
-        </div>
-        
-        <div class="cyber-card register-card mt-4 d-none">
-          <div class="cyber-card-header text-center">
-            <h4 class="mb-0">Criar Conta</h4>
-          </div>
-          <div class="cyber-card-body">
-            <form id="registerForm">
-              <div class="mb-3">
-                <div class="input-group">
-                  <span class="input-group-text cyber-input-icon"><i class="bi bi-person-fill"></i></span>
-                  <input type="text" class="form-control cyber-input" id="registerName" placeholder="Nome completo" required>
-                </div>
-              </div>
-              
-              <div class="mb-3">
-                <div class="input-group">
-                  <span class="input-group-text cyber-input-icon"><i class="bi bi-envelope-fill"></i></span>
-                  <input type="email" class="form-control cyber-input" id="registerEmail" placeholder="Email" required>
-                </div>
-              </div>
-              
-              <div class="mb-3">
-                <div class="input-group">
-                  <span class="input-group-text cyber-input-icon"><i class="bi bi-lock-fill"></i></span>
-                  <input type="password" class="form-control cyber-input" id="registerPassword" placeholder="Senha" required>
-                </div>
-              </div>
-              
-              <div class="mb-4">
-                <div class="input-group">
-                  <span class="input-group-text cyber-input-icon"><i class="bi bi-lock-fill"></i></span>
-                  <input type="password" class="form-control cyber-input" id="confirmPassword" placeholder="Confirmar senha" required>
-                </div>
-              </div>
-              
-              <div class="d-grid gap-2">
-                <button type="submit" class="btn cyber-btn cyber-btn-primary">Cadastrar</button>
-                <button type="button" class="btn cyber-btn cyber-btn-outline" id="backToLogin2">Já tenho uma conta</button>
-              </div>
-            </form>
           </div>
         </div>
       </div>
     </div>
   </div>
-  
-  <!-- Notification Toast -->
+
+  <!-- Notificação Toast -->
   <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-    <div id="notificationToast" class="toast cyber-toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div id="toast" class="toast cyber-toast" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="toast-header">
         <strong class="me-auto" id="toastTitle">Notificação</strong>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -147,9 +182,13 @@
     </div>
   </div>
 
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+  <script src="/static/js/firebase-config.js"></script>
   <script src="/static/js/login.js"></script>
 </body>
 </html>
