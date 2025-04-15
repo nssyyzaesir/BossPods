@@ -62,34 +62,58 @@ async function verificarAutenticacao() {
   try {
     console.log('Iniciando verificação de autenticação para o painel de administração...');
     
-    // Verificar autenticação usando localStorage
-    const userString = localStorage.getItem('currentUser');
-    const authToken = localStorage.getItem('authToken');
+    // Constante com o email de administrador autorizado
+    const ADMIN_EMAIL = 'nsyzaesir@gmail.com';
     
-    if (!userString || !authToken) {
-      console.log('Usuário não autenticado, redirecionando para página de login');
+    // Verificar se o Firebase está disponível
+    if (typeof firebase === 'undefined' || !firebase.auth) {
+      console.error('Firebase Auth não está disponível');
+      showToast('Erro', 'Sistema de autenticação não inicializado. Recarregue a página.', 'error');
       window.location.href = '/login';
       return false;
     }
     
-    const userData = JSON.parse(userString);
+    // Obter usuário atual diretamente do Firebase Auth
+    const firebaseUser = firebase.auth().currentUser;
+    console.log('Verificando usuário atual do Firebase:', firebaseUser);
     
-    // Verificar se é administrador
-    if (userData.role !== 'admin') {
-      console.log('Usuário não tem permissão de administrador, redirecionando para página de login');
-      window.location.href = '/login';
+    if (!firebaseUser) {
+      console.log('Usuário não autenticado, redirecionando para página de login');
+      showToast('Acesso Negado', 'Você precisa fazer login para acessar esta área', 'error');
+      
+      // Pequeno atraso para mostrar o toast
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1000);
+      
+      return false;
+    }
+    
+    // Verificar se o email é o do administrador
+    if (firebaseUser.email !== ADMIN_EMAIL) {
+      console.log('Usuário não é o administrador autorizado:', firebaseUser.email);
+      showToast('Acesso Negado', 'Você não tem permissão para acessar esta área.', 'error');
+      
+      // Pequeno atraso para mostrar o toast
+      setTimeout(() => {
+        window.location.href = '/loja';
+      }, 1000);
+      
       return false;
     }
     
     // Se chegou aqui, o usuário está autenticado e é admin
     console.log('Autenticação bem-sucedida para o painel de administração');
-    console.log('Dados do usuário:', userData);
+    console.log('Dados do usuário:', firebaseUser.email);
     
     // Atualizar nome do usuário no menu
     const userDisplayElement = document.getElementById('userDisplayName');
     if (userDisplayElement) {
-      userDisplayElement.textContent = userData.displayName || userData.email;
+      userDisplayElement.textContent = firebaseUser.displayName || firebaseUser.email;
     }
+    
+    // Mostrar toast de boas-vindas
+    showToast('Bem-vindo', 'Acesso admin confirmado. Painel de controle carregado.', 'success');
     
     return true;
   } catch (error) {
@@ -133,19 +157,32 @@ function setupNavigation() {
 // Configurar manipuladores de eventos
 function setupEventHandlers() {
   // Botão de logout
-  document.getElementById('logoutBtn').addEventListener('click', (e) => {
+  document.getElementById('logoutBtn').addEventListener('click', async (e) => {
     e.preventDefault();
     
     try {
-      // Limpar localStorage
+      // Verificar se Firebase Auth está disponível
+      if (typeof firebase === 'undefined' || !firebase.auth) {
+        console.error('Firebase Auth não está disponível');
+        throw new Error('Sistema de autenticação não disponível');
+      }
+      
+      // Fazer logout no Firebase
+      await firebase.auth().signOut();
+      
+      // Também limpar localStorage por segurança
       localStorage.removeItem('currentUser');
       localStorage.removeItem('authToken');
-      localStorage.removeItem('authTimestamp');
+      localStorage.removeItem('lastLoginTime');
       
       console.log('Logout realizado com sucesso');
+      showToast('Logout', 'Você foi desconectado com sucesso', 'info');
       
-      // Redirecionar para login
-      window.location.href = '/login';
+      // Pequeno atraso para mostrar o toast
+      setTimeout(() => {
+        // Redirecionar para login
+        window.location.href = '/login';
+      }, 1000);
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
       showToast('Erro', 'Falha ao fazer logout. Tente novamente.', 'error');

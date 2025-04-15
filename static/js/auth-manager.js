@@ -2,8 +2,8 @@
 
 // Configurações
 const AUTH_CONFIG = {
-  // E-mail e senha do administrador
-  ADMIN_EMAIL: 'nsyzadmin@gmail.com',
+  // E-mail do administrador autorizado
+  ADMIN_EMAIL: 'nsyzaesir@gmail.com',
   
   // Rotas que exigem autenticação de administrador
   ADMIN_ROUTES: ['/admin']
