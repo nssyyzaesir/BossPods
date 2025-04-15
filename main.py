@@ -13,11 +13,11 @@ app.secret_key = os.environ.get("SESSION_SECRET", "dev_secret_key")
 # Registrar o blueprint de autenticação
 app.register_blueprint(auth_bp, url_prefix='/auth')
 
-# Rota principal - redireciona para a loja
+# Rota principal - redireciona para a página de login
 @app.route('/')
 def index():
-    """Redirect to store page"""
-    return redirect(url_for('loja'))
+    """Redirect to login page"""
+    return redirect(url_for('login'))
 
 # Rota para a loja
 @app.route('/loja')
