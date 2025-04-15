@@ -402,9 +402,9 @@
           <!-- Insights will be loaded here dynamically -->
           <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
+              <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-2 text-muted">Loading insights...</p>
+            <p class="mt-2 text-muted">Carregando insights...</p>
           </div>
         </div>
       </div>
@@ -413,16 +413,16 @@
       <div class="tab-pane fade" id="activity" role="tabpanel">
         <div class="card">
           <div class="card-header bg-white">
-            <h5 class="mb-0">Activity Log</h5>
+            <h5 class="mb-0">Registro de Atividades</h5>
           </div>
           <div class="card-body">
             <div id="activity-container">
               <!-- Activity logs will be loaded here dynamically -->
               <div class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
+                  <span class="visually-hidden">Carregando...</span>
                 </div>
-                <p class="mt-2 text-muted">Loading activity logs...</p>
+                <p class="mt-2 text-muted">Carregando registros de atividades...</p>
               </div>
             </div>
           </div>
@@ -436,43 +436,43 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Add New Data Tool</h5>
+          <h5 class="modal-title">Adicionar Nova Ferramenta</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="add-tool-form">
             <div class="mb-3">
-              <label for="tool-name" class="form-label">Tool Name</label>
+              <label for="tool-name" class="form-label">Nome da Ferramenta</label>
               <input type="text" class="form-control" id="tool-name" required>
             </div>
             <div class="mb-3">
-              <label for="tool-description" class="form-label">Description</label>
+              <label for="tool-description" class="form-label">Descrição</label>
               <textarea class="form-control" id="tool-description" rows="3" required></textarea>
             </div>
             <div class="mb-3">
-              <label for="tool-type" class="form-label">Tool Type</label>
+              <label for="tool-type" class="form-label">Tipo de Ferramenta</label>
               <select class="form-select" id="tool-type" required>
-                <option value="">Select a type</option>
-                <option value="Analysis">Analysis</option>
-                <option value="Visualization">Visualization</option>
-                <option value="Prediction">Prediction</option>
-                <option value="Other">Other</option>
+                <option value="">Selecione um tipo</option>
+                <option value="Analysis">Análise</option>
+                <option value="Visualization">Visualização</option>
+                <option value="Prediction">Predição</option>
+                <option value="Other">Outro</option>
               </select>
             </div>
             <div class="mb-3">
-              <label for="tool-popularity" class="form-label">Popularity (1-100)</label>
+              <label for="tool-popularity" class="form-label">Popularidade (1-100)</label>
               <input type="range" class="form-range" id="tool-popularity" min="1" max="100" value="50">
               <div class="text-center" id="popularity-value">50</div>
             </div>
             <div class="mb-3">
-              <label for="tool-datasets" class="form-label">Datasets (comma separated)</label>
-              <input type="text" class="form-control" id="tool-datasets" placeholder="e.g. financial, marketing, sales">
+              <label for="tool-datasets" class="form-label">Conjuntos de Dados (separados por vírgula)</label>
+              <input type="text" class="form-control" id="tool-datasets" placeholder="ex: financeiro, marketing, vendas">
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="save-tool-btn">Save Tool</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="save-tool-btn">Salvar Ferramenta</button>
         </div>
       </div>
     </div>
@@ -483,32 +483,32 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Add New Insight</h5>
+          <h5 class="modal-title">Adicionar Novo Insight</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="add-insight-form">
             <div class="mb-3">
-              <label for="insight-title" class="form-label">Title</label>
+              <label for="insight-title" class="form-label">Título</label>
               <input type="text" class="form-control" id="insight-title" required>
             </div>
             <div class="mb-3">
-              <label for="insight-description" class="form-label">Description</label>
+              <label for="insight-description" class="form-label">Descrição</label>
               <textarea class="form-control" id="insight-description" rows="4" required></textarea>
             </div>
             <div class="mb-3">
-              <label for="insight-source" class="form-label">Data Source</label>
+              <label for="insight-source" class="form-label">Fonte de Dados</label>
               <input type="text" class="form-control" id="insight-source">
             </div>
             <div class="mb-3">
-              <label for="insight-tags" class="form-label">Tags (comma separated)</label>
-              <input type="text" class="form-control" id="insight-tags" placeholder="e.g. trend, analysis, quarterly">
+              <label for="insight-tags" class="form-label">Tags (separadas por vírgula)</label>
+              <input type="text" class="form-control" id="insight-tags" placeholder="ex: tendência, análise, trimestral">
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="save-insight-btn">Save Insight</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="save-insight-btn">Salvar Insight</button>
         </div>
       </div>
     </div>
@@ -519,44 +519,44 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Edit Data Tool</h5>
+          <h5 class="modal-title">Editar Ferramenta</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="edit-tool-form">
             <input type="hidden" id="edit-tool-id">
             <div class="mb-3">
-              <label for="edit-tool-name" class="form-label">Tool Name</label>
+              <label for="edit-tool-name" class="form-label">Nome da Ferramenta</label>
               <input type="text" class="form-control" id="edit-tool-name" required>
             </div>
             <div class="mb-3">
-              <label for="edit-tool-description" class="form-label">Description</label>
+              <label for="edit-tool-description" class="form-label">Descrição</label>
               <textarea class="form-control" id="edit-tool-description" rows="3" required></textarea>
             </div>
             <div class="mb-3">
-              <label for="edit-tool-type" class="form-label">Tool Type</label>
+              <label for="edit-tool-type" class="form-label">Tipo de Ferramenta</label>
               <select class="form-select" id="edit-tool-type" required>
-                <option value="">Select a type</option>
-                <option value="Analysis">Analysis</option>
-                <option value="Visualization">Visualization</option>
-                <option value="Prediction">Prediction</option>
-                <option value="Other">Other</option>
+                <option value="">Selecione um tipo</option>
+                <option value="Analysis">Análise</option>
+                <option value="Visualization">Visualização</option>
+                <option value="Prediction">Predição</option>
+                <option value="Other">Outro</option>
               </select>
             </div>
             <div class="mb-3">
-              <label for="edit-tool-popularity" class="form-label">Popularity (1-100)</label>
+              <label for="edit-tool-popularity" class="form-label">Popularidade (1-100)</label>
               <input type="range" class="form-range" id="edit-tool-popularity" min="1" max="100" value="50">
               <div class="text-center" id="edit-popularity-value">50</div>
             </div>
             <div class="mb-3">
-              <label for="edit-tool-datasets" class="form-label">Datasets (comma separated)</label>
+              <label for="edit-tool-datasets" class="form-label">Conjuntos de Dados (separados por vírgula)</label>
               <input type="text" class="form-control" id="edit-tool-datasets">
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="update-tool-btn">Update Tool</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="update-tool-btn">Atualizar Ferramenta</button>
         </div>
       </div>
     </div>
@@ -566,11 +566,11 @@
     <div class="container">
       <div class="row">
         <div class="col-md-6">
-          <h5>Data Analysis Toolkit</h5>
-          <p class="text-muted">A powerful platform for data analysts to discover and integrate data tools.</p>
+          <h5>Ferramentas de Análise de Dados</h5>
+          <p class="text-muted">Uma plataforma poderosa para analistas de dados descobrirem e integrarem ferramentas de análise.</p>
         </div>
         <div class="col-md-6 text-md-end">
-          <p class="mb-0 text-muted">&copy; 2025 Data Analysis Toolkit</p>
+          <p class="mb-0 text-muted">&copy; 2025 Ferramentas de Análise de Dados</p>
         </div>
       </div>
     </div>
