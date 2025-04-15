@@ -1,18 +1,18 @@
 // Configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCl_NEvqOLaHjbhx3pDfnZrhBR4iqav9h8",
-  authDomain: "bosspods-store.firebaseapp.com",
-  projectId: "bosspods-store",
-  storageBucket: "bosspods-store.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abc123def456ghi789jkl"
+  authDomain: "bosspods.firebaseapp.com",
+  projectId: "bosspods",
+  storageBucket: "bosspods.firebasestorage.app",
+  messagingSenderId: "319819159324",
+  appId: "1:319819159324:web:953f64130fe51842600cd9"
 };
 
 // Variáveis de estado do Firebase
 let firebaseInitialized = false;
 let firestoreDB = null;
 let firebaseAuth = null;
-let localDevMode = true; // Ativando modo de desenvolvimento local devido a problemas de configuração do Firebase
+let localDevMode = false; // Usando Firebase real com as credenciais fornecidas
 let currentUser = null;
 let authInitialized = false;
 let dbInitialized = false;
@@ -58,8 +58,8 @@ try {
   // Marcar como inicializado
   firebaseInitialized = true;
   dbInitialized = true;
-  // Manter modo de desenvolvimento local devido a problemas de configuração do Firebase
-  // localDevMode = false;
+  // Usar Firebase real com as credenciais fornecidas
+  localDevMode = false;
   
   console.log("Firebase completamente inicializado com sucesso");
 } catch (error) {
