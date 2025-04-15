@@ -8,6 +8,11 @@ let loginBtn = document.getElementById('loginBtn');
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Página de login carregada, verificando autenticação...');
   
+  // Limpar qualquer sessão existente no localStorage
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('lastLoginTime');
+  console.log('Sessão existente removida para garantir novo login');
+  
   // Verificar se já está logado
   firebaseAuthAPI.getCurrentUser().then(user => {
     console.log('Verificação inicial de usuário:', user);

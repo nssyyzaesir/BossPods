@@ -31,6 +31,26 @@ document.addEventListener('DOMContentLoaded', () => {
 async function verificarAutenticacao() {
   try {
     console.log('Iniciando verificação de autenticação...');
+    
+    // Verificar se o token de sessão ainda é válido (expiração)
+    const lastLogin = localStorage.getItem('lastLoginTime');
+    if (!lastLogin) {
+      console.log('Nenhum timestamp de login encontrado, redirecionando para login');
+      window.location.href = '/login';
+      return;
+    }
+    
+    // Verificar se o login expirou (1 hora = 3600000 ms)
+    const loginTime = parseInt(lastLogin, 10);
+    const currentTime = new Date().getTime();
+    if (currentTime - loginTime > 3600000) {
+      console.log('Sessão expirada, redirecionando para login');
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('lastLoginTime');
+      window.location.href = '/login';
+      return;
+    }
+    
     const user = await firebaseAuthAPI.getCurrentUser();
     console.log('Resultado getCurrentUser:', user);
     

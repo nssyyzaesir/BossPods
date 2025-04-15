@@ -502,13 +502,36 @@ const fakeAuth = {
     }
   ],
   
-  // Inicializar currentUser com dados do localStorage, se disponível
+  // Inicializar currentUser com dados do localStorage, se disponível e se o token não estiver expirado
   currentUser: (() => {
     try {
       const savedUser = localStorage.getItem('currentUser');
-      return savedUser ? JSON.parse(savedUser) : null;
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        // Verificar se o token expirou (considerando validade de 1 hora = 3600000 ms)
+        const lastLogin = localStorage.getItem('lastLoginTime');
+        if (lastLogin) {
+          const loginTime = parseInt(lastLogin, 10);
+          const currentTime = new Date().getTime();
+          // Se passou mais de 1 hora, invalidar a sessão
+          if (currentTime - loginTime > 3600000) {
+            console.log('Sessão expirada, removendo dados de autenticação');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('lastLoginTime');
+            return null;
+          }
+        } else {
+          // Se não tem timestamp de login, também invalidar
+          localStorage.removeItem('currentUser');
+          return null;
+        }
+        return parsedUser;
+      }
+      return null;
     } catch (e) {
       console.error('Erro ao recuperar usuário do localStorage:', e);
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('lastLoginTime');
       return null;
     }
   })(),
@@ -573,6 +596,10 @@ const fakeAuth = {
     // Salvar no localStorage
     this._saveCurrentUser();
     
+    // Registrar o timestamp de login
+    localStorage.setItem('lastLoginTime', new Date().getTime().toString());
+    console.log('Timestamp de login registrado:', new Date().getTime());
+    
     return this.currentUser;
   },
   
@@ -594,6 +621,10 @@ const fakeAuth = {
     
     // Remover do localStorage
     this._saveCurrentUser();
+    
+    // Remover timestamp de login
+    localStorage.removeItem('lastLoginTime');
+    console.log('Timestamp de login removido');
     
     return true;
   }
