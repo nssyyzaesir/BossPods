@@ -15,29 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Inicialmente mostrar mensagem de carregamento
   showErrorMessage('Conectando ao serviço de autenticação...', 'info');
   
-  // Forçar logout de qualquer usuário existente
-  function forceLogout() {
-    // Limpar qualquer sessão existente no localStorage
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('lastLoginTime');
-    console.log('Sessão existente removida para garantir novo login');
-    
-    // Se o Firebase estiver inicializado, também fazer logout na API
-    if (typeof firebaseInitialized !== 'undefined' && firebaseInitialized) {
-      firebaseAuthAPI.logout()
-        .then(() => {
-          console.log('Usuário deslogado com sucesso');
-          showErrorMessage('Sessão encerrada. Digite suas credenciais para acessar o painel.', 'info');
-        })
-        .catch(error => {
-          console.error('Erro ao fazer logout:', error);
-        });
-    }
-  }
-  
-  // Executar logout forçado
-  forceLogout();
-  
   // Verificar se o Firebase foi inicializado
   const firebaseCheckInterval = setInterval(() => {
     if (typeof firebaseInitialized !== 'undefined' && firebaseInitialized) {
@@ -45,31 +22,22 @@ document.addEventListener('DOMContentLoaded', () => {
       clearInterval(firebaseCheckInterval);
       console.log('Firebase inicializado, verificando autenticação...');
       
-      // Verificar se há usuário autenticado e forçar logout
+      // Verificar se há usuário autenticado
       firebaseAuthAPI.getCurrentUser()
         .then(user => {
           console.log('Verificação inicial de usuário:', user);
           
-          if (user) {
-            console.log('Usuário autenticado encontrado:', user.email);
-            console.log('Realizando logout para garantir nova autenticação...');
-            
-            // Forçar logout mesmo que já esteja autenticado
-            firebaseAuthAPI.logout()
-              .then(() => {
-                console.log('Logout realizado com sucesso');
-                showErrorMessage('Digite suas credenciais para acessar o painel de administrador.', 'info');
-              })
-              .catch(error => {
-                console.error('Erro ao realizar logout forçado:', error);
-                showLoginError('Erro ao verificar sessão. Tente novamente.');
-              });
-          } else {
-            console.log('Nenhum usuário autenticado, aguardando login');
-            
-            // Mostrar mensagem pronto para login
-            showErrorMessage('Pronto para login. Digite suas credenciais de administrador.', 'info');
+          if (user && user.email === AUTHORIZED_EMAIL) {
+            console.log('Usuário administrador já autenticado:', user.email);
+            // Se já estiver logado com o admin, perguntar se deseja ir para o painel
+            if (confirm('Você já está autenticado como administrador. Deseja ir para o painel de administração?')) {
+              window.location.href = '/admin';
+              return;
+            }
           }
+          
+          // Mostrar mensagem pronto para login
+          showErrorMessage('Pronto para login. Digite suas credenciais de administrador.', 'info');
         })
         .catch(error => {
           console.error('Erro ao verificar autenticação inicial:', error);

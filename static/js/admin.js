@@ -60,66 +60,28 @@ document.addEventListener('DOMContentLoaded', () => {
 // Verificar se o usuário está autenticado
 async function verificarAutenticacao() {
   try {
-    console.log('Iniciando verificação de autenticação...');
+    console.log('Iniciando verificação de autenticação para o painel de administração...');
     
-    // E-mail autorizado (único com permissão de acesso)
-    const AUTHORIZED_EMAIL = 'nsyz@gmail.com';
+    // Usar o novo sistema de autenticação
+    const isAuthenticated = await checkAuthentication();
     
-    // Verificar se o token de sessão ainda é válido (expiração)
-    const lastLogin = localStorage.getItem('lastLoginTime');
-    if (!lastLogin) {
-      console.log('Nenhum timestamp de login encontrado, redirecionando para login');
-      window.location.href = '/login';
-      return;
+    if (!isAuthenticated) {
+      console.log('Falha na autenticação, o usuário será redirecionado');
+      return; // O redirecionamento será tratado pelo auth-manager.js
     }
     
-    // Verificar se o login expirou (1 hora = 3600000 ms)
-    const loginTime = parseInt(lastLogin, 10);
-    const currentTime = new Date().getTime();
-    if (currentTime - loginTime > 3600000) {
-      console.log('Sessão expirada, redirecionando para login');
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('lastLoginTime');
-      window.location.href = '/login';
-      return;
-    }
+    // Se chegou aqui, o usuário está autenticado e é admin
+    console.log('Autenticação bem-sucedida para o painel de administração');
     
+    // Obter usuário atual para atualizar nome no menu
     const user = await firebaseAuthAPI.getCurrentUser();
-    console.log('Resultado getCurrentUser:', user);
-    
-    if (!user) {
-      // Usuário não está autenticado, redirecionar para login
-      console.log('Usuário não autenticado, redirecionando para login');
-      window.location.href = '/login';
-      return;
+    if (user) {
+      // Atualizar nome do usuário no menu
+      const userDisplayElement = document.getElementById('userDisplayName');
+      if (userDisplayElement) {
+        userDisplayElement.textContent = user.displayName || user.email;
+      }
     }
-    
-    // Verificar se é o e-mail autorizado
-    if (user.email !== AUTHORIZED_EMAIL) {
-      console.log('Tentativa de acesso não autorizada:', user.email);
-      alert('Acesso negado. Apenas o administrador autorizado pode acessar o painel.');
-      // Fazer logout
-      await firebaseAuthAPI.logout();
-      window.location.href = '/login';
-      return;
-    }
-    
-    // Verificar se o usuário é admin (verificação secundária)
-    console.log('Verificando se usuário é admin...');
-    const isAdmin = await firebaseAuthAPI.isAdmin(user);
-    console.log('Resultado isAdmin:', isAdmin);
-    
-    if (!isAdmin) {
-      // Usuário não é admin, mostrar mensagem e redirecionar
-      console.log('Usuário não é admin, redirecionando');
-      alert('Você não tem permissão para acessar esta página');
-      window.location.href = '/';
-      return;
-    }
-    
-    console.log('Autenticação bem-sucedida, usuário é autorizado e admin');
-    // Atualizar nome do usuário no menu
-    document.getElementById('userDisplayName').textContent = user.displayName || user.email;
     
   } catch (error) {
     console.error('Erro ao verificar autenticação:', error);
