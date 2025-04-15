@@ -14,17 +14,47 @@ let confirmCallback = null;
 
 // Inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-  // Verificar autenticação
-  verificarAutenticacao();
+  console.log("Página admin carregada, aguardando inicialização do Firebase...");
   
-  // Configurar navegação entre abas
-  setupNavigation();
+  // Verificar se o container de erros existe e mostrar mensagem de inicialização
+  const errorMessages = document.getElementById('errorMessages');
+  if (errorMessages) {
+    errorMessages.innerHTML = `
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        Inicializando o sistema. Por favor, aguarde...
+      </div>
+    `;
+  }
   
-  // Configurar manipuladores de eventos
-  setupEventHandlers();
-  
-  // Carregar dados iniciais
-  carregarDados();
+  // Verificar se o Firebase foi inicializado antes de prosseguir
+  const firebaseCheckInterval = setInterval(() => {
+    if (typeof firebaseInitialized !== 'undefined' && firebaseInitialized) {
+      // Firebase inicializado, podemos continuar
+      clearInterval(firebaseCheckInterval);
+      console.log('Firebase inicializado, prosseguindo com a inicialização da página admin...');
+      
+      // Verificar autenticação
+      verificarAutenticacao();
+      
+      // Configurar navegação entre abas
+      setupNavigation();
+      
+      // Configurar manipuladores de eventos
+      setupEventHandlers();
+      
+      // Carregar dados iniciais
+      carregarDados();
+      
+      // Limpar mensagem de inicialização
+      if (errorMessages) {
+        errorMessages.innerHTML = '';
+      }
+    } else {
+      // Firebase ainda não inicializado, aguardar
+      console.log("Aguardando inicialização do Firebase...");
+    }
+  }, 500);
 });
 
 // Verificar se o usuário está autenticado
