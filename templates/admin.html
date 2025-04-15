@@ -3,412 +3,424 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel Admin | BOSSPODS</title>
+  <title>BOSSPODS | Painel Admin</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+  
+  <!-- Chart.js para os gráficos -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="cyber-bg">
-  <div class="container py-4">
-    <!-- Header -->
-    <header class="mb-4 text-center">
-      <div class="glow-container mb-3">
-        <h1 class="neon-text mb-0">BOSSPODS - Admin</h1>
-      </div>
-      <p class="cyber-text">Painel de Administração</p>
-    </header>
 
-    <!-- Control Panel -->
-    <div class="control-panel mb-4">
-      <div class="row">
-        <div class="col-md-6 mb-3 mb-md-0">
-          <div class="d-flex">
-            <div class="search-wrapper">
-              <i class="bi bi-search search-icon"></i>
-              <input type="text" id="searchInput" class="form-control cyber-input" placeholder="Buscar produto...">
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="d-flex justify-content-md-end">
-            <div class="dropdown me-2">
-              <button id="btnImportExport" class="btn cyber-btn cyber-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-arrow-down-up"></i> Importar/Exportar
-              </button>
-              <ul class="dropdown-menu cyber-dropdown">
-                <li><a class="dropdown-item" href="#" id="btnExportJSON"><i class="bi bi-download"></i> Exportar (JSON)</a></li>
-                <li><a class="dropdown-item" href="#" id="btnExportCSV"><i class="bi bi-file-spreadsheet"></i> Exportar (CSV)</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" id="btnImport"><i class="bi bi-upload"></i> Importar</a></li>
-              </ul>
-            </div>
-            <button id="btnAddProduct" class="btn cyber-btn cyber-btn-primary me-2">
-              <i class="bi bi-plus-lg"></i> Novo Produto
+  <!-- Barra de navegação -->
+  <nav class="navbar navbar-expand-lg cyber-navbar">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">
+        <span class="neon-text">BOSS<span class="text-purple">PODS</span></span> 
+        <small class="nav-subtitle">Admin</small>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" data-page="dashboard">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-page="products">
+              <i class="bi bi-box-seam"></i> Produtos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-page="logs">
+              <i class="bi bi-journal-text"></i> Logs
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/" target="_blank">
+              <i class="bi bi-shop"></i> Ver Loja
+            </a>
+          </li>
+        </ul>
+        <div class="d-flex">
+          <div class="dropdown">
+            <button class="btn cyber-btn cyber-btn-sm dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle"></i> <span id="userDisplayName">Admin</span>
             </button>
-            <button id="btnViewLogs" class="btn cyber-btn cyber-btn-info me-2">
-              <i class="bi bi-journal-text"></i> Ver Logs
-            </button>
-            <button id="btnInsights" class="btn cyber-btn cyber-btn-secondary me-2">
-              <i class="bi bi-graph-up"></i> Insights
-            </button>
-            <button id="btnDeleteAll" class="btn cyber-btn cyber-btn-danger">
-              <i class="bi bi-trash"></i> Apagar Tudo
-            </button>
+            <ul class="dropdown-menu cyber-dropdown" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Configurações</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> Sair</a></li>
+            </ul>
           </div>
         </div>
       </div>
     </div>
+  </nav>
 
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-      <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
-        <div class="cyber-card stats-card">
-          <div class="cyber-card-body text-center">
-            <i class="bi bi-box-seam stats-icon"></i>
-            <h3 class="stats-number" id="totalProducts">0</h3>
-            <p class="stats-label">Total de Produtos</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
-        <div class="cyber-card stats-card">
-          <div class="cyber-card-body text-center">
-            <i class="bi bi-currency-dollar stats-icon"></i>
-            <h3 class="stats-number" id="totalValue">R$ 0,00</h3>
-            <p class="stats-label">Valor Total</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-3 mb-sm-0">
-        <div class="cyber-card stats-card">
-          <div class="cyber-card-body text-center">
-            <i class="bi bi-x-circle stats-icon"></i>
-            <h3 class="stats-number" id="zeroStockCount">0</h3>
-            <p class="stats-label">Estoque Zerado</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6">
-        <div class="cyber-card stats-card">
-          <div class="cyber-card-body text-center">
-            <i class="bi bi-exclamation-triangle stats-icon"></i>
-            <h3 class="stats-number" id="lowStockCount">0</h3>
-            <p class="stats-label">Baixo Estoque</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filters Panel (collapsed by default) -->
-    <div class="cyber-card mb-4">
-      <div class="cyber-card-header d-flex justify-content-between align-items-center">
-        <button class="btn cyber-btn-sm cyber-btn-outline w-100 text-start d-flex justify-content-between align-items-center" 
-                type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse" 
-                aria-expanded="false" aria-controls="filtersCollapse">
-          <span><i class="bi bi-funnel me-2"></i> Filtros Avançados</span>
-          <i class="bi bi-chevron-down"></i>
-        </button>
-      </div>
-      <div class="collapse" id="filtersCollapse">
-        <div class="cyber-card-body">
-          <form id="filtersForm">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Categoria</label>
-                <select class="form-select cyber-input" id="filterCategory">
-                  <option value="">Todas as Categorias</option>
-                  <option value="pod">Pod</option>
-                  <option value="mod">Mod</option>
-                  <option value="acessorio">Acessório</option>
-                  <option value="liquido">Líquido</option>
-                  <option value="outro">Outro</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Tags</label>
-                <select class="form-select cyber-input" id="filterTag">
-                  <option value="">Todas as Tags</option>
-                  <!-- Tags will be populated dynamically -->
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Faixa de Preço</label>
-                <div class="d-flex">
-                  <input type="number" class="form-control cyber-input me-2" id="filterPriceMin" placeholder="Mín" min="0" step="0.01">
-                  <input type="number" class="form-control cyber-input" id="filterPriceMax" placeholder="Máx" min="0" step="0.01">
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Status do Estoque</label>
-                <div class="d-flex flex-wrap mt-2">
-                  <div class="form-check me-3">
-                    <input class="form-check-input cyber-checkbox" type="checkbox" id="filterLowStock">
-                    <label class="form-check-label" for="filterLowStock">Baixo Estoque</label>
-                  </div>
-                  <div class="form-check me-3">
-                    <input class="form-check-input cyber-checkbox" type="checkbox" id="filterZeroStock">
-                    <label class="form-check-label" for="filterZeroStock">Estoque Zerado</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input cyber-checkbox" type="checkbox" id="filterPromotion">
-                    <label class="form-check-label" for="filterPromotion">Em Promoção</label>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 text-end">
-                <button type="button" class="btn cyber-btn cyber-btn-secondary me-2" id="clearFilters">
-                  <i class="bi bi-x-circle"></i> Limpar Filtros
-                </button>
-                <button type="button" class="btn cyber-btn cyber-btn-primary" id="applyFilters">
-                  <i class="bi bi-funnel"></i> Aplicar Filtros
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Content Tabs -->
-    <ul class="nav nav-tabs cyber-tabs mb-3" id="mainTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-tab-pane" 
-                type="button" role="tab" aria-controls="products-tab-pane" aria-selected="true">
-          <i class="bi bi-grid"></i> Produtos
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="insights-tab" data-bs-toggle="tab" data-bs-target="#insights-tab-pane" 
-                type="button" role="tab" aria-controls="insights-tab-pane" aria-selected="false">
-          <i class="bi bi-graph-up"></i> Insights & Métricas
-        </button>
-      </li>
-    </ul>
-
-    <div class="tab-content" id="mainTabsContent">
-      <!-- Products Tab -->
-      <div class="tab-pane fade show active" id="products-tab-pane" role="tabpanel" aria-labelledby="products-tab" tabindex="0">
-        <div class="cyber-card main-card">
-          <div class="cyber-card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Lista de Produtos</h5>
-            <div class="d-flex">
-              <div class="me-2">
-                <div id="autoSaveIndicator" class="cyber-badge">
-                  <i class="bi bi-check-circle-fill"></i> Auto-save Ativo
-                </div>
-              </div>
-              <button id="sortByName" class="btn cyber-btn-sm cyber-btn-outline me-2">
-                <i class="bi bi-sort-alpha-down"></i> Nome
-              </button>
-              <button id="sortByStock" class="btn cyber-btn-sm cyber-btn-outline me-2">
-                <i class="bi bi-sort-numeric-down"></i> Estoque
-              </button>
-              <button id="sortByPrice" class="btn cyber-btn-sm cyber-btn-outline">
-                <i class="bi bi-sort-numeric-down"></i> Preço
+  <!-- Conteúdo principal -->
+  <div class="container-fluid mt-4">
+    
+    <!-- Dashboard -->
+    <div class="page-content active" id="dashboard-page">
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <div class="cyber-card">
+            <div class="cyber-card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0"><i class="bi bi-graph-up"></i> Visão Geral</h5>
+              <button class="btn cyber-btn cyber-btn-sm" id="refreshDashboard">
+                <i class="bi bi-arrow-clockwise"></i> Atualizar
               </button>
             </div>
-          </div>
-          <div class="cyber-card-body">
-            <div id="productsContainer" class="row g-3">
-              <!-- Products will be loaded here dynamically -->
-              <div class="col-12 text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Carregando...</span>
+            <div class="cyber-card-body">
+              <div class="row">
+                <div class="col-md-3 mb-3">
+                  <div class="stats-card">
+                    <div class="stats-icon">
+                      <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div class="stats-info">
+                      <h3 id="totalProdutos">0</h3>
+                      <p>Produtos</p>
+                    </div>
+                  </div>
                 </div>
-                <p class="mt-2 text-muted">Carregando produtos...</p>
+                <div class="col-md-3 mb-3">
+                  <div class="stats-card">
+                    <div class="stats-icon">
+                      <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <div class="stats-info">
+                      <h3 id="valorTotal">R$ 0.00</h3>
+                      <p>Valor Total</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <div class="stats-card">
+                    <div class="stats-icon warning">
+                      <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="stats-info">
+                      <h3 id="estoqueBaixo">0</h3>
+                      <p>Estoque Baixo</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <div class="stats-card">
+                    <div class="stats-icon danger">
+                      <i class="bi bi-x-circle"></i>
+                    </div>
+                    <div class="stats-info">
+                      <h3 id="estoqueZerado">0</h3>
+                      <p>Sem Estoque</p>
+                    </div>
+                  </div>
+                </div>
               </div>
+              <hr class="cyber-hr">
+              <div class="row">
+                <div class="col-md-6">
+                  <h6 class="cyber-subtitle"><i class="bi bi-pie-chart"></i> Distribuição por Categoria</h6>
+                  <div class="chart-container">
+                    <canvas id="categoriasChart"></canvas>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="cyber-subtitle"><i class="bi bi-bar-chart-line"></i> Estoque por Produto</h6>
+                  <div class="chart-container">
+                    <canvas id="estoqueChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="cyber-card mb-4">
+            <div class="cyber-card-header">
+              <h5 class="mb-0"><i class="bi bi-exclamation-circle"></i> Alertas</h5>
+            </div>
+            <div class="cyber-card-body p-0">
+              <div class="list-group list-group-flush" id="alertasList">
+                <!-- Os alertas serão inseridos aqui via JavaScript -->
+                <div class="list-group-item cyber-list-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-danger">Crítico</span>
+                    <span>Nenhum produto cadastrado</span>
+                  </div>
+                  <small>Agora</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cyber-card">
+            <div class="cyber-card-header">
+              <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Resumo de Estoque</h5>
+            </div>
+            <div class="cyber-card-body p-0">
+              <table class="table cyber-table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th class="text-center">Estoque</th>
+                    <th class="text-end">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="resumoEstoque">
+                  <!-- Resumo de estoque será inserido aqui via JavaScript -->
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
       
-      <!-- Insights Tab -->
-      <div class="tab-pane fade" id="insights-tab-pane" role="tabpanel" aria-labelledby="insights-tab" tabindex="0">
-        <div class="row">
-          <!-- Donut Chart - Categorias -->
-          <div class="col-lg-6 mb-4">
-            <div class="cyber-card h-100">
-              <div class="cyber-card-header">
-                <h5 class="mb-0">Distribuição por Categoria</h5>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="cyber-card">
+            <div class="cyber-card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0"><i class="bi bi-activity"></i> Atividade Recente</h5>
+              <a href="#" class="cyber-link" data-page="logs">Ver todos</a>
+            </div>
+            <div class="cyber-card-body p-0">
+              <table class="table cyber-table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th width="180">Data</th>
+                    <th width="100">Tipo</th>
+                    <th>Produto</th>
+                    <th>Detalhes</th>
+                  </tr>
+                </thead>
+                <tbody id="atividadeRecente">
+                  <!-- Atividades recentes serão inseridas aqui via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Produtos -->
+    <div class="page-content" id="products-page">
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-box-seam"></i> Gerenciar Produtos</h5>
+          <div>
+            <button class="btn cyber-btn cyber-btn-sm me-2" id="exportarBtn">
+              <i class="bi bi-download"></i> Exportar
+            </button>
+            <button class="btn cyber-btn cyber-btn-sm cyber-btn-secondary me-2" id="importarBtn">
+              <i class="bi bi-upload"></i> Importar
+            </button>
+            <button class="btn cyber-btn cyber-btn-sm cyber-btn-primary" id="novoProdutoBtn">
+              <i class="bi bi-plus-lg"></i> Novo Produto
+            </button>
+          </div>
+        </div>
+        <div class="cyber-card-body">
+          <!-- Filtros -->
+          <div class="row mb-4">
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text cyber-input-icon"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control cyber-input" id="searchProduto" placeholder="Buscar produto...">
               </div>
-              <div class="cyber-card-body">
-                <div class="chart-container">
-                  <canvas id="categoriesChart"></canvas>
-                </div>
-              </div>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select cyber-select" id="filtroCategoria">
+                <option value="">Todas Categorias</option>
+                <!-- Categorias serão inseridas aqui via JavaScript -->
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select cyber-select" id="filtroEstoque">
+                <option value="">Todo Estoque</option>
+                <option value="estoque_baixo">Estoque Baixo</option>
+                <option value="estoque_zerado">Sem Estoque</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select cyber-select" id="filtroTag">
+                <option value="">Todas Tags</option>
+                <!-- Tags serão inseridas aqui via JavaScript -->
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select cyber-select" id="ordenacao">
+                <option value="nome-asc">Nome (A-Z)</option>
+                <option value="nome-desc">Nome (Z-A)</option>
+                <option value="preco-asc">Preço (Menor)</option>
+                <option value="preco-desc">Preço (Maior)</option>
+                <option value="estoque-asc">Estoque (Menor)</option>
+                <option value="estoque-desc">Estoque (Maior)</option>
+              </select>
             </div>
           </div>
           
-          <!-- Bar Chart - Top Produtos por Estoque -->
-          <div class="col-lg-6 mb-4">
-            <div class="cyber-card h-100">
-              <div class="cyber-card-header">
-                <h5 class="mb-0">Top Produtos por Estoque</h5>
-              </div>
-              <div class="cyber-card-body">
-                <div class="chart-container">
-                  <canvas id="topStockChart"></canvas>
-                </div>
-              </div>
-            </div>
+          <!-- Lista de Produtos -->
+          <div class="table-responsive">
+            <table class="table cyber-table mb-0" id="produtosTable">
+              <thead>
+                <tr>
+                  <th width="70">ID</th>
+                  <th width="80">Imagem</th>
+                  <th>Nome</th>
+                  <th>Categoria</th>
+                  <th width="100">Preço</th>
+                  <th width="100">Estoque</th>
+                  <th width="70">Status</th>
+                  <th width="150">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="produtosList">
+                <!-- Produtos serão inseridos aqui via JavaScript -->
+              </tbody>
+            </table>
           </div>
           
-          <!-- Tabela de Produtos com Estoque Zerado -->
-          <div class="col-lg-6 mb-4">
-            <div class="cyber-card h-100">
-              <div class="cyber-card-header">
-                <h5 class="mb-0">Produtos com Estoque Zerado</h5>
-              </div>
-              <div class="cyber-card-body">
-                <div class="table-responsive">
-                  <table class="table table-dark table-hover cyber-table">
-                    <thead>
-                      <tr>
-                        <th>Nome</th>
-                        <th>Categoria</th>
-                        <th>Preço</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody id="zeroStockTable">
-                      <!-- Will be populated dynamically -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+          <!-- Paginação -->
+          <div class="cyber-pagination mt-3" id="produtosPagination">
+            <!-- Paginação será inserida aqui via JavaScript -->
           </div>
-          
-          <!-- Tabela de Produtos com Baixo Estoque -->
-          <div class="col-lg-6 mb-4">
-            <div class="cyber-card h-100">
-              <div class="cyber-card-header">
-                <h5 class="mb-0">Produtos com Baixo Estoque</h5>
-              </div>
-              <div class="cyber-card-body">
-                <div class="table-responsive">
-                  <table class="table table-dark table-hover cyber-table">
-                    <thead>
-                      <tr>
-                        <th>Nome</th>
-                        <th>Categoria</th>
-                        <th>Estoque</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody id="lowStockTable">
-                      <!-- Will be populated dynamically -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Logs -->
+    <div class="page-content" id="logs-page">
+      <div class="cyber-card">
+        <div class="cyber-card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-journal-text"></i> Logs de Atividade</h5>
+          <div>
+            <button class="btn cyber-btn cyber-btn-sm me-2" id="exportarLogsBtn">
+              <i class="bi bi-download"></i> Exportar Logs
+            </button>
+            <select class="form-select cyber-select d-inline-block ms-2" style="width: auto;" id="filtroLog">
+              <option value="">Todos os tipos</option>
+              <option value="criar">Criação</option>
+              <option value="editar">Edição</option>
+              <option value="excluir">Exclusão</option>
+              <option value="importar">Importação</option>
+              <option value="limpar">Limpeza</option>
+            </select>
+          </div>
+        </div>
+        <div class="cyber-card-body p-0">
+          <div class="table-responsive">
+            <table class="table cyber-table mb-0">
+              <thead>
+                <tr>
+                  <th width="180">Data/Hora</th>
+                  <th width="100">Tipo</th>
+                  <th>Produto</th>
+                  <th>Detalhes</th>
+                  <th width="100">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="logsList">
+                <!-- Logs serão inseridos aqui via JavaScript -->
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Add/Edit Product Modal -->
-  <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+  <!-- Modal de Produto -->
+  <div class="modal fade" id="produtoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content cyber-modal">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle">Adicionar Produto</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="produtoModalTitle">Novo Produto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <form id="productForm">
-            <input type="hidden" id="productId">
-            <div class="mb-3">
-              <label for="productName" class="form-label">Nome do Produto</label>
-              <input type="text" class="form-control cyber-input" id="productName" required>
-            </div>
-            <div class="mb-3">
-              <label for="productPrice" class="form-label">Preço (R$)</label>
-              <input type="number" class="form-control cyber-input" id="productPrice" step="0.01" min="0" required>
-            </div>
-            <div class="mb-3">
-              <label for="productStock" class="form-label">Estoque</label>
-              <input type="number" class="form-control cyber-input" id="productStock" min="0" required>
-            </div>
-            <div class="mb-3">
-              <label for="productImage" class="form-label">URL da Imagem</label>
-              <input type="text" class="form-control cyber-input" id="productImage" placeholder="https://exemplo.com/imagem.jpg">
-              <div id="imagePreview" class="mt-2 text-center d-none">
-                <img src="" alt="Preview" class="img-thumbnail cyber-thumbnail">
+          <form id="produtoForm">
+            <input type="hidden" id="produtoId">
+            <div class="row mb-3">
+              <div class="col-md-7">
+                <label for="nome" class="form-label">Nome do Produto <span class="text-danger">*</span></label>
+                <input type="text" class="form-control cyber-input" id="nome" required>
               </div>
-            </div>
-            <div class="mb-3">
-              <label for="productCategory" class="form-label">Categoria</label>
-              <select class="form-select cyber-input" id="productCategory">
-                <option value="pod">Pod</option>
-                <option value="mod">Mod</option>
-                <option value="acessorio">Acessório</option>
-                <option value="liquido">Líquido</option>
-                <option value="outro">Outro</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label for="productTags" class="form-label">Tags</label>
-              <div class="tags-input-container">
-                <div id="tagsContainer" class="d-flex flex-wrap mb-2"></div>
-                <div class="d-flex">
-                  <input type="text" class="form-control cyber-input" id="tagInput" placeholder="Adicionar tag...">
-                  <button type="button" class="btn cyber-btn cyber-btn-sm ms-2" id="addTagBtn">
-                    <i class="bi bi-plus-lg"></i> Add
-                  </button>
+              <div class="col-md-5">
+                <label for="categoria" class="form-label">Categoria <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="text" class="form-control cyber-input" id="categoria" required list="categoriasDatalist">
+                  <datalist id="categoriasDatalist">
+                    <!-- Categorias serão inseridas aqui via JavaScript -->
+                  </datalist>
                 </div>
               </div>
             </div>
-            <div class="mb-3 form-check">
-              <input type="checkbox" class="form-check-input cyber-checkbox" id="productPromotion">
-              <label class="form-check-label" for="productPromotion">Em Promoção</label>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label for="preco" class="form-label">Preço (R$) <span class="text-danger">*</span></label>
+                <input type="number" step="0.01" min="0" class="form-control cyber-input" id="preco" required>
+              </div>
+              <div class="col-md-4">
+                <label for="estoque" class="form-label">Estoque <span class="text-danger">*</span></label>
+                <input type="number" min="0" class="form-control cyber-input" id="estoque" required>
+              </div>
+              <div class="col-md-4">
+                <label for="promocao" class="form-label">Em Promoção?</label>
+                <div class="form-check form-switch mt-2">
+                  <input class="form-check-input" type="checkbox" id="promocao">
+                  <label class="form-check-label" for="promocao">Sim, está em promoção</label>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="imagem" class="form-label">URL da Imagem</label>
+              <div class="input-group">
+                <span class="input-group-text cyber-input-icon"><i class="bi bi-image"></i></span>
+                <input type="text" class="form-control cyber-input" id="imagem" placeholder="https://example.com/imagem.jpg">
+              </div>
+              <div class="form-text">Deixe em branco para usar uma imagem padrão.</div>
+            </div>
+            <div class="mb-3">
+              <label for="tagInput" class="form-label">Tags</label>
+              <div class="input-group">
+                <input type="text" class="form-control cyber-input" id="tagInput" placeholder="Adicione uma tag e pressione Enter">
+                <button class="btn cyber-btn" type="button" id="addTagBtn">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+              <div id="tagsContainer" class="mt-2">
+                <!-- Tags serão inseridas aqui via JavaScript -->
+              </div>
+              <input type="hidden" id="tagsHidden">
+            </div>
+            <div class="mb-3">
+              <label for="descricao" class="form-label">Descrição</label>
+              <textarea class="form-control cyber-input" id="descricao" rows="3"></textarea>
             </div>
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn cyber-btn cyber-btn-primary" id="saveProductBtn">Salvar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-primary" id="salvarProdutoBtn">Salvar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Logs Modal -->
-  <div class="modal fade" id="logsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
-      <div class="modal-content cyber-modal">
-        <div class="modal-header">
-          <h5 class="modal-title">Logs de Atividade</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div id="logsContainer">
-            <!-- Logs will be loaded here dynamically -->
-            <div class="text-center py-3">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Carregando...</span>
-              </div>
-              <p class="mt-2 text-muted">Carregando logs...</p>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Fechar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Import Modal -->
+  <!-- Modal de Importação -->
   <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content cyber-modal">
         <div class="modal-header">
           <h5 class="modal-title">Importar Produtos</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="importForm">
@@ -417,56 +429,115 @@
               <input class="form-control cyber-input" type="file" id="importFile" accept=".json">
             </div>
             <div class="form-check mb-3">
-              <input class="form-check-input cyber-checkbox" type="checkbox" id="clearBeforeImport">
-              <label class="form-check-label" for="clearBeforeImport">
-                Limpar produtos existentes antes de importar
+              <input class="form-check-input" type="checkbox" id="limparAntesImportar">
+              <label class="form-check-label" for="limparAntesImportar">
+                Limpar todos os produtos antes de importar
               </label>
+            </div>
+            <div class="alert alert-warning">
+              <i class="bi bi-exclamation-triangle"></i> A importação substituirá produtos com IDs iguais. Certifique-se de que o arquivo está no formato correto.
             </div>
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn cyber-btn cyber-btn-primary" id="confirmImportBtn">Importar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-secondary" id="confirmarImportBtn">Importar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Confirmation Modal -->
-  <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <!-- Modal de Exportação -->
+  <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content cyber-modal">
         <div class="modal-header">
-          <h5 class="modal-title" id="confirmationModalLabel">Confirmação</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Exportar Dados</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body" id="confirmationMessage">
-          Tem certeza que deseja realizar esta ação?
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn cyber-btn cyber-btn-danger" id="confirmButton">Confirmar</button>
+        <div class="modal-body">
+          <p>Escolha o formato para exportar os dados:</p>
+          <div class="d-grid gap-2">
+            <button class="btn cyber-btn" id="exportarJSONBtn">
+              <i class="bi bi-filetype-json"></i> Exportar como JSON
+            </button>
+            <button class="btn cyber-btn" id="exportarCSVBtn">
+              <i class="bi bi-filetype-csv"></i> Exportar como CSV
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Notification Toast -->
+  <!-- Modal de Confirmação -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmModalTitle">Confirmação</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="confirmModalText">Tem certeza que deseja realizar esta ação?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-danger" id="confirmBtn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Detalhes do Log -->
+  <div class="modal fade" id="logDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title">Detalhes do Log</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Data:</strong> <span id="logDetailsData"></span></p>
+              <p><strong>Tipo:</strong> <span id="logDetailsTipo"></span></p>
+              <p><strong>Produto:</strong> <span id="logDetailsProduto"></span></p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>ID do Produto:</strong> <span id="logDetailsProdutoId"></span></p>
+            </div>
+          </div>
+          <hr class="cyber-hr">
+          <h6>Alterações:</h6>
+          <pre class="cyber-code" id="logDetailsJson"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificação Toast -->
   <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-    <div id="notificationToast" class="toast cyber-toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div id="toast" class="toast cyber-toast" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="toast-header">
         <strong class="me-auto" id="toastTitle">Notificação</strong>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
       <div class="toast-body" id="toastMessage">
-        Alterações salvas com sucesso!
+        Mensagem de notificação
       </div>
     </div>
   </div>
 
-  <div id="secretAdminTrigger" style="position: fixed; top: 0; left: 0; width: 10px; height: 10px; opacity: 0;"></div>
-
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/static/js/script.js"></script>
+  <script src="/static/js/firebase-config.js"></script>
+  <script src="/static/js/admin.js"></script>
 </body>
 </html>
