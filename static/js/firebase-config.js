@@ -174,17 +174,49 @@ const firebaseAuthAPI = {
 
 // API Produtos (Firestore)
 const firestoreProducts = {
+  // Verificar inicialização do Firebase e do Firestore
+  _checkFirebaseInit() {
+    if (!firebaseInitialized || !dbInitialized) {
+      console.error("Firebase ou Firestore não inicializado ainda");
+      throw new Error("Firebase não inicializado. Aguarde a inicialização ou recarregue a página.");
+    }
+  },
+  
+  // Verificar autenticação do usuário
+  _checkAuthentication() {
+    if (!currentUser) {
+      console.error("Usuário não autenticado");
+      throw new Error("Usuário não autenticado. Faça login novamente.");
+    }
+  },
+  
+  // Log de operação com detalhes
+  _logOperation(operation, details) {
+    console.log(`[${new Date().toISOString()}] Operação ${operation}:`, details);
+  },
+  
   // Obter todos os produtos
   async getAllProducts() {
+    this._logOperation('getAllProducts', 'Iniciando busca de todos os produtos');
+    
     if (!localDevMode) {
       try {
+        // Verificar inicialização, mas não requer autenticação para leitura pública
+        this._checkFirebaseInit();
+        
+        this._logOperation('getAllProducts', 'Acessando collection produtos');
         const snapshot = await firestoreDB.collection('produtos').get();
-        return snapshot.docs.map(doc => ({
+        
+        const produtos = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        
+        this._logOperation('getAllProducts', `${produtos.length} produtos encontrados`);
+        return produtos;
       } catch (error) {
         console.error("Erro ao buscar produtos:", error);
+        this._logOperation('getAllProducts', `ERRO: ${error.message}`);
         return [];
       }
     } else {
@@ -221,11 +253,16 @@ const firestoreProducts = {
   
   // Adicionar um novo produto
   async addProduct(produtoData) {
+    this._logOperation('addProduct', 'Iniciando adição de produto');
     console.log("Chamada de addProduct recebida com dados:", produtoData);
     
     if (!localDevMode) {
       console.log("Modo Firebase: Tentando adicionar produto ao Firestore");
       try {
+        // Verificar inicialização do Firebase e autenticação (ambos necessários para escrita)
+        this._checkFirebaseInit();
+        this._checkAuthentication();
+        
         // Validar dados mínimos necessários
         if (!produtoData.nome) {
           console.error("Erro: Nome do produto é obrigatório");
@@ -239,28 +276,22 @@ const firestoreProducts = {
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
-        console.log("Dados preparados com timestamps:", dataWithTimestamps);
-        
-        // Verificar conexão com Firestore
-        if (!firestoreDB) {
-          console.error("Erro: Firestore DB não está inicializado");
-          throw new Error("Firestore não inicializado. Verifique a conexão com Firebase.");
-        }
+        this._logOperation('addProduct', 'Dados preparados com timestamps');
         
         // Adicionar ao Firestore
-        console.log("Adicionando ao Firestore collection 'produtos'...");
+        this._logOperation('addProduct', 'Adicionando ao Firestore collection produtos');
         const docRef = await firestoreDB.collection('produtos').add(dataWithTimestamps);
-        console.log("Produto adicionado com sucesso, ID:", docRef.id);
+        this._logOperation('addProduct', `Produto adicionado com sucesso, ID: ${docRef.id}`);
         
         // Registrar log
         await this.registrarLog('criar', docRef.id, produtoData.nome, produtoData);
-        console.log("Log de criação registrado");
+        this._logOperation('addProduct', 'Log de criação registrado');
         
         const resultado = {
           id: docRef.id,
           ...produtoData
         };
-        console.log("Retornando resultado:", resultado);
+        this._logOperation('addProduct', 'Operação concluída com sucesso');
         return resultado;
       } catch (error) {
         console.error("Erro ao adicionar produto:", error);
@@ -297,27 +328,51 @@ const firestoreProducts = {
   
   // Atualizar um produto existente
   async updateProduct(id, produtoData) {
+    this._logOperation('updateProduct', `Iniciando atualização do produto ID: ${id}`);
+    
     if (!localDevMode) {
       try {
+        // Verificar inicialização do Firebase e autenticação (ambos necessários para escrita)
+        this._checkFirebaseInit();
+        this._checkAuthentication();
+        
+        // Validações básicas
+        if (!id) {
+          throw new Error("ID do produto é obrigatório para atualização");
+        }
+        
+        if (!produtoData.nome) {
+          throw new Error("Nome do produto é obrigatório");
+        }
+        
         // Adicionar timestamp de atualização
         const dataWithTimestamp = {
           ...produtoData,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
+        this._logOperation('updateProduct', 'Obtendo dados do produto antes da atualização');
         // Obter produto antes da atualização para o log
         const oldProduct = await firestoreDB.collection('produtos').doc(id).get();
+        
+        if (!oldProduct.exists) {
+          throw new Error(`Produto com ID ${id} não encontrado`);
+        }
+        
         const oldData = oldProduct.exists ? oldProduct.data() : null;
         
+        this._logOperation('updateProduct', 'Atualizando produto no Firestore');
         // Atualizar no Firestore
         await firestoreDB.collection('produtos').doc(id).update(dataWithTimestamp);
         
+        this._logOperation('updateProduct', 'Registrando log de alteração');
         // Registrar log
         await this.registrarLog('editar', id, produtoData.nome, {
           old: oldData,
           new: produtoData
         });
         
+        this._logOperation('updateProduct', 'Operação concluída com sucesso');
         return {
           id,
           ...produtoData
@@ -334,20 +389,40 @@ const firestoreProducts = {
   
   // Excluir um produto
   async deleteProduct(id) {
+    this._logOperation('deleteProduct', `Iniciando exclusão do produto ID: ${id}`);
+    
     if (!localDevMode) {
       try {
+        // Verificar inicialização do Firebase e autenticação (ambos necessários para escrita)
+        this._checkFirebaseInit();
+        this._checkAuthentication();
+        
+        // Validações básicas
+        if (!id) {
+          throw new Error("ID do produto é obrigatório para exclusão");
+        }
+        
+        this._logOperation('deleteProduct', 'Obtendo dados do produto antes da exclusão');
         // Obter produto antes da exclusão para o log
         const product = await firestoreDB.collection('produtos').doc(id).get();
+        
+        if (!product.exists) {
+          throw new Error(`Produto com ID ${id} não encontrado`);
+        }
+        
         const produtoData = product.exists ? product.data() : null;
         
+        this._logOperation('deleteProduct', 'Excluindo produto do Firestore');
         // Excluir do Firestore
         await firestoreDB.collection('produtos').doc(id).delete();
         
+        this._logOperation('deleteProduct', 'Registrando log de exclusão');
         // Registrar log
         if (produtoData) {
           await this.registrarLog('excluir', id, produtoData.nome, produtoData);
         }
         
+        this._logOperation('deleteProduct', 'Operação concluída com sucesso');
         return true;
       } catch (error) {
         console.error("Erro ao excluir produto:", error);
