@@ -3,582 +3,232 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ferramentas de Análise de Dados</title>
+  <title>Painel Admin | Gerenciador de Pods</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-  <style>
-    :root {
-      --primary-color: #4a6fdc;
-      --primary-hover: #3a5ec9;
-      --secondary-color: #6c757d;
-      --accent-color: #17a2b8;
-      --success-color: #28a745;
-      --warning-color: #ffc107;
-      --danger-color: #dc3545;
-      --light-color: #f8f9fa;
-      --dark-color: #343a40;
-      --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      --transition: all 0.3s ease;
-    }
-    
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f5f7fb;
-      color: #333;
-    }
-    
-    .navbar-brand {
-      font-weight: 700;
-      color: var(--primary-color);
-    }
-    
-    .stats-card {
-      background: white;
-      border-radius: 10px;
-      box-shadow: var(--card-shadow);
-      padding: 20px;
-      margin-bottom: 20px;
-      transition: var(--transition);
-    }
-    
-    .stats-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-    }
-    
-    .stats-icon {
-      font-size: 2rem;
-      margin-bottom: 15px;
-      color: var(--primary-color);
-    }
-    
-    .stats-number {
-      font-size: 2.2rem;
-      font-weight: 700;
-      margin: 0;
-      color: var(--dark-color);
-    }
-    
-    .stats-label {
-      color: var(--secondary-color);
-      font-size: 0.9rem;
-      margin-top: 5px;
-    }
-    
-    .tool-card {
-      background: white;
-      border-radius: 10px;
-      box-shadow: var(--card-shadow);
-      transition: var(--transition);
-      height: 100%;
-      border: none;
-    }
-    
-    .tool-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-    }
-    
-    .card-title {
-      color: var(--primary-color);
-      font-weight: 600;
-    }
-    
-    .popularity-badge {
-      background-color: var(--primary-color);
-      color: white;
-      font-size: 0.75rem;
-      padding: 0.4em 0.7em;
-    }
-    
-    .tool-type {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--secondary-color);
-    }
-    
-    .dataset-tag {
-      background: #eef2ff;
-      color: var(--primary-color);
-      border-radius: 30px;
-      padding: 4px 10px;
-      font-size: 0.75rem;
-      display: inline-block;
-      margin-right: 4px;
-      margin-bottom: 4px;
-    }
-    
-    .action-btn {
-      transition: var(--transition);
-    }
-    
-    .filter-section {
-      background: white;
-      border-radius: 10px;
-      box-shadow: var(--card-shadow);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    
-    .nav-tabs .nav-link {
-      color: var(--secondary-color);
-      border: none;
-      padding: 10px 20px;
-      border-radius: 0;
-    }
-    
-    .nav-tabs .nav-link.active {
-      font-weight: 600;
-      color: var(--primary-color);
-      border-bottom: 3px solid var(--primary-color);
-      background: transparent;
-    }
-    
-    .tab-content {
-      padding: 20px 0;
-    }
-    
-    .search-input {
-      border-radius: 30px;
-      padding-left: 40px;
-      border: 1px solid #e0e0e0;
-    }
-    
-    .search-icon {
-      position: absolute;
-      left: 15px;
-      top: 10px;
-      color: #aaa;
-    }
-    
-    .btn-primary {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    
-    .btn-primary:hover {
-      background-color: var(--primary-hover);
-      border-color: var(--primary-hover);
-    }
-    
-    .btn-outline-primary {
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    
-    .btn-outline-primary:hover {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    
-    .insight-card {
-      background: #fff;
-      border-left: 4px solid var(--accent-color);
-      border-radius: 5px;
-      box-shadow: var(--card-shadow);
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-    
-    .insight-header {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--dark-color);
-    }
-    
-    .insight-source {
-      color: var(--secondary-color);
-      font-size: 0.85rem;
-    }
-    
-    .insight-tag {
-      background: #e9ecef;
-      color: var(--secondary-color);
-      border-radius: 30px;
-      padding: 3px 8px;
-      font-size: 0.7rem;
-      display: inline-block;
-      margin-right: 4px;
-    }
-    
-    /* Animation for cards */
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .animate-card {
-      animation: fadeInUp 0.5s ease forwards;
-    }
-    
-    .footer {
-      background: white;
-      padding: 30px 0;
-      margin-top: 30px;
-      border-top: 1px solid #eee;
-    }
-    
-    /* Modal customization */
-    .modal-header {
-      background-color: var(--primary-color);
-      color: white;
-    }
-    
-    .form-label {
-      font-weight: 500;
-    }
-    
-    /* Activity log styling */
-    .log-item {
-      padding: 10px 15px;
-      border-left: 3px solid #ddd;
-      margin-bottom: 10px;
-      background: #f9f9f9;
-      border-radius: 4px;
-    }
-    
-    .log-create {
-      border-left-color: var(--success-color);
-    }
-    
-    .log-update {
-      border-left-color: var(--warning-color);
-    }
-    
-    .log-delete {
-      border-left-color: var(--danger-color);
-    }
-    
-    .log-timestamp {
-      color: var(--secondary-color);
-      font-size: 0.8rem;
-    }
-    
-    .log-entity {
-      font-weight: 600;
-    }
-    
-    .chart-container {
-      height: 250px;
-      margin-top: 15px;
-    }
-  </style>
+  <link rel="stylesheet" href="/static/css/styles.css">
 </head>
-<body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-    <div class="container">
-      <a class="navbar-brand" href="/">
-        <i class="bi bi-bar-chart-line-fill me-2"></i>
-        Ferramentas de Análise de Dados
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link active" href="#tools" data-bs-toggle="tab" role="tab">Ferramentas</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#insights" data-bs-toggle="tab" role="tab">Insights</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#activity" data-bs-toggle="tab" role="tab">Atividades</a>
-          </li>
-        </ul>
+<body class="cyber-bg">
+  <div class="container py-4">
+    <!-- Header -->
+    <header class="mb-4 text-center">
+      <div class="glow-container mb-3">
+        <h1 class="neon-text mb-0">Administração de Pods</h1>
       </div>
-    </div>
-  </nav>
+      <p class="cyber-text">Gerencie seu inventário com estilo</p>
+    </header>
 
-  <div class="container mt-4">
-    <!-- Statistics Cards -->
-    <div class="row mb-4" id="stats-container">
-      <div class="col-md-3 col-sm-6 mb-3">
-        <div class="stats-card text-center">
-          <i class="bi bi-tools stats-icon"></i>
-          <h3 class="stats-number" id="total-tools">0</h3>
-          <p class="stats-label">Total de Ferramentas</p>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-3">
-        <div class="stats-card text-center">
-          <i class="bi bi-lightbulb stats-icon"></i>
-          <h3 class="stats-number" id="total-insights">0</h3>
-          <p class="stats-label">Insights Gerados</p>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-3">
-        <div class="stats-card text-center">
-          <i class="bi bi-graph-up stats-icon"></i>
-          <h3 class="stats-number" id="avg-popularity">0</h3>
-          <p class="stats-label">Popularidade Média</p>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-3">
-        <div class="stats-card text-center">
-          <i class="bi bi-tags stats-icon"></i>
-          <h3 class="stats-number" id="total-categories">0</h3>
-          <p class="stats-label">Categorias</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab Navigation -->
-    <div class="tab-content">
-      <!-- Tools Tab -->
-      <div class="tab-pane fade show active" id="tools" role="tabpanel">
-        <div class="filter-section mb-4">
-          <div class="row align-items-center">
-            <div class="col-lg-4 mb-3 mb-lg-0">
-              <div class="position-relative">
-                <i class="bi bi-search search-icon"></i>
-                <input type="text" id="search-tools" class="form-control search-input" placeholder="Pesquisar ferramentas...">
-              </div>
-            </div>
-            <div class="col-lg-6 mb-3 mb-lg-0">
-              <div class="row">
-                <div class="col-6">
-                  <select id="filter-type" class="form-select">
-                    <option value="">Todos os Tipos</option>
-                    <option value="Analysis">Análise</option>
-                    <option value="Visualization">Visualização</option>
-                    <option value="Prediction">Predição</option>
-                  </select>
-                </div>
-                <div class="col-6">
-                  <select id="sort-tools" class="form-select">
-                    <option value="popularity">Ordenar por Popularidade</option>
-                    <option value="name-asc">Nome (A-Z)</option>
-                    <option value="name-desc">Nome (Z-A)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-2 text-end">
-              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addToolModal">
-                <i class="bi bi-plus-lg"></i> Adicionar Ferramenta
-              </button>
+    <!-- Control Panel -->
+    <div class="control-panel mb-4">
+      <div class="row">
+        <div class="col-md-6 mb-3 mb-md-0">
+          <div class="d-flex">
+            <div class="search-wrapper">
+              <i class="bi bi-search search-icon"></i>
+              <input type="text" id="searchInput" class="form-control cyber-input" placeholder="Buscar produto...">
             </div>
           </div>
         </div>
+        <div class="col-md-6">
+          <div class="d-flex justify-content-md-end">
+            <button id="btnAddProduct" class="btn cyber-btn cyber-btn-primary me-2">
+              <i class="bi bi-plus-lg"></i> Novo Produto
+            </button>
+            <button id="btnViewLogs" class="btn cyber-btn cyber-btn-info me-2">
+              <i class="bi bi-journal-text"></i> Ver Logs
+            </button>
+            <button id="btnDeleteAll" class="btn cyber-btn cyber-btn-danger">
+              <i class="bi bi-trash"></i> Apagar Tudo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        <div class="row" id="tools-container">
-          <!-- Tools will be loaded here dynamically -->
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+      <div class="col-md-4 mb-3 mb-md-0">
+        <div class="cyber-card stats-card">
+          <div class="cyber-card-body text-center">
+            <i class="bi bi-box-seam stats-icon"></i>
+            <h3 class="stats-number" id="totalProducts">0</h3>
+            <p class="stats-label">Total de Produtos</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3 mb-md-0">
+        <div class="cyber-card stats-card">
+          <div class="cyber-card-body text-center">
+            <i class="bi bi-currency-dollar stats-icon"></i>
+            <h3 class="stats-number" id="totalValue">R$ 0,00</h3>
+            <p class="stats-label">Valor Total</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="cyber-card stats-card">
+          <div class="cyber-card-body text-center">
+            <i class="bi bi-exclamation-triangle stats-icon"></i>
+            <h3 class="stats-number" id="lowStockCount">0</h3>
+            <p class="stats-label">Produtos com Baixo Estoque</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="cyber-card main-card">
+      <div class="cyber-card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Lista de Produtos</h5>
+        <div class="d-flex">
+          <button id="sortByName" class="btn cyber-btn-sm cyber-btn-outline me-2">
+            <i class="bi bi-sort-alpha-down"></i> Nome
+          </button>
+          <button id="sortByStock" class="btn cyber-btn-sm cyber-btn-outline me-2">
+            <i class="bi bi-sort-numeric-down"></i> Estoque
+          </button>
+          <button id="sortByPrice" class="btn cyber-btn-sm cyber-btn-outline">
+            <i class="bi bi-sort-numeric-down"></i> Preço
+          </button>
+        </div>
+      </div>
+      <div class="cyber-card-body">
+        <div id="productsContainer" class="row g-3">
+          <!-- Products will be loaded here dynamically -->
           <div class="col-12 text-center py-5">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-2 text-muted">Carregando ferramentas...</p>
+            <p class="mt-2 text-muted">Carregando produtos...</p>
           </div>
         </div>
       </div>
-      
-      <!-- Insights Tab -->
-      <div class="tab-pane fade" id="insights" role="tabpanel">
-        <div class="filter-section mb-4">
-          <div class="row align-items-center">
-            <div class="col-md-10 mb-3 mb-md-0">
-              <div class="position-relative">
-                <i class="bi bi-search search-icon"></i>
-                <input type="text" id="search-insights" class="form-control search-input" placeholder="Pesquisar insights...">
+    </div>
+  </div>
+
+  <!-- Add/Edit Product Modal -->
+  <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Adicionar Produto</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="productForm">
+            <input type="hidden" id="productId">
+            <div class="mb-3">
+              <label for="productName" class="form-label">Nome do Produto</label>
+              <input type="text" class="form-control cyber-input" id="productName" required>
+            </div>
+            <div class="mb-3">
+              <label for="productPrice" class="form-label">Preço (R$)</label>
+              <input type="number" class="form-control cyber-input" id="productPrice" step="0.01" min="0" required>
+            </div>
+            <div class="mb-3">
+              <label for="productStock" class="form-label">Estoque</label>
+              <input type="number" class="form-control cyber-input" id="productStock" min="0" required>
+            </div>
+            <div class="mb-3">
+              <label for="productImage" class="form-label">URL da Imagem</label>
+              <input type="text" class="form-control cyber-input" id="productImage" placeholder="https://exemplo.com/imagem.jpg">
+              <div id="imagePreview" class="mt-2 text-center d-none">
+                <img src="" alt="Preview" class="img-thumbnail cyber-thumbnail">
               </div>
             </div>
-            <div class="col-md-2 text-end">
-              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInsightModal">
-                <i class="bi bi-plus-lg"></i> Adicionar Insight
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div id="insights-container">
-          <!-- Insights will be loaded here dynamically -->
-          <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Carregando...</span>
-            </div>
-            <p class="mt-2 text-muted">Carregando insights...</p>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Activity Log Tab -->
-      <div class="tab-pane fade" id="activity" role="tabpanel">
-        <div class="card">
-          <div class="card-header bg-white">
-            <h5 class="mb-0">Registro de Atividades</h5>
-          </div>
-          <div class="card-body">
-            <div id="activity-container">
-              <!-- Activity logs will be loaded here dynamically -->
-              <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Carregando...</span>
-                </div>
-                <p class="mt-2 text-muted">Carregando registros de atividades...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add Tool Modal -->
-  <div class="modal fade" id="addToolModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Adicionar Nova Ferramenta</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="add-tool-form">
             <div class="mb-3">
-              <label for="tool-name" class="form-label">Nome da Ferramenta</label>
-              <input type="text" class="form-control" id="tool-name" required>
-            </div>
-            <div class="mb-3">
-              <label for="tool-description" class="form-label">Descrição</label>
-              <textarea class="form-control" id="tool-description" rows="3" required></textarea>
-            </div>
-            <div class="mb-3">
-              <label for="tool-type" class="form-label">Tipo de Ferramenta</label>
-              <select class="form-select" id="tool-type" required>
-                <option value="">Selecione um tipo</option>
-                <option value="Analysis">Análise</option>
-                <option value="Visualization">Visualização</option>
-                <option value="Prediction">Predição</option>
-                <option value="Other">Outro</option>
+              <label for="productCategory" class="form-label">Categoria</label>
+              <select class="form-select cyber-input" id="productCategory">
+                <option value="pod">Pod</option>
+                <option value="mod">Mod</option>
+                <option value="acessorio">Acessório</option>
+                <option value="liquido">Líquido</option>
+                <option value="outro">Outro</option>
               </select>
             </div>
-            <div class="mb-3">
-              <label for="tool-popularity" class="form-label">Popularidade (1-100)</label>
-              <input type="range" class="form-range" id="tool-popularity" min="1" max="100" value="50">
-              <div class="text-center" id="popularity-value">50</div>
-            </div>
-            <div class="mb-3">
-              <label for="tool-datasets" class="form-label">Conjuntos de Dados (separados por vírgula)</label>
-              <input type="text" class="form-control" id="tool-datasets" placeholder="ex: financeiro, marketing, vendas">
-            </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="save-tool-btn">Salvar Ferramenta</button>
+          <button type="button" class="btn cyber-btn cyber-btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-primary" id="saveProduct">Salvar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Add Insight Modal -->
-  <div class="modal fade" id="addInsightModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
+  <!-- View Logs Modal -->
+  <div class="modal fade" id="logsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content cyber-modal">
         <div class="modal-header">
-          <h5 class="modal-title">Adicionar Novo Insight</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Logs de Atividades</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <form id="add-insight-form">
-            <div class="mb-3">
-              <label for="insight-title" class="form-label">Título</label>
-              <input type="text" class="form-control" id="insight-title" required>
-            </div>
-            <div class="mb-3">
-              <label for="insight-description" class="form-label">Descrição</label>
-              <textarea class="form-control" id="insight-description" rows="4" required></textarea>
-            </div>
-            <div class="mb-3">
-              <label for="insight-source" class="form-label">Fonte de Dados</label>
-              <input type="text" class="form-control" id="insight-source">
-            </div>
-            <div class="mb-3">
-              <label for="insight-tags" class="form-label">Tags (separadas por vírgula)</label>
-              <input type="text" class="form-control" id="insight-tags" placeholder="ex: tendência, análise, trimestral">
-            </div>
-          </form>
+          <div class="table-responsive">
+            <table class="table table-dark table-hover cyber-table">
+              <thead>
+                <tr>
+                  <th>Data/Hora</th>
+                  <th>Produto</th>
+                  <th>Ação</th>
+                  <th>Detalhes</th>
+                </tr>
+              </thead>
+              <tbody id="logsTableBody">
+                <!-- Logs will be loaded here dynamically -->
+              </tbody>
+            </table>
+          </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="save-insight-btn">Salvar Insight</button>
+          <button type="button" class="btn cyber-btn cyber-btn-secondary" data-bs-dismiss="modal">Fechar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Edit Tool Modal -->
-  <div class="modal fade" id="editToolModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
+  <!-- Confirmation Modal -->
+  <div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal cyber-modal-danger">
         <div class="modal-header">
-          <h5 class="modal-title">Editar Ferramenta</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Confirmação</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <form id="edit-tool-form">
-            <input type="hidden" id="edit-tool-id">
-            <div class="mb-3">
-              <label for="edit-tool-name" class="form-label">Nome da Ferramenta</label>
-              <input type="text" class="form-control" id="edit-tool-name" required>
-            </div>
-            <div class="mb-3">
-              <label for="edit-tool-description" class="form-label">Descrição</label>
-              <textarea class="form-control" id="edit-tool-description" rows="3" required></textarea>
-            </div>
-            <div class="mb-3">
-              <label for="edit-tool-type" class="form-label">Tipo de Ferramenta</label>
-              <select class="form-select" id="edit-tool-type" required>
-                <option value="">Selecione um tipo</option>
-                <option value="Analysis">Análise</option>
-                <option value="Visualization">Visualização</option>
-                <option value="Prediction">Predição</option>
-                <option value="Other">Outro</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label for="edit-tool-popularity" class="form-label">Popularidade (1-100)</label>
-              <input type="range" class="form-range" id="edit-tool-popularity" min="1" max="100" value="50">
-              <div class="text-center" id="edit-popularity-value">50</div>
-            </div>
-            <div class="mb-3">
-              <label for="edit-tool-datasets" class="form-label">Conjuntos de Dados (separados por vírgula)</label>
-              <input type="text" class="form-control" id="edit-tool-datasets">
-            </div>
-          </form>
+          <p id="confirmationMessage">Tem certeza que deseja realizar esta ação?</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="update-tool-btn">Atualizar Ferramenta</button>
+          <button type="button" class="btn cyber-btn cyber-btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-danger" id="confirmAction">Sim, apagar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <footer class="footer">
-    <div class="container">
-      <div class="row">
-        <div class="col-md-6">
-          <h5>Ferramentas de Análise de Dados</h5>
-          <p class="text-muted">Uma plataforma poderosa para analistas de dados descobrirem e integrarem ferramentas de análise.</p>
+  <!-- Notification Modal -->
+  <div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal cyber-modal-primary">
+        <div class="modal-header">
+          <h5 class="modal-title">Notificação</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="col-md-6 text-md-end">
-          <p class="mb-0 text-muted">&copy; 2025 Ferramentas de Análise de Dados</p>
+        <div class="modal-body text-center">
+          <div class="notification-icon mb-3">
+            <i id="notificationIcon" class="bi bi-check-circle-fill fs-1"></i>
+          </div>
+          <p id="notificationMessage">Operação realizada com sucesso!</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-primary" data-bs-dismiss="modal">OK</button>
         </div>
       </div>
     </div>
-  </footer>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/script.js"></script>
 </body>
 </html>
