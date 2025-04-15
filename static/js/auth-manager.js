@@ -32,7 +32,15 @@ async function checkAuthentication() {
   try {
     console.log('Verificando autenticação para rota protegida...');
     
-    // Verificar se o token de sessão ainda é válido (expiração)
+    // Verificar se o token de autenticação existe
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      console.log('Nenhum token de autenticação encontrado, redirecionando para login');
+      window.location.href = '/login';
+      return false;
+    }
+    
+    // Verificar se o timestamp de login existe e está válido
     const lastLogin = localStorage.getItem('lastLoginTime');
     if (!lastLogin) {
       console.log('Nenhum timestamp de login encontrado, redirecionando para login');
@@ -47,41 +55,42 @@ async function checkAuthentication() {
       console.log('Sessão expirada, redirecionando para login');
       localStorage.removeItem('currentUser');
       localStorage.removeItem('lastLoginTime');
+      localStorage.removeItem('authToken');
       window.location.href = '/login';
       return false;
     }
     
-    // Verificar se há um usuário autenticado
-    const user = await firebaseAuthAPI.getCurrentUser();
-    console.log('Resultado getCurrentUser:', user);
-    
-    if (!user) {
-      // Usuário não está autenticado, redirecionar para login
-      console.log('Usuário não autenticado, redirecionando para login');
+    // Obter dados do usuário atual do localStorage
+    const userString = localStorage.getItem('currentUser');
+    if (!userString) {
+      console.log('Nenhum usuário encontrado no localStorage, redirecionando para login');
       window.location.href = '/login';
       return false;
     }
     
-    // Verificar se é um dos e-mails autorizados
-    if (!AUTH_CONFIG.ADMIN_EMAILS.includes(user.email)) {
+    // Verificar se o usuário tem papel de administrador
+    const user = JSON.parse(userString);
+    console.log('Dados do usuário:', user);
+    
+    if (!user.email || !AUTH_CONFIG.ADMIN_EMAILS.includes(user.email)) {
       console.log('Tentativa de acesso não autorizada:', user.email);
       alert('Acesso negado. Apenas o administrador autorizado pode acessar o painel.');
-      // Fazer logout
-      await firebaseAuthAPI.logout();
+      // Remover dados de autenticação
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('lastLoginTime'); 
+      localStorage.removeItem('authToken');
       window.location.href = '/login';
       return false;
     }
     
-    // Verificar se o usuário é admin (verificação secundária)
-    console.log('Verificando se usuário é admin...');
-    const isAdmin = await firebaseAuthAPI.isAdmin(user);
-    console.log('Resultado isAdmin:', isAdmin);
-    
-    if (!isAdmin) {
+    // Verificar se o usuário é admin (verificação do papel)
+    if (user.role !== 'admin') {
       // Usuário não é admin, mostrar mensagem e redirecionar
       console.log('Usuário não é admin, redirecionando');
       alert('Você não tem permissão para acessar esta página');
-      await firebaseAuthAPI.logout();
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('lastLoginTime');
+      localStorage.removeItem('authToken');
       window.location.href = '/';
       return false;
     }

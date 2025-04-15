@@ -80,30 +80,58 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       try {
-        // Tentar fazer login
+        // Tentar fazer login com a API do backend
         console.log('Chamando API de login');
-        const user = await firebaseAuthAPI.login(email, password);
-        console.log('Login bem-sucedido:', user);
+        const response = await fetch('/auth/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
         
-        // Verificar se o e-mail do usuário é o autorizado
-        if (AUTHORIZED_EMAILS.includes(user.email)) {
+        const data = await response.json();
+        console.log('Resposta da API:', data);
+        
+        if (!data.success) {
+          console.error('Erro ao fazer login:', data.error);
+          showLoginError(data.error || 'Email ou senha incorretos');
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Entrar';
+          return;
+        }
+        
+        // Salvar o token no localStorage
+        if (data.token) {
+          localStorage.setItem('authToken', data.token);
+          console.log('Token de autenticação salvo');
+        }
+        
+        // Criar objeto de usuário com os dados da resposta
+        const user = {
+          email: email,
+          role: data.role || 'user'
+        };
+        
+        // Salvar dados do usuário no localStorage
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        
+        // Registrar o timestamp de login
+        localStorage.setItem('lastLoginTime', new Date().getTime().toString());
+        console.log('Timestamp de login registrado:', new Date().getTime());
+        
+        // Verificar se o papel do usuário é administrador
+        if (data.role === 'admin') {
           // Mostrar mensagem de sucesso
           console.log('Usuário autorizado, redirecionando para dashboard');
           showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');
           
-          // Verificar novamente se o usuário está salvo corretamente
-          const currentUser = await firebaseAuthAPI.getCurrentUser();
-          console.log('Verificação pós-login:', currentUser);
-          
           // Redirecionar para o dashboard após um pequeno delay
           setTimeout(redirectToDashboard, 500);
         } else {
-          // Logout (usuário não autorizado)
-          console.log('Usuário não autorizado, realizando logout');
-          await firebaseAuthAPI.logout();
-          
-          // Mostrar erro
-          showLoginError('Acesso negado. Apenas o administrador autorizado pode acessar o painel.');
+          // Mostrar erro para papel não autorizado
+          console.log('Usuário não tem papel de administrador:', data.role);
+          showLoginError('Este usuário não tem permissão de administrador.');
         }
       } catch (error) {
         console.error('Erro de login:', error);
