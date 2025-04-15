@@ -25,30 +25,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Verificar autenticação e mostrar botão de admin se aplicável
 function verificarAutenticacao() {
-  // Credenciais do administrador
-  const ADMIN_EMAIL = 'nsyzaesir@gmail.com';
+  console.log('Verificando autenticação para loja...');
   
-  // Esperar até que o Firebase Auth esteja inicializado
-  const authCheckInterval = setInterval(() => {
-    if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && firebase.auth) {
-      clearInterval(authCheckInterval);
-      
-      // Verificar estado de autenticação
-      firebase.auth().onAuthStateChanged((user) => {
-        const adminBtn = document.getElementById('adminBtn');
+  // Verificar se o auth manager está disponível
+  if (window.auth) {
+    console.log('Auth Manager disponível, usando para verificação de autenticação');
+    
+    // Usar o auth manager para verificar acesso
+    window.auth.checkAuthentication().then(authenticated => {
+      if (authenticated) {
+        console.log('Usuário autenticado na loja');
         
-        if (user && user.email === ADMIN_EMAIL) {
-          // Mostrar botão de admin se o usuário for o administrador
+        // Atualizar contador do carrinho após autenticação
+        atualizarContadorCarrinho();
+      } else {
+        console.log('Usuário não autenticado, redirecionando...');
+      }
+    });
+    
+    // Adicionar um listener para atualizações de estado de autenticação
+    window.auth.addAuthStateListener(updateStoreUI);
+  } else {
+    console.log('Auth Manager não disponível, utilizando verificação direta');
+    
+    // Esperar até que o Firebase Auth esteja inicializado
+    const authCheckInterval = setInterval(() => {
+      if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && firebase.auth) {
+        clearInterval(authCheckInterval);
+        
+        // Verificar estado de autenticação
+        firebase.auth().onAuthStateChanged(updateStoreUI);
+      }
+    }, 500);
+  }
+  
+  // Função para atualizar a UI da loja com base no estado de autenticação
+  function updateStoreUI(user) {
+    const adminBtn = document.getElementById('adminBtn');
+    const logoutButton = document.getElementById('logoutButton');
+    
+    if (user) {
+      console.log('Usuário autenticado na loja:', user.email);
+      
+      // Verificar se é admin
+      const isAdmin = user.email === 'nsyzaesir@gmail.com';
+      
+      // Mostrar/ocultar botão de admin
+      if (adminBtn) {
+        if (isAdmin) {
           adminBtn.classList.remove('d-none');
-          console.log('Usuário admin autenticado, botão de administração visível');
+          console.log('Botão de administração visível');
         } else {
-          // Esconder botão de admin para outros usuários
           adminBtn.classList.add('d-none');
-          console.log('Usuário não é admin ou não está autenticado');
         }
-      });
+      }
+      
+      // Mostrar botão de logout
+      if (logoutButton) {
+        logoutButton.classList.remove('d-none');
+      }
+    } else {
+      console.log('Usuário não autenticado na loja');
+      
+      // Ocultar botão de admin
+      if (adminBtn) adminBtn.classList.add('d-none');
+      
+      // Ocultar botão de logout
+      if (logoutButton) logoutButton.classList.add('d-none');
     }
-  }, 500);
+  }
 }
 
 // Configurar escuta em tempo real para produtos
@@ -174,6 +219,24 @@ function carregarCategorias() {
 
 // Configurar manipuladores de eventos
 function setupEventHandlers() {
+  // Configurar botão de logout
+  const logoutButton = document.getElementById('logoutButton');
+  if (logoutButton) {
+    logoutButton.addEventListener('click', () => {
+      if (window.auth) {
+        window.auth.logout();
+      } else if (firebase && firebase.auth) {
+        firebase.auth().signOut().then(() => {
+          console.log('Logout realizado');
+          window.location.href = '/';
+        }).catch(error => {
+          console.error('Erro no logout:', error);
+          showToast('Erro', 'Ocorreu um erro ao fazer logout. Tente novamente.', 'error');
+        });
+      }
+    });
+  }
+  
   // Eventos de filtro
   document.getElementById('categoriaFilter').addEventListener('change', aplicarFiltros);
   document.getElementById('precoFilter').addEventListener('change', aplicarFiltros);
