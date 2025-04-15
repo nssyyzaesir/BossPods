@@ -1,6 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify, session
 import os
 import logging
+from auth_routes import auth_bp
 
 # Configurar logging
 logging.basicConfig(level=logging.DEBUG)
@@ -8,6 +9,9 @@ logging.basicConfig(level=logging.DEBUG)
 # Criar a aplicação Flask
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SESSION_SECRET", "dev_secret_key")
+
+# Registrar o blueprint de autenticação
+app.register_blueprint(auth_bp, url_prefix='/auth')
 
 # Rota principal - redireciona para a loja
 @app.route('/')
