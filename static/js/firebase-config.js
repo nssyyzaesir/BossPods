@@ -628,16 +628,16 @@ const fakeAuth = {
   users: [
     {
       uid: 'admin123',
-      email: 'admin@bosspods.com',
+      email: 'admin1@gmail.com',
       password: 'admin123',
-      displayName: 'Administrador',
+      displayName: 'Administrador 1',
       role: 'admin'
     },
     {
       uid: 'admin456',
-      email: 'nsyz@gmail.com',
-      password: 'nsyz123',
-      displayName: 'Novo Administrador',
+      email: 'admin2@gmail.com',
+      password: 'admin456',
+      displayName: 'Administrador 2',
       role: 'admin'
     },
     {

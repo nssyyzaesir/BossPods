@@ -3,7 +3,7 @@
 // Configurações
 const AUTH_CONFIG = {
   // E-mails de administradores autorizados
-  ADMIN_EMAILS: ['admin@bosspods.com', 'nsyz@gmail.com'],
+  ADMIN_EMAILS: ['admin1@gmail.com', 'admin2@gmail.com'],
   
   // Rotas que exigem autenticação
   PROTECTED_ROUTES: ['/admin'],

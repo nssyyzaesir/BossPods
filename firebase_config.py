@@ -7,18 +7,18 @@ print("Inicializando em modo de desenvolvimento local (sem Firebase)")
 
 # Armazenamento local simulado
 local_users = {
-    'admin@bosspods.com': {
+    'admin1@gmail.com': {
         'uid': 'admin123',
         'password': 'admin123',
-        'displayName': 'Administrador',
+        'displayName': 'Administrador 1',
         'role': 'admin',
         'createdAt': datetime.datetime.now().isoformat(),
         'lastLogin': None
     },
-    'nsyz@gmail.com': {
-        'uid': 'nsyz123',
-        'password': 'nsyzadmin123',
-        'displayName': 'Administrador NSYZ',
+    'admin2@gmail.com': {
+        'uid': 'admin456',
+        'password': 'admin456',
+        'displayName': 'Administrador 2',
         'role': 'admin',
         'createdAt': datetime.datetime.now().isoformat(),
         'lastLogin': None
