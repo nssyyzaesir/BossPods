@@ -499,7 +499,27 @@ const fakeAuth = {
     }
   ],
   
-  currentUser: null,
+  // Inicializar currentUser com dados do localStorage, se disponível
+  currentUser: (() => {
+    try {
+      const savedUser = localStorage.getItem('currentUser');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      console.error('Erro ao recuperar usuário do localStorage:', e);
+      return null;
+    }
+  })(),
+  
+  // Função para salvar o usuário atual no localStorage
+  _saveCurrentUser() {
+    if (this.currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+      console.log('Usuário salvo no localStorage:', this.currentUser.email);
+    } else {
+      localStorage.removeItem('currentUser');
+      console.log('Dados de usuário removidos do localStorage');
+    }
+  },
   
   async register(email, password, displayName = null) {
     // Verificar se o email já existe
@@ -524,35 +544,54 @@ const fakeAuth = {
     this.currentUser = { ...newUser };
     delete this.currentUser.password;
     
+    // Salvar no localStorage
+    this._saveCurrentUser();
+    
     return this.currentUser;
   },
   
   async login(email, password) {
+    console.log('Tentando login com email:', email);
+    
     // Buscar usuário
     const user = this.users.find(u => u.email === email && u.password === password);
     
     if (!user) {
+      console.error('Usuário não encontrado ou senha incorreta');
       throw new Error('Email ou senha inválidos');
     }
+    
+    console.log('Usuário encontrado:', user.email, 'Role:', user.role);
     
     // Definir usuário atual
     this.currentUser = { ...user };
     delete this.currentUser.password;
     
+    // Salvar no localStorage
+    this._saveCurrentUser();
+    
     return this.currentUser;
   },
   
   async getCurrentUser() {
+    console.log('getCurrentUser chamado, usuário atual:', this.currentUser?.email || 'nenhum');
     return this.currentUser;
   },
   
   isUserAdmin(uid) {
     const user = this.users.find(u => u.uid === uid);
-    return user && user.role === 'admin';
+    const isAdmin = user && user.role === 'admin';
+    console.log('Verificando se usuário é admin:', uid, isAdmin);
+    return isAdmin;
   },
   
   async logout() {
+    console.log('Fazendo logout');
     this.currentUser = null;
+    
+    // Remover do localStorage
+    this._saveCurrentUser();
+    
     return true;
   }
 };
