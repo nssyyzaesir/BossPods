@@ -177,8 +177,9 @@ def update_produto(id):
     return jsonify(produto.to_dict())
 
 @app.route('/api/produtos/<int:id>', methods=['DELETE'])
+@admin_required
 def delete_produto(id):
-    """Exclui um produto"""
+    """Exclui um produto - requer autenticação admin"""
     produto = Produto.query.get_or_404(id)
     produto_dict = produto.to_dict()
     
@@ -198,14 +199,16 @@ def delete_produto(id):
     return jsonify({'message': 'Produto excluído com sucesso'})
 
 @app.route('/api/logs', methods=['GET'])
+@admin_required
 def get_logs():
-    """Retorna todos os logs"""
+    """Retorna todos os logs - requer autenticação admin"""
     logs = LogAtividade.query.order_by(LogAtividade.data.desc()).all()
     return jsonify([log.to_dict() for log in logs])
 
 @app.route('/api/stats', methods=['GET'])
+@admin_required
 def get_stats():
-    """Retorna estatísticas sobre os produtos"""
+    """Retorna estatísticas sobre os produtos - requer autenticação admin"""
     total_produtos = Produto.query.count()
     valor_total = db.session.query(db.func.sum(Produto.preco * Produto.estoque)).scalar() or 0
     estoque_zerado = Produto.query.filter(Produto.estoque == 0).count()
@@ -254,8 +257,9 @@ def get_categorias():
     return jsonify([cat[0] for cat in categorias if cat[0]])
 
 @app.route('/api/export', methods=['GET'])
+@admin_required
 def export_data():
-    """Exporta os dados dos produtos em formato JSON ou CSV"""
+    """Exporta os dados dos produtos em formato JSON ou CSV - requer autenticação admin"""
     format_type = request.args.get('format', 'json')
     produtos = Produto.query.all()
     
@@ -296,8 +300,9 @@ def export_data():
     return jsonify({'error': 'Formato inválido. Use json ou csv.'}), 400
 
 @app.route('/api/import', methods=['POST'])
+@admin_required
 def import_data():
-    """Importa dados de produtos"""
+    """Importa dados de produtos - requer autenticação admin"""
     if 'file' not in request.files:
         return jsonify({'error': 'Nenhum arquivo enviado'}), 400
     

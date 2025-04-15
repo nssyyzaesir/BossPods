@@ -97,7 +97,7 @@ def logout():
     return redirect(url_for('auth.login'))
 
 # API de autenticação
-@auth_bp.route('/api/auth/login', methods=['POST'])
+@auth_bp.route('/api/login', methods=['POST'])
 def api_login():
     """Endpoint para login via API"""
     data = request.json
@@ -105,19 +105,15 @@ def api_login():
     if not data or 'email' not in data or 'password' not in data:
         return jsonify({'success': False, 'error': 'Email e senha são obrigatórios'}), 400
     
-    # Tentar fazer login com Firebase
+    # Tentar fazer login local
     result = firebase.login_user(data['email'], data['password'])
     
     if result['success']:
-        # Obter role do usuário do Firestore
-        uid = result['uid']
-        role = firebase.get_user_role(uid)
-        
         # Criar dados do usuário
         user_data = {
-            'uid': uid,
+            'uid': result['uid'],
             'email': data['email'],
-            'role': role
+            'role': result['role']
         }
         
         # Gerar token de sessão local
@@ -126,11 +122,11 @@ def api_login():
         # Armazenar token na sessão
         session['token'] = token
         
-        return jsonify({'success': True, 'role': role})
+        return jsonify({'success': True, 'role': result['role']})
     else:
         return jsonify({'success': False, 'error': 'Email ou senha incorretos'}), 401
 
-@auth_bp.route('/api/auth/register', methods=['POST'])
+@auth_bp.route('/api/register', methods=['POST'])
 def api_register():
     """Endpoint para registro de usuário via API"""
     data = request.json
@@ -138,7 +134,7 @@ def api_register():
     if not data or 'email' not in data or 'password' not in data or 'name' not in data:
         return jsonify({'success': False, 'error': 'Dados insuficientes para registro'}), 400
     
-    # Criar usuário no Firebase
+    # Criar usuário local
     result = firebase.create_user(
         email=data['email'],
         password=data['password'],
@@ -151,32 +147,27 @@ def api_register():
     else:
         return jsonify({'success': False, 'error': result.get('error', 'Erro ao criar usuário')}), 400
 
-@auth_bp.route('/api/auth/verify-token', methods=['POST'])
+@auth_bp.route('/api/verify-token', methods=['POST'])
 def api_verify_token():
     """Verifica se um token de sessão é válido"""
-    token = request.json.get('token')
+    # Verificar o token da sessão atual
+    token = session.get('token')
     
     if not token:
-        return jsonify({'valid': False, 'error': 'Token não fornecido'}), 400
+        return jsonify({'valid': False, 'error': 'Não há sessão ativa'}), 401
     
     user_data = verify_session_token(token)
     if user_data:
         return jsonify({'valid': True, 'user': user_data})
     else:
+        # Token expirou ou é inválido
+        session.pop('token', None)
         return jsonify({'valid': False, 'error': 'Token inválido ou expirado'}), 401
 
-@auth_bp.route('/api/auth/refresh-token', methods=['POST'])
+@auth_bp.route('/api/refresh-token', methods=['POST'])
 def api_refresh_token():
-    """Renova um token de sessão expirado usando refresh token do Firebase"""
-    refresh_token = request.json.get('refreshToken')
-    
-    if not refresh_token:
-        return jsonify({'success': False, 'error': 'Refresh token não fornecido'}), 400
-    
+    """Renova um token de sessão expirado (versão local)"""
     try:
-        # Implementar refresh do token com Firebase quando necessário
-        # Esta é uma versão simplificada
-        
         # Obter token atual da sessão
         token = session.get('token')
         if not token:
@@ -195,3 +186,29 @@ def api_refresh_token():
         return jsonify({'success': True, 'token': new_token})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
+        
+# Rotas para proteção de APIs administrativas
+@auth_bp.route('/api/check-admin', methods=['GET'])
+def check_admin():
+    """Verifica se o usuário atual é administrador"""
+    token = session.get('token')
+    
+    if not token:
+        return jsonify({'isAdmin': False, 'error': 'Não há sessão ativa'}), 401
+    
+    user_data = verify_session_token(token)
+    if not user_data:
+        # Token expirou ou é inválido
+        session.pop('token', None)
+        return jsonify({'isAdmin': False, 'error': 'Sessão expirada'}), 401
+    
+    # Verificar role do usuário
+    is_admin = user_data.get('role') in ['admin', 'root']
+    
+    return jsonify({
+        'isAdmin': is_admin, 
+        'user': {
+            'email': user_data.get('email'),
+            'role': user_data.get('role')
+        }
+    })
