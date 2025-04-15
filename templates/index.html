@@ -3,492 +3,370 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel Admin | Gerenciador de Pods</title>
+  <title>BOSSPODS | Login</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/static/css/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      margin: 0;
+      background: var(--bg-dark);
+    }
+    
+    .grid-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(rgba(10, 10, 20, 0.8) 1px, transparent 1px), 
+                        linear-gradient(90deg, rgba(10, 10, 20, 0.8) 1px, transparent 1px);
+      background-size: 30px 30px;
+      z-index: 1;
+    }
+    
+    .global-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 25%, rgba(184, 51, 255, 0.15), transparent 70%);
+      z-index: 2;
+    }
+    
+    .login-screen {
+      position: relative;
+      z-index: 3;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    
+    .login-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .login-card {
+      max-width: 450px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-options {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .login-option {
+      text-align: center;
+      width: 140px;
+      opacity: 0.75;
+      transition: all 0.3s ease;
+      color: var(--text-light);
+      text-decoration: none;
+    }
+    
+    .login-option:hover {
+      opacity: 1;
+      transform: translateY(-5px);
+      color: var(--primary-color-light);
+    }
+    
+    .option-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+      color: inherit;
+      transition: all 0.3s ease;
+    }
+    
+    .login-option:hover .option-icon {
+      background-color: rgba(184, 51, 255, 0.1);
+      border-color: var(--primary-color-light);
+      box-shadow: 0 0 15px rgba(184, 51, 255, 0.5);
+    }
+    
+    .login-footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--text-dark);
+    }
+    
+    .login-logo {
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    
+    .login-logo h1 {
+      font-size: 4rem;
+      font-weight: 900;
+    }
+    
+    .login-logo p {
+      font-size: 1.2rem;
+      color: var(--text-dark);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+    
+    .scanner-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--primary-color), transparent);
+      animation: scan 4s linear infinite;
+      opacity: 0.6;
+      z-index: 2;
+    }
+    
+    @keyframes scan {
+      0% {
+        top: 0;
+      }
+      100% {
+        top: 100%;
+      }
+    }
+    
+    .cyber-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 20px;
+      z-index: 4;
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .circle-button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dark);
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+    
+    .circle-button:hover {
+      background-color: rgba(184, 51, 255, 0.1);
+      border-color: var(--primary-color-light);
+      color: var(--primary-color-light);
+      box-shadow: 0 0 10px rgba(184, 51, 255, 0.3);
+    }
+    
+    .animated-bg-effect {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+    }
+    
+    .animated-bg-effect span {
+      position: absolute;
+      display: block;
+      width: 40px;
+      height: 40px;
+      background: rgba(184, 51, 255, 0.1);
+      animation: animate 25s linear infinite;
+      bottom: -150px;
+      border-radius: 50%;
+    }
+    
+    .animated-bg-effect span:nth-child(1) {
+      left: 10%;
+      width: 80px;
+      height: 80px;
+      animation-delay: 0s;
+      animation-duration: 20s;
+    }
+    
+    .animated-bg-effect span:nth-child(2) {
+      left: 20%;
+      width: 30px;
+      height: 30px;
+      animation-delay: 2s;
+      animation-duration: 15s;
+    }
+    
+    .animated-bg-effect span:nth-child(3) {
+      left: 30%;
+      width: 100px;
+      height: 100px;
+      animation-delay: 4s;
+      animation-duration: 25s;
+    }
+    
+    .animated-bg-effect span:nth-child(4) {
+      left: 40%;
+      width: 60px;
+      height: 60px;
+      animation-delay: 0s;
+      animation-duration: 18s;
+    }
+    
+    .animated-bg-effect span:nth-child(5) {
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      animation-delay: 3s;
+      animation-duration: 12s;
+    }
+    
+    .animated-bg-effect span:nth-child(6) {
+      left: 60%;
+      width: 100px;
+      height: 100px;
+      animation-delay: 6s;
+      animation-duration: 30s;
+    }
+    
+    .animated-bg-effect span:nth-child(7) {
+      left: 70%;
+      width: 40px;
+      height: 40px;
+      animation-delay: 5s;
+      animation-duration: 14s;
+    }
+    
+    .animated-bg-effect span:nth-child(8) {
+      left: 80%;
+      width: 70px;
+      height: 70px;
+      animation-delay: 1s;
+      animation-duration: 22s;
+    }
+    
+    .animated-bg-effect span:nth-child(9) {
+      left: 90%;
+      width: 30px;
+      height: 30px;
+      animation-delay: 0s;
+      animation-duration: 16s;
+    }
+    
+    @keyframes animate {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.3;
+      }
+      100% {
+        transform: translateY(-1000px) rotate(720deg);
+        opacity: 0;
+      }
+    }
+  </style>
 </head>
-<body class="cyber-bg">
-  <div class="container py-4">
-    <!-- Header -->
-    <header class="mb-4 text-center">
-      <div class="glow-container mb-3">
-        <h1 class="neon-text mb-0">Administração de Pods</h1>
-      </div>
-      <p class="cyber-text">Gerencie seu inventário com estilo</p>
-    </header>
+<body>
+  <!-- Efeitos de fundo -->
+  <div class="grid-bg"></div>
+  <div class="global-glow"></div>
+  <div class="animated-bg-effect">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
 
-    <!-- Control Panel -->
-    <div class="control-panel mb-4">
-      <div class="row">
-        <div class="col-md-6 mb-3 mb-md-0">
-          <div class="d-flex">
-            <div class="search-wrapper">
-              <i class="bi bi-search search-icon"></i>
-              <input type="text" id="searchInput" class="form-control cyber-input" placeholder="Buscar produto...">
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="d-flex justify-content-md-end">
-            <div class="dropdown me-2">
-              <button id="btnImportExport" class="btn cyber-btn cyber-btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-arrow-down-up"></i> Importar/Exportar
-              </button>
-              <ul class="dropdown-menu cyber-dropdown">
-                <li><a class="dropdown-item" href="#" id="btnExportJSON"><i class="bi bi-download"></i> Exportar (JSON)</a></li>
-                <li><a class="dropdown-item" href="#" id="btnExportCSV"><i class="bi bi-file-spreadsheet"></i> Exportar (CSV)</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" id="btnImport"><i class="bi bi-upload"></i> Importar</a></li>
-              </ul>
-            </div>
-            <button id="btnAddProduct" class="btn cyber-btn cyber-btn-primary me-2">
-              <i class="bi bi-plus-lg"></i> Novo Produto
-            </button>
-            <button id="btnViewLogs" class="btn cyber-btn cyber-btn-info me-2">
-              <i class="bi bi-journal-text"></i> Ver Logs
-            </button>
-            <button id="btnInsights" class="btn cyber-btn cyber-btn-secondary me-2">
-              <i class="bi bi-graph-up"></i> Insights
-            </button>
-            <button id="btnDeleteAll" class="btn cyber-btn cyber-btn-danger">
-              <i class="bi bi-trash"></i> Apagar Tudo
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+  <!-- Painel de navegação -->
+  <div class="cyber-panel">
+    <a href="/login" class="circle-button">
+      <i class="bi bi-person-badge"></i>
+    </a>
+    <a href="#" class="circle-button">
+      <i class="bi bi-info-circle"></i>
+    </a>
+    <a href="#" class="circle-button">
+      <i class="bi bi-question-circle"></i>
+    </a>
+  </div>
 
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-      <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
-        <div class="cyber-card stats-card">
-          <div class="cyber-card-body text-center">
-            <i class="bi bi-box-seam stats-icon"></i>
-            <h3 class="stats-number" id="totalProducts">0</h3>
-            <p class="stats-label">Total de Produtos</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
-        <div class="cyber-card stats-card">
-          <div class="cyber-card-body text-center">
-            <i class="bi bi-currency-dollar stats-icon"></i>
-            <h3 class="stats-number" id="totalValue">R$ 0,00</h3>
-            <p class="stats-label">Valor Total</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-3 mb-sm-0">
-        <div class="cyber-card stats-card">
-          <div class="cyber-card-body text-center">
-            <i class="bi bi-x-circle stats-icon"></i>
-            <h3 class="stats-number" id="zeroStockCount">0</h3>
-            <p class="stats-label">Estoque Zerado</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6">
-        <div class="cyber-card stats-card">
-          <div class="cyber-card-body text-center">
-            <i class="bi bi-exclamation-triangle stats-icon"></i>
-            <h3 class="stats-number" id="lowStockCount">0</h3>
-            <p class="stats-label">Baixo Estoque</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filters Panel (collapsed by default) -->
-    <div class="cyber-card mb-4">
-      <div class="cyber-card-header d-flex justify-content-between align-items-center">
-        <button class="btn cyber-btn-sm cyber-btn-outline w-100 text-start d-flex justify-content-between align-items-center" 
-                type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse" 
-                aria-expanded="false" aria-controls="filtersCollapse">
-          <span><i class="bi bi-funnel me-2"></i> Filtros Avançados</span>
-          <i class="bi bi-chevron-down"></i>
-        </button>
-      </div>
-      <div class="collapse" id="filtersCollapse">
-        <div class="cyber-card-body">
-          <form id="filtersForm">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Categoria</label>
-                <select class="form-select cyber-input" id="filterCategory">
-                  <option value="">Todas as Categorias</option>
-                  <option value="pod">Pod</option>
-                  <option value="mod">Mod</option>
-                  <option value="acessorio">Acessório</option>
-                  <option value="liquido">Líquido</option>
-                  <option value="outro">Outro</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Tags</label>
-                <select class="form-select cyber-input" id="filterTag">
-                  <option value="">Todas as Tags</option>
-                  <!-- Tags will be populated dynamically -->
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Faixa de Preço</label>
-                <div class="d-flex">
-                  <input type="number" class="form-control cyber-input me-2" id="filterPriceMin" placeholder="Mín" min="0" step="0.01">
-                  <input type="number" class="form-control cyber-input" id="filterPriceMax" placeholder="Máx" min="0" step="0.01">
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Status do Estoque</label>
-                <div class="d-flex flex-wrap mt-2">
-                  <div class="form-check me-3">
-                    <input class="form-check-input cyber-checkbox" type="checkbox" id="filterLowStock">
-                    <label class="form-check-label" for="filterLowStock">Baixo Estoque</label>
-                  </div>
-                  <div class="form-check me-3">
-                    <input class="form-check-input cyber-checkbox" type="checkbox" id="filterZeroStock">
-                    <label class="form-check-label" for="filterZeroStock">Estoque Zerado</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input cyber-checkbox" type="checkbox" id="filterPromotion">
-                    <label class="form-check-label" for="filterPromotion">Em Promoção</label>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 text-end">
-                <button type="button" class="btn cyber-btn cyber-btn-secondary me-2" id="clearFilters">
-                  <i class="bi bi-x-circle"></i> Limpar Filtros
-                </button>
-                <button type="button" class="btn cyber-btn cyber-btn-primary" id="applyFilters">
-                  <i class="bi bi-funnel"></i> Aplicar Filtros
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Content Tabs -->
-    <ul class="nav nav-tabs cyber-tabs mb-3" id="mainTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-tab-pane" 
-                type="button" role="tab" aria-controls="products-tab-pane" aria-selected="true">
-          <i class="bi bi-grid"></i> Produtos
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="insights-tab" data-bs-toggle="tab" data-bs-target="#insights-tab-pane" 
-                type="button" role="tab" aria-controls="insights-tab-pane" aria-selected="false">
-          <i class="bi bi-graph-up"></i> Insights & Métricas
-        </button>
-      </li>
-    </ul>
-
-    <div class="tab-content" id="mainTabsContent">
-      <!-- Products Tab -->
-      <div class="tab-pane fade show active" id="products-tab-pane" role="tabpanel" aria-labelledby="products-tab" tabindex="0">
-        <div class="cyber-card main-card">
-          <div class="cyber-card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Lista de Produtos</h5>
-            <div class="d-flex">
-              <div class="me-2">
-                <div id="autoSaveIndicator" class="cyber-badge">
-                  <i class="bi bi-check-circle-fill"></i> Auto-save Ativo
-                </div>
-              </div>
-              <button id="sortByName" class="btn cyber-btn-sm cyber-btn-outline me-2">
-                <i class="bi bi-sort-alpha-down"></i> Nome
-              </button>
-              <button id="sortByStock" class="btn cyber-btn-sm cyber-btn-outline me-2">
-                <i class="bi bi-sort-numeric-down"></i> Estoque
-              </button>
-              <button id="sortByPrice" class="btn cyber-btn-sm cyber-btn-outline">
-                <i class="bi bi-sort-numeric-down"></i> Preço
-              </button>
-            </div>
-          </div>
-          <div class="cyber-card-body">
-            <div id="productsContainer" class="row g-3">
-              <!-- Products will be loaded here dynamically -->
-              <div class="col-12 text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Carregando...</span>
-                </div>
-                <p class="mt-2 text-muted">Carregando produtos...</p>
-              </div>
-            </div>
-          </div>
-        </div>
+  <!-- Tela de login -->
+  <div class="login-screen">
+    <div class="login-container">
+      <!-- Logo e título -->
+      <div class="login-logo text-center">
+        <h1 class="neon-text">BOSS<span class="text-purple">PODS</span></h1>
+        <p>Sistema de Gerenciamento</p>
       </div>
       
-      <!-- Insights Tab -->
-      <div class="tab-pane fade" id="insights-tab-pane" role="tabpanel" aria-labelledby="insights-tab" tabindex="0">
-        <div class="row">
-          <!-- Donut Chart - Categorias -->
-          <div class="col-lg-6 mb-4">
-            <div class="cyber-card h-100">
-              <div class="cyber-card-header">
-                <h5 class="mb-0">Distribuição por Categoria</h5>
-              </div>
-              <div class="cyber-card-body">
-                <div class="chart-container">
-                  <canvas id="categoriesChart"></canvas>
-                </div>
-              </div>
-            </div>
+      <!-- Opções de login -->
+      <div class="login-options">
+        <a href="/loja" class="login-option">
+          <div class="option-icon">
+            <i class="bi bi-shop"></i>
           </div>
-          
-          <!-- Bar Chart - Top Produtos por Estoque -->
-          <div class="col-lg-6 mb-4">
-            <div class="cyber-card h-100">
-              <div class="cyber-card-header">
-                <h5 class="mb-0">Top Produtos por Estoque</h5>
-              </div>
-              <div class="cyber-card-body">
-                <div class="chart-container">
-                  <canvas id="topStockChart"></canvas>
-                </div>
-              </div>
-            </div>
+          <div>Loja Online</div>
+        </a>
+        
+        <a href="/login" class="login-option">
+          <div class="option-icon">
+            <i class="bi bi-person-lock"></i>
           </div>
-          
-          <!-- Tabela de Produtos com Estoque Zerado -->
-          <div class="col-lg-6 mb-4">
-            <div class="cyber-card h-100">
-              <div class="cyber-card-header">
-                <h5 class="mb-0">Produtos com Estoque Zerado</h5>
-              </div>
-              <div class="cyber-card-body">
-                <div class="table-responsive">
-                  <table class="table table-dark table-hover cyber-table">
-                    <thead>
-                      <tr>
-                        <th>Nome</th>
-                        <th>Categoria</th>
-                        <th>Preço</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody id="zeroStockTable">
-                      <!-- Will be populated dynamically -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+          <div>Painel Admin</div>
+        </a>
+        
+        <a href="/carrinho" class="login-option">
+          <div class="option-icon">
+            <i class="bi bi-cart3"></i>
           </div>
-          
-          <!-- Tabela de Produtos com Baixo Estoque -->
-          <div class="col-lg-6 mb-4">
-            <div class="cyber-card h-100">
-              <div class="cyber-card-header">
-                <h5 class="mb-0">Produtos com Baixo Estoque</h5>
-              </div>
-              <div class="cyber-card-body">
-                <div class="table-responsive">
-                  <table class="table table-dark table-hover cyber-table">
-                    <thead>
-                      <tr>
-                        <th>Nome</th>
-                        <th>Categoria</th>
-                        <th>Estoque</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody id="lowStockTable">
-                      <!-- Will be populated dynamically -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          <div>Meu Carrinho</div>
+        </a>
+      </div>
+      
+      <!-- Efeito scanner -->
+      <div class="scanner-line"></div>
+      
+      <!-- Rodapé -->
+      <div class="login-footer">
+        <p class="mb-0">BOSSPODS © 2025 | Todos os direitos reservados</p>
+        <small>v1.0.0</small>
       </div>
     </div>
   </div>
 
-  <!-- Add/Edit Product Modal -->
-  <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content cyber-modal">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle">Adicionar Produto</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="productForm">
-            <input type="hidden" id="productId">
-            <div class="mb-3">
-              <label for="productName" class="form-label">Nome do Produto</label>
-              <input type="text" class="form-control cyber-input" id="productName" required>
-            </div>
-            <div class="mb-3">
-              <label for="productPrice" class="form-label">Preço (R$)</label>
-              <input type="number" class="form-control cyber-input" id="productPrice" step="0.01" min="0" required>
-            </div>
-            <div class="mb-3">
-              <label for="productStock" class="form-label">Estoque</label>
-              <input type="number" class="form-control cyber-input" id="productStock" min="0" required>
-            </div>
-            <div class="mb-3">
-              <label for="productImage" class="form-label">URL da Imagem</label>
-              <input type="text" class="form-control cyber-input" id="productImage" placeholder="https://exemplo.com/imagem.jpg">
-              <div id="imagePreview" class="mt-2 text-center d-none">
-                <img src="" alt="Preview" class="img-thumbnail cyber-thumbnail">
-              </div>
-            </div>
-            <div class="mb-3">
-              <label for="productCategory" class="form-label">Categoria</label>
-              <select class="form-select cyber-input" id="productCategory">
-                <option value="pod">Pod</option>
-                <option value="mod">Mod</option>
-                <option value="acessorio">Acessório</option>
-                <option value="liquido">Líquido</option>
-                <option value="outro">Outro</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label for="productTags" class="form-label">Tags</label>
-              <input type="text" class="form-control cyber-input" id="productTags" placeholder="Separadas por vírgula (ex: frutado, ice, forte)">
-              <div class="mt-2" id="tagsContainer">
-                <!-- Tags will be displayed here -->
-              </div>
-              <div class="small text-muted mt-1">Digite as tags separadas por vírgula ou selecione abaixo:</div>
-              <div class="mt-2 common-tags">
-                <button type="button" class="btn cyber-btn cyber-btn-tag tag-ice me-1 mb-1" data-tag="ice">#ice</button>
-                <button type="button" class="btn cyber-btn cyber-btn-tag tag-frutado me-1 mb-1" data-tag="frutado">#frutado</button>
-                <button type="button" class="btn cyber-btn cyber-btn-tag tag-forte me-1 mb-1" data-tag="forte">#forte</button>
-                <button type="button" class="btn cyber-btn cyber-btn-tag tag-tabaco me-1 mb-1" data-tag="tabaco">#tabaco</button>
-                <button type="button" class="btn cyber-btn cyber-btn-tag tag-mentolado me-1 mb-1" data-tag="mentolado">#mentolado</button>
-              </div>
-            </div>
-            <div class="mb-3 form-check">
-              <input type="checkbox" class="form-check-input cyber-checkbox" id="productPromotion">
-              <label class="form-check-label" for="productPromotion">Produto em Promoção</label>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn cyber-btn cyber-btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn cyber-btn cyber-btn-primary" id="saveProduct">Salvar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- View Logs Modal -->
-  <div class="modal fade" id="logsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content cyber-modal">
-        <div class="modal-header">
-          <h5 class="modal-title">Logs de Atividades</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="table-responsive">
-            <table class="table table-dark table-hover cyber-table">
-              <thead>
-                <tr>
-                  <th>Data/Hora</th>
-                  <th>Produto</th>
-                  <th>Ação</th>
-                  <th>Detalhes</th>
-                </tr>
-              </thead>
-              <tbody id="logsTableBody">
-                <!-- Logs will be loaded here dynamically -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn cyber-btn cyber-btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Confirmation Modal -->
-  <div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content cyber-modal cyber-modal-danger">
-        <div class="modal-header">
-          <h5 class="modal-title">Confirmação</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p id="confirmationMessage">Tem certeza que deseja realizar esta ação?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn cyber-btn cyber-btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn cyber-btn cyber-btn-danger" id="confirmAction">Sim, apagar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Notification Modal -->
-  <div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content cyber-modal cyber-modal-primary">
-        <div class="modal-header">
-          <h5 class="modal-title">Notificação</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body text-center">
-          <div class="notification-icon mb-3">
-            <i id="notificationIcon" class="bi bi-check-circle-fill fs-1"></i>
-          </div>
-          <p id="notificationMessage">Operação realizada com sucesso!</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn cyber-btn cyber-btn-primary" data-bs-dismiss="modal">OK</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Import Modal -->
-  <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content cyber-modal">
-        <div class="modal-header">
-          <h5 class="modal-title">Importar Produtos</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="importForm">
-            <input type="file" id="fileInput" accept=".json" class="d-none">
-            <label for="fileInput" class="file-upload-label">
-              <i class="bi bi-cloud-arrow-up import-icon"></i>
-              <span>Arraste um arquivo JSON ou clique para selecionar</span>
-              <small class="d-block mt-2 text-muted">Apenas arquivos .json são suportados</small>
-            </label>
-            <div class="mt-3">
-              <div class="form-check">
-                <input class="form-check-input cyber-checkbox" type="checkbox" id="clearBeforeImport">
-                <label class="form-check-label" for="clearBeforeImport">
-                  Limpar produtos existentes antes de importar
-                </label>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn cyber-btn cyber-btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn cyber-btn cyber-btn-primary" id="confirmImport" disabled>Importar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/static/js/script.js"></script>
-  <!-- Notificações de Estoque Baixo Container -->
-  <div id="notificationContainer" class="notification-container"></div>
-
+  <script>
+    // Animação simples para elementos da página
+    document.addEventListener('DOMContentLoaded', () => {
+      const fadeInElements = document.querySelectorAll('.login-logo, .login-options, .login-footer');
+      
+      fadeInElements.forEach((el, index) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'all 0.8s ease';
+        
+        setTimeout(() => {
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+        }, 300 + (index * 200));
+      });
+    });
+  </script>
 </body>
 </html>

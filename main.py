@@ -9,9 +9,15 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SESSION_SECRET", "dev_secret_key")
 
-# Rota principal - loja
+# Rota principal - tela de entrada
 @app.route('/')
 def index():
+    """Render the initial screen"""
+    return render_template('index.html')
+
+# Rota para a loja
+@app.route('/loja')
+def loja():
     """Render the public store"""
     return render_template('loja.html')
 
