@@ -1,5 +1,5 @@
 // Gerenciador de autenticação para diferentes páginas
-// Versão refatorada para Firebase v8 CDN
+// Verificação de autenticação com Firebase Auth v8
 
 // Configurações de autenticação
 const AUTH_CONFIG = {
@@ -10,12 +10,13 @@ const AUTH_CONFIG = {
   ADMIN_ROUTES: ['/admin'],
   
   // Rotas que exigem apenas login (qualquer usuário)
-  AUTH_ROUTES: ['/admin', '/carrinho', '/perfil']
+  AUTH_ROUTES: ['/admin', '/carrinho', '/loja']
 };
 
 // Estado global de autenticação
 let currentUser = null;
 let authCheckComplete = false;
+let authStateListeners = [];
 
 // Verificar se a página atual exige autenticação de administrador
 function isAdminRoute() {
@@ -32,6 +33,27 @@ function isProtectedRoute() {
 // Atualizar UI com base no estado de autenticação
 function updateAuthUI(user) {
   try {
+    // Botão de login/logout em todas as páginas (se existir)
+    const loginButton = document.getElementById('loginButton');
+    const logoutButton = document.getElementById('logoutButton');
+    const authOverlay = document.getElementById('authOverlay');
+    
+    if (user) {
+      // Usuário autenticado
+      if (loginButton) loginButton.classList.add('d-none');
+      if (logoutButton) logoutButton.classList.remove('d-none');
+      if (authOverlay) authOverlay.style.display = 'none';
+    } else {
+      // Usuário não autenticado
+      if (loginButton) loginButton.classList.remove('d-none');
+      if (logoutButton) logoutButton.classList.add('d-none');
+      
+      // Só mostrar overlay se for uma rota protegida
+      if (authOverlay && isProtectedRoute()) {
+        authOverlay.style.display = 'flex';
+      }
+    }
+    
     // Botão de admin na loja
     const adminBtn = document.getElementById('adminBtn');
     if (adminBtn) {
@@ -48,30 +70,14 @@ function updateAuthUI(user) {
       userDisplayName.textContent = user.displayName || user.email;
     }
     
-    // Botões de login/logout no header, se existirem
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const userMenu = document.getElementById('userMenu');
-    
-    if (loginBtn && logoutBtn) {
-      if (user) {
-        loginBtn.classList.add('d-none');
-        logoutBtn.classList.remove('d-none');
-        if (userMenu) {
-          userMenu.classList.remove('d-none');
-          const userNameEl = document.getElementById('userName');
-          if (userNameEl) {
-            userNameEl.textContent = user.displayName || user.email;
-          }
-        }
-      } else {
-        loginBtn.classList.remove('d-none');
-        logoutBtn.classList.add('d-none');
-        if (userMenu) {
-          userMenu.classList.add('d-none');
-        }
+    // Chamar listeners adicionais
+    authStateListeners.forEach(listener => {
+      try {
+        listener(user);
+      } catch (err) {
+        console.error('Erro ao executar listener de autenticação:', err);
       }
-    }
+    });
   } catch (error) {
     console.error('Erro ao atualizar UI de autenticação:', error);
   }
@@ -153,6 +159,13 @@ function isAdminUser(user = currentUser) {
   return user.email === AUTH_CONFIG.ADMIN_EMAIL;
 }
 
+// Adicionar listener para mudanças de autenticação
+function addAuthStateListener(listener) {
+  if (typeof listener === 'function') {
+    authStateListeners.push(listener);
+  }
+}
+
 // Redirecionar para a página de login com mensagem
 function redirectToLogin(message) {
   // Salvar mensagem para ser exibida na página de login
@@ -161,8 +174,12 @@ function redirectToLogin(message) {
   }
   
   // Não redirecionar se já estiver na página de login
-  if (window.location.pathname !== '/login') {
-    window.location.href = '/login';
+  if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+    window.location.href = '/';
+  } else {
+    // Abrir modal de login na página inicial
+    const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+    loginModal.show();
   }
 }
 
@@ -172,81 +189,18 @@ function showErrorAndRedirect(message, redirectUrl) {
   window.location.href = redirectUrl;
 }
 
-// Inicialização quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
-  // Verificar se o Firebase foi inicializado
-  const firebaseCheckInterval = setInterval(() => {
-    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-      // Firebase inicializado
-      clearInterval(firebaseCheckInterval);
-      console.log('Firebase inicializado para gerenciamento de autenticação');
-      
-      // Configurar listener de autenticação para atualizar a UI
-      firebase.auth().onAuthStateChanged((user) => {
-        // Atualizar variável global
-        currentUser = user;
-        
-        // Atualizar UI baseada no estado de autenticação
-        updateAuthUI(user);
-        
-        // Verificar restrições de acesso
-        const isAdmin = isAdminUser(user);
-        const path = window.location.pathname;
-        
-        // Verificações de permissão
-        if (path === '/admin') {
-          if (!user) {
-            redirectToLogin('Você precisa fazer login para acessar esta área');
-          } else if (!isAdmin) {
-            showErrorAndRedirect('Você não tem permissão para acessar esta área.', '/loja');
-          }
-        } else if (path === '/login' && user) {
-          // Se já estiver logado, redirecionar para a página apropriada
-          if (isAdmin) {
-            window.location.href = '/admin';
-          } else {
-            window.location.href = '/loja';
-          }
-        }
-      });
-    } else {
-      // Firebase ainda não inicializado, aguardar
-      console.log('Aguardando inicialização do Firebase para verificação de autenticação...');
-    }
-  }, 500);
-  
-  // Se estiver na página de login, verificar se há erro de autenticação salvo
-  if (window.location.pathname === '/login') {
-    const authError = localStorage.getItem('auth_error');
-    if (authError) {
-      // Exibir erro (o código na página de login deve lidar com isso)
-      // Será resolvido quando o DOM estiver pronto
-      console.log('Mensagem de erro de autenticação encontrada:', authError);
-      
-      // Limpar mensagem
-      localStorage.removeItem('auth_error');
-    }
-  }
-  
-  // Adicionar listener para logout se o botão existir
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', logout);
-  }
-});
-
 // Função para fazer logout
 function logout() {
   if (firebase && firebase.auth) {
     firebase.auth().signOut()
       .then(() => {
         console.log('Logout bem-sucedido');
-        // Limpar dados do localStorage
+        // Limpar dados de autenticação local
         localStorage.removeItem('currentUser');
         localStorage.removeItem('lastLoginTime');
         
-        // Redirecionar para a página inicial/login
-        window.location.href = '/login';
+        // Redirecionar para a página inicial
+        window.location.href = '/';
       })
       .catch((error) => {
         console.error('Erro ao fazer logout:', error);
@@ -276,6 +230,60 @@ function canExecuteAdminFunction(operation = 'operação administrativa') {
   return true;
 }
 
+// Inicialização quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Auth Manager iniciando...');
+  
+  // Verificar se o Firebase foi inicializado
+  const firebaseCheckInterval = setInterval(() => {
+    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+      // Firebase inicializado
+      clearInterval(firebaseCheckInterval);
+      console.log('Firebase inicializado, verificando autenticação...');
+      
+      // Configurar o listener de autenticação
+      firebase.auth().onAuthStateChanged((user) => {
+        console.log('Estado de autenticação alterado:', user ? 'Autenticado' : 'Não autenticado');
+        
+        // Atualizar usuário atual
+        currentUser = user;
+        authCheckComplete = true;
+        
+        // Atualizar UI baseada no estado de autenticação
+        updateAuthUI(user);
+        
+        // Verificar restrições de acesso para a página atual
+        const path = window.location.pathname;
+        
+        // Se for rota administrativa
+        if (isAdminRoute()) {
+          if (!user) {
+            redirectToLogin('Você precisa fazer login para acessar esta área');
+          } else if (!isAdminUser(user)) {
+            showErrorAndRedirect('Você não tem permissão para acessar esta área.', '/loja');
+          }
+        } 
+        // Se for rota que requer login
+        else if (isProtectedRoute() && !user) {
+          // Se estiver na página inicial, apenas mostrar overlay
+          if (path === '/' || path === '/index.html') {
+            const authOverlay = document.getElementById('authOverlay');
+            if (authOverlay) authOverlay.style.display = 'flex';
+          } else {
+            redirectToLogin('Você precisa fazer login para acessar esta área');
+          }
+        }
+      });
+      
+      // Configurar botão de logout global (se existir)
+      const logoutButton = document.getElementById('logoutButton');
+      if (logoutButton) {
+        logoutButton.addEventListener('click', logout);
+      }
+    }
+  }, 500);
+});
+
 // Exportar funções para uso global
 window.auth = {
   checkAuthentication,
@@ -284,5 +292,6 @@ window.auth = {
   isAdminUser,
   logout,
   canExecuteAdminFunction,
-  getCurrentUser: () => currentUser
+  getCurrentUser: () => currentUser,
+  addAuthStateListener
 };

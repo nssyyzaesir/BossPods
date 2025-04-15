@@ -3,7 +3,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCl_NEvqOLaHjbhx3pDfnZrhBR4iqav9h8",
   authDomain: "bosspods.firebaseapp.com",
   projectId: "bosspods",
-  storageBucket: "bosspods.firebasestorage.app",
+  storageBucket: "bosspods.appspot.com", // Corrigido para o domínio correto
   messagingSenderId: "319819159324",
   appId: "1:319819159324:web:953f64130fe51842600cd9"
 };
@@ -55,54 +55,6 @@ function initializeFirebase() {
         console.error("Erro ao configurar persistência:", error);
       });
     
-    // Configurar o listener de autenticação
-    firebaseAuth.onAuthStateChanged((user) => {
-      console.log("Estado de autenticação alterado:", user ? "Usuário autenticado" : "Usuário não autenticado");
-      
-      if (user) {
-        console.log("Usuário autenticado:", user.email);
-        
-        // Verificar se é o admin baseado no email
-        const isAdmin = user.email === ADMIN_EMAIL;
-        
-        // Salvar dados do usuário no localStorage para persistência
-        localStorage.setItem('currentUser', JSON.stringify({
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName || user.email.split('@')[0],
-          isAdmin: isAdmin
-        }));
-        
-        localStorage.setItem('lastLoginTime', new Date().getTime());
-        
-        // Redirecionar baseado no tipo de usuário e localização atual
-        const currentPath = window.location.pathname;
-        
-        if (isAdmin) {
-          // Se for admin na página de login, redirecionar para admin
-          if (currentPath === '/login') {
-            window.location.href = '/admin';
-          }
-        } else {
-          // Se for usuário normal tentando acessar área administrativa
-          if (currentPath === '/admin') {
-            alert('Você não tem permissão para acessar esta área.');
-            window.location.href = '/loja';
-          }
-        }
-      } else {
-        // Se não há usuário autenticado e está em página restrita
-        if (window.location.pathname === '/admin') {
-          alert('Você precisa fazer login como administrador para acessar esta área.');
-          window.location.href = '/login';
-        }
-        
-        // Limpar dados de autenticação local
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('lastLoginTime');
-      }
-    });
-    
     // Marcar como inicializado
     firebaseInitialized = true;
     console.log("Firebase completamente inicializado com sucesso");
@@ -150,9 +102,20 @@ function createProductsAPI(db) {
       }
     },
     
+    // Criar produto (compatibilidade com código existente)
+    async addProduct(produto) {
+      return this.createProduct(produto);
+    },
+    
     // Criar produto
     async createProduct(produto) {
       try {
+        // Verificar se usuário é admin
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+          throw new Error("Permissão negada: apenas administradores podem criar produtos");
+        }
+        
         const docRef = await db.collection('produtos').add({
           ...produto,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -162,7 +125,10 @@ function createProductsAPI(db) {
         // Registrar log
         await this.registrarLog('criar', docRef.id, produto.nome, produto);
         
-        return docRef.id;
+        return {
+          id: docRef.id,
+          ...produto
+        };
       } catch (error) {
         console.error("Erro ao criar produto:", error);
         throw error;
@@ -172,6 +138,12 @@ function createProductsAPI(db) {
     // Atualizar produto
     async updateProduct(id, produto) {
       try {
+        // Verificar se usuário é admin
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+          throw new Error("Permissão negada: apenas administradores podem atualizar produtos");
+        }
+        
         await db.collection('produtos').doc(id).update({
           ...produto,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -190,6 +162,22 @@ function createProductsAPI(db) {
     // Excluir produto
     async deleteProduct(id, nomeProduto) {
       try {
+        // Verificar se usuário é admin
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+          throw new Error("Permissão negada: apenas administradores podem excluir produtos");
+        }
+        
+        // Obter nome do produto se não foi fornecido
+        if (!nomeProduto) {
+          const doc = await db.collection('produtos').doc(id).get();
+          if (doc.exists) {
+            nomeProduto = doc.data().nome || 'Produto sem nome';
+          } else {
+            nomeProduto = 'Produto não encontrado';
+          }
+        }
+        
         await db.collection('produtos').doc(id).delete();
         
         // Registrar log
@@ -205,10 +193,15 @@ function createProductsAPI(db) {
     // Registrar um log de atividade
     async registrarLog(tipo, produtoId, nomeProduto, detalhes) {
       try {
+        // Verificar se usuário está autenticado
+        const currentUser = firebase.auth().currentUser;
+        const userEmail = currentUser ? currentUser.email : 'sistema';
+        
         await db.collection('logs_atividade').add({
           tipo: tipo,
           produto_id: produtoId,
           nome_produto: nomeProduto,
+          usuario: userEmail,
           detalhes: JSON.stringify(detalhes),
           data: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -222,6 +215,13 @@ function createProductsAPI(db) {
     // Obter logs
     async getLogs() {
       try {
+        // Verificar se usuário é admin
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+          console.error("Permissão negada: apenas administradores podem visualizar logs");
+          return [];
+        }
+        
         const snapshot = await db.collection('logs_atividade')
           .orderBy('data', 'desc')
           .limit(100)
@@ -265,6 +265,19 @@ function createStatsAPI(db) {
     // Obter estatísticas básicas
     async getBasicStats() {
       try {
+        // Verificar autenticação
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser) {
+          console.error("Usuário não autenticado para obter estatísticas");
+          return {
+            totalProdutos: 0,
+            valorTotal: 0,
+            estoqueBaixo: 0,
+            estoqueZerado: 0,
+            maioresEstoques: []
+          };
+        }
+        
         // Buscar todos os produtos
         const snapshot = await db.collection('produtos').get();
         const produtos = snapshot.docs.map(doc => ({
@@ -361,66 +374,6 @@ function createStatsAPI(db) {
   };
 }
 
-// Inicializa o Firebase quando o script é carregado
-(function() {
-  try {
-    // Inicializar Firebase
-    initializeFirebase();
-    
-    // Verificar se estamos na página de admin
-    if (window.location.pathname === '/admin') {
-      console.log("Verificando autorização para acessar a página de administração...");
-      
-      // Pequeno atraso para garantir que o Firebase foi inicializado
-      setTimeout(async () => {
-        if (firebase && firebase.auth) {
-          try {
-            // Verificar se o usuário atual tem permissão de administrador
-            const currentUser = firebase.auth().currentUser;
-            
-            if (currentUser && currentUser.email) {
-              if (currentUser.email === ADMIN_EMAIL) {
-                console.log("Acesso permitido para o administrador:", currentUser.email);
-              } else {
-                console.log("Acesso negado para usuário não-admin:", currentUser.email);
-                alert("Você não tem permissão para acessar esta área.");
-                window.location.href = '/loja';
-              }
-            } else {
-              console.log("Usuário não autenticado tentando acessar a área restrita");
-              alert("Você precisa fazer login como administrador para acessar esta área.");
-              window.location.href = '/login';
-            }
-          } catch (error) {
-            console.error("Erro ao verificar permissão:", error);
-          }
-        }
-      }, 1000);
-    } else if (window.location.pathname === '/login') {
-      // Na página de login, verificamos se já temos um usuário autenticado
-      setTimeout(async () => {
-        if (firebase && firebase.auth) {
-          const currentUser = firebase.auth().currentUser;
-          
-          if (currentUser) {
-            console.log("Usuário já autenticado:", currentUser.email);
-            // Redirecionar para a página apropriada
-            if (currentUser.email === ADMIN_EMAIL) {
-              window.location.href = '/admin';
-            } else {
-              window.location.href = '/loja';
-            }
-          } else {
-            console.log("Nenhum usuário autenticado, permanecendo na página de login");
-          }
-        }
-      }, 1000);
-    }
-  } catch (error) {
-    console.error("Erro ao inicializar Firebase:", error);
-  }
-})();
-
 // API Firebase Auth
 const firebaseAuthAPI = {
   // Registrar um novo usuário
@@ -509,3 +462,24 @@ const firebaseAuthAPI = {
     return firebase.auth().currentUser;
   }
 };
+
+// Verificar se usuário logado é admin
+function isAdminUser(user) {
+  // Se não tiver usuário, não é admin
+  if (!user) return false;
+  
+  // Verifica o email do usuário
+  return user.email === ADMIN_EMAIL;
+}
+
+// Inicializa o Firebase quando o script é carregado
+(function() {
+  try {
+    // Inicializar Firebase
+    initializeFirebase();
+    
+    console.log("Firebase configurado e APIs inicializadas");
+  } catch (error) {
+    console.error("Erro ao inicializar Firebase:", error);
+  }
+})();
