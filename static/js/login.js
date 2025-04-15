@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorMessages = document.getElementById('errorMessages');
   
   // E-mail autorizado (único com permissão de acesso)
-  const AUTHORIZED_EMAIL = 'nsyz@gmail.com';
+  const AUTHORIZED_EMAIL = 'admin@bosspods.com';
   
   // Inicialmente mostrar mensagem de carregamento
   showErrorMessage('Conectando ao serviço de autenticação...', 'info');
