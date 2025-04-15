@@ -238,24 +238,59 @@ function showAutoSaveNotification() {
   }, 2000);
 }
 
-// Load products from localStorage
+// Load products
 function carregarProdutos() {
-  try {
-    const produtosJSON = localStorage.getItem('produtos');
-    const logsJSON = localStorage.getItem('logs');
-    
-    if (produtosJSON) {
-      produtos = JSON.parse(produtosJSON);
+  if (serverMode) {
+    // Carregar do backend
+    fetch(`${apiUrl}/produtos`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        produtos = data;
+        renderAdmin();
+        updateStats();
+        refreshInsights();
+        
+        // Carregar logs
+        return fetch(`${apiUrl}/logs`);
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erro HTTP ao carregar logs: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        logs = data;
+      })
+      .catch(error => {
+        console.error('Erro ao carregar dados do servidor:', error);
+        showModal(`Erro ao carregar produtos: ${error.message}`, 'x-circle', 'text-danger');
+      });
+  } else {
+    // Modo localStorage
+    try {
+      const produtosJSON = localStorage.getItem('produtos');
+      const logsJSON = localStorage.getItem('logs');
+      
+      if (produtosJSON) {
+        produtos = JSON.parse(produtosJSON);
+      }
+      
+      if (logsJSON) {
+        logs = JSON.parse(logsJSON);
+      }
+      
+      renderAdmin();
+      updateStats();
+      refreshInsights();
+    } catch (error) {
+      console.error('Erro ao carregar os dados do localStorage:', error);
     }
-    
-    if (logsJSON) {
-      logs = JSON.parse(logsJSON);
-    }
-    
-    renderAdmin();
-    updateStats();
-  } catch (error) {
-    console.error('Erro ao carregar os dados:', error);
   }
 }
 
@@ -291,6 +326,14 @@ function adicionarProduto() {
   const estoque = parseInt(document.getElementById('productStock').value);
   const imagem = document.getElementById('productImage').value.trim();
   const categoria = document.getElementById('productCategory').value;
+  const tagsInput = document.getElementById('productTags').value.trim();
+  const em_promocao = document.getElementById('productPromotion').checked;
+  
+  // Process tags
+  let tags = [];
+  if (tagsInput) {
+    tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+  }
   
   const novoProduto = {
     id: gerarID(),
@@ -299,21 +342,51 @@ function adicionarProduto() {
     estoque,
     imagem: imagem || 'https://via.placeholder.com/150?text=Sem+Imagem',
     categoria,
-    dataInclusao: new Date().toISOString()
+    tags,
+    em_promocao,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   };
   
-  produtos.push(novoProduto);
-  
-  // Add to activity log
-  registrarLog('criar', novoProduto.id, novoProduto.nome, {
-    produto: novoProduto
-  });
-  
-  salvarProdutos(produtos);
-  renderAdmin();
-  updateStats();
-  
-  showModal('Produto adicionado com sucesso!');
+  if (serverMode) {
+    // Enviar para o servidor via API
+    fetch(`${apiUrl}/produtos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(novoProduto)
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Atualizar a lista e interface
+      carregarProdutos();
+      showModal('Produto adicionado com sucesso!');
+    })
+    .catch(error => {
+      console.error('Erro ao adicionar produto:', error);
+      showModal(`Erro ao adicionar produto: ${error.message}`, 'x-circle', 'text-danger');
+    });
+  } else {
+    // Modo localStorage
+    produtos.push(novoProduto);
+    
+    // Add to activity log
+    registrarLog('criar', novoProduto.id, novoProduto.nome, {
+      produto: novoProduto
+    });
+    
+    salvarProdutos(produtos);
+    renderAdmin();
+    updateStats();
+    
+    showModal('Produto adicionado com sucesso!');
+  }
 }
 
 // Save product (update)
@@ -330,6 +403,14 @@ function salvar(id) {
   const estoque = parseInt(document.getElementById('productStock').value);
   const imagem = document.getElementById('productImage').value.trim();
   const categoria = document.getElementById('productCategory').value;
+  const tagsInput = document.getElementById('productTags').value.trim();
+  const em_promocao = document.getElementById('productPromotion').checked;
+  
+  // Process tags
+  let tags = [];
+  if (tagsInput) {
+    tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+  }
   
   // Create change log details
   const mudancas = {};
@@ -340,24 +421,81 @@ function salvar(id) {
   if (produtoAtual.imagem !== imagem && imagem !== '') mudancas.imagem = { antes: produtoAtual.imagem, depois: imagem };
   if (produtoAtual.categoria !== categoria) mudancas.categoria = { antes: produtoAtual.categoria, depois: categoria };
   
-  // Update product
-  produtoAtual.nome = nome;
-  produtoAtual.preco = preco;
-  produtoAtual.estoque = estoque;
-  produtoAtual.categoria = categoria;
-  if (imagem) produtoAtual.imagem = imagem;
-  produtoAtual.ultimaAtualizacao = new Date().toISOString();
+  // Compare tags
+  const currentTags = produtoAtual.tags || [];
+  const currentTagsArray = typeof currentTags === 'string' ? JSON.parse(currentTags) : currentTags;
   
-  // Add to activity log if there are changes
-  if (Object.keys(mudancas).length > 0) {
-    registrarLog('editar', produtoAtual.id, produtoAtual.nome, mudancas);
+  if (JSON.stringify(currentTagsArray.sort()) !== JSON.stringify(tags.sort())) {
+    mudancas.tags = { antes: currentTagsArray, depois: tags };
   }
   
-  salvarProdutos(produtos);
-  renderAdmin();
-  updateStats();
+  // Compare promotion status
+  if (produtoAtual.em_promocao !== em_promocao) {
+    mudancas.em_promocao = { antes: produtoAtual.em_promocao, depois: em_promocao };
+  }
   
-  showModal('Alterações salvas com sucesso!');
+  if (serverMode) {
+    // Prepare updated product data
+    const produtoAtualizado = {
+      nome: nome,
+      preco: preco,
+      estoque: estoque,
+      categoria: categoria,
+      tags: tags,
+      em_promocao: em_promocao,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (imagem) {
+      produtoAtualizado.imagem = imagem;
+    }
+    
+    // Send to server via API
+    fetch(`${apiUrl}/produtos/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(produtoAtualizado)
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Reload products and interface
+      carregarProdutos();
+      showModal('Alterações salvas com sucesso!');
+    })
+    .catch(error => {
+      console.error('Erro ao salvar produto:', error);
+      showModal(`Erro ao salvar produto: ${error.message}`, 'x-circle', 'text-danger');
+    });
+  } else {
+    // Local storage mode
+    // Update product
+    produtoAtual.nome = nome;
+    produtoAtual.preco = preco;
+    produtoAtual.estoque = estoque;
+    produtoAtual.categoria = categoria;
+    produtoAtual.tags = tags;
+    produtoAtual.em_promocao = em_promocao;
+    if (imagem) produtoAtual.imagem = imagem;
+    produtoAtual.updated_at = new Date().toISOString();
+    
+    // Add to activity log if there are changes
+    if (Object.keys(mudancas).length > 0) {
+      registrarLog('editar', produtoAtual.id, produtoAtual.nome, mudancas);
+    }
+    
+    salvarProdutos(produtos);
+    renderAdmin();
+    updateStats();
+    
+    showModal('Alterações salvas com sucesso!');
+  }
 }
 
 // Delete product
@@ -372,19 +510,41 @@ function excluirProduto(id) {
   const produtoExcluido = produtos[produtoIndex];
   
   showConfirmationModal(`Tem certeza que deseja excluir o produto "${produtoExcluido.nome}"?`, function() {
-    // Add to activity log
-    registrarLog('excluir', produtoExcluido.id, produtoExcluido.nome, {
-      produto: produtoExcluido
-    });
-    
-    // Remove product
-    produtos.splice(produtoIndex, 1);
-    
-    salvarProdutos(produtos);
-    renderAdmin();
-    updateStats();
-    
-    showModal('Produto excluído com sucesso!');
+    if (serverMode) {
+      // Enviar para o servidor via API
+      fetch(`${apiUrl}/produtos/${id}`, {
+        method: 'DELETE'
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Recarregar produtos e interface
+        carregarProdutos();
+        showModal('Produto excluído com sucesso!');
+      })
+      .catch(error => {
+        console.error('Erro ao excluir produto:', error);
+        showModal(`Erro ao excluir produto: ${error.message}`, 'x-circle', 'text-danger');
+      });
+    } else {
+      // Add to activity log
+      registrarLog('excluir', produtoExcluido.id, produtoExcluido.nome, {
+        produto: produtoExcluido
+      });
+      
+      // Remove product
+      produtos.splice(produtoIndex, 1);
+      
+      salvarProdutos(produtos);
+      renderAdmin();
+      updateStats();
+      
+      showModal('Produto excluído com sucesso!');
+    }
   });
 }
 
