@@ -9,13 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginBtn = document.getElementById('loginBtn');
   const errorMessages = document.getElementById('errorMessages');
   
-  // Elementos do DOM para Registro
-  const registerForm = document.getElementById('registerForm');
-  const registerNameInput = document.getElementById('registerName');
-  const registerEmailInput = document.getElementById('registerEmail');
-  const registerPasswordInput = document.getElementById('registerPassword');
-  const confirmPasswordInput = document.getElementById('confirmPassword');
-  const registerBtn = document.getElementById('registerBtn');
+  // E-mail autorizado (único com permissão de acesso)
+  const AUTHORIZED_EMAIL = 'nsyz@gmail.com';
   
   // Inicialmente mostrar mensagem de carregamento
   showErrorMessage('Conectando ao serviço de autenticação...', 'info');
@@ -96,20 +91,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const password = passwordInput.value;
       console.log('Tentando login com email:', email);
       
+      // Verificar se o e-mail é o autorizado
+      if (email !== AUTHORIZED_EMAIL) {
+        console.log('Tentativa de acesso com e-mail não autorizado:', email);
+        showLoginError('Acesso negado. Apenas o administrador autorizado pode acessar o painel.');
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Entrar';
+        return;
+      }
+      
       try {
         // Tentar fazer login
         console.log('Chamando API de login');
         const user = await firebaseAuthAPI.login(email, password);
         console.log('Login bem-sucedido:', user);
         
-        // Verificar se o usuário é admin
-        console.log('Verificando se usuário é admin');
-        const isAdmin = await firebaseAuthAPI.isAdmin(user);
-        console.log('Resultado da verificação admin:', isAdmin);
-        
-        if (isAdmin) {
+        // Verificar se o e-mail do usuário é o autorizado
+        if (user.email === AUTHORIZED_EMAIL) {
           // Mostrar mensagem de sucesso
-          console.log('Usuário é admin, redirecionando para dashboard');
+          console.log('Usuário autorizado, redirecionando para dashboard');
           showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');
           
           // Verificar novamente se o usuário está salvo corretamente
@@ -119,12 +119,12 @@ document.addEventListener('DOMContentLoaded', () => {
           // Redirecionar para o dashboard após um pequeno delay
           setTimeout(redirectToDashboard, 500);
         } else {
-          // Logout (usuário não é admin)
-          console.log('Usuário não é admin, realizando logout');
+          // Logout (usuário não autorizado)
+          console.log('Usuário não autorizado, realizando logout');
           await firebaseAuthAPI.logout();
           
           // Mostrar erro
-          showLoginError('Você não tem permissão para acessar o painel de administração');
+          showLoginError('Acesso negado. Apenas o administrador autorizado pode acessar o painel.');
         }
       } catch (error) {
         console.error('Erro de login:', error);
@@ -139,76 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   } else {
     console.error('Formulário de login não encontrado!');
-  }
-  
-  // Configurar evento de submit do formulário de registro
-  if (registerForm) {
-    registerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      console.log('Formulário de registro enviado');
-      
-      // Verificar se Firebase está pronto
-      if (typeof firebaseInitialized === 'undefined' || !firebaseInitialized) {
-        showErrorMessage('Firebase ainda não foi inicializado. Aguarde ou recarregue a página.', 'danger');
-        return;
-      }
-      
-      // Desabilitar botão de registro
-      registerBtn.disabled = true;
-      registerBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Registrando...';
-      
-      // Obter valores do formulário
-      const name = registerNameInput.value.trim();
-      const email = registerEmailInput.value.trim();
-      const password = registerPasswordInput.value;
-      const confirmPassword = confirmPasswordInput.value;
-      
-      // Validar senhas
-      if (password !== confirmPassword) {
-        showErrorMessage('As senhas não conferem', 'danger');
-        registerBtn.disabled = false;
-        registerBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
-        return;
-      }
-      
-      try {
-        // Registrar usuário
-        console.log('Chamando API de registro');
-        const user = await firebaseAuthAPI.register(email, password, name);
-        console.log('Registro bem-sucedido:', user);
-        
-        // Mostrar mensagem de sucesso
-        showNotification('Conta criada', 'Sua conta foi criada com sucesso! Faça login para continuar.', 'success');
-        
-        // Limpar formulário
-        registerForm.reset();
-        
-        // Trocar para a aba de login
-        document.getElementById('login-tab').click();
-        
-      } catch (error) {
-        console.error('Erro de registro:', error);
-        
-        // Tratar erros específicos
-        let errorMessage = 'Erro ao criar conta. Tente novamente.';
-        
-        if (error.code === 'auth/email-already-in-use') {
-          errorMessage = 'Este email já está em uso.';
-        } else if (error.code === 'auth/invalid-email') {
-          errorMessage = 'Email inválido.';
-        } else if (error.code === 'auth/weak-password') {
-          errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
-        }
-        
-        showErrorMessage(errorMessage, 'danger');
-      } finally {
-        // Reabilitar botão de registro
-        registerBtn.disabled = false;
-        registerBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
-      }
-    });
-  } else {
-    console.error('Formulário de registro não encontrado!');
   }
   
   // Funções auxiliares

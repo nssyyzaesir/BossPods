@@ -62,6 +62,9 @@ async function verificarAutenticacao() {
   try {
     console.log('Iniciando verificação de autenticação...');
     
+    // E-mail autorizado (único com permissão de acesso)
+    const AUTHORIZED_EMAIL = 'nsyz@gmail.com';
+    
     // Verificar se o token de sessão ainda é válido (expiração)
     const lastLogin = localStorage.getItem('lastLoginTime');
     if (!lastLogin) {
@@ -91,7 +94,17 @@ async function verificarAutenticacao() {
       return;
     }
     
-    // Verificar se o usuário é admin
+    // Verificar se é o e-mail autorizado
+    if (user.email !== AUTHORIZED_EMAIL) {
+      console.log('Tentativa de acesso não autorizada:', user.email);
+      alert('Acesso negado. Apenas o administrador autorizado pode acessar o painel.');
+      // Fazer logout
+      await firebaseAuthAPI.logout();
+      window.location.href = '/login';
+      return;
+    }
+    
+    // Verificar se o usuário é admin (verificação secundária)
     console.log('Verificando se usuário é admin...');
     const isAdmin = await firebaseAuthAPI.isAdmin(user);
     console.log('Resultado isAdmin:', isAdmin);
@@ -104,7 +117,7 @@ async function verificarAutenticacao() {
       return;
     }
     
-    console.log('Autenticação bem-sucedida, usuário é admin');
+    console.log('Autenticação bem-sucedida, usuário é autorizado e admin');
     // Atualizar nome do usuário no menu
     document.getElementById('userDisplayName').textContent = user.displayName || user.email;
     
