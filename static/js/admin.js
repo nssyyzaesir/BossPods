@@ -1073,6 +1073,26 @@ async function salvarProduto() {
   try {
     console.log('===== INICIANDO SALVAMENTO DE PRODUTO =====');
     
+    // Verificar se Firebase está inicializado
+    if (!firebaseInitialized) {
+      console.error('ERRO CRÍTICO: Firebase não está inicializado');
+      showToast('Erro', 'Serviço do Firebase não está inicializado. Aguarde ou recarregue a página.', 'error');
+      // Adicionar visualização do erro no HTML para depuração
+      document.getElementById('errorMessages').innerHTML = 
+        '<div class="alert alert-danger">Firebase não está inicializado. Verifique a conexão com a internet ou recarregue a página.</div>';
+      return;
+    }
+    
+    // Verificar se o usuário está autenticado
+    const currentUser = await firebaseAuthAPI.getCurrentUser();
+    if (!currentUser) {
+      console.error('ERRO: Usuário não está autenticado');
+      showToast('Erro', 'Você precisa estar autenticado para salvar produtos.', 'error');
+      // Redirecionar para login
+      window.location.href = '/login';
+      return;
+    }
+    
     // Validar formulário
     const form = document.getElementById('produtoForm');
     if (!form.checkValidity()) {
@@ -1085,6 +1105,9 @@ async function salvarProduto() {
     if (typeof firestoreProducts === 'undefined' || !firestoreProducts) {
       console.error('ERRO CRÍTICO: firestoreProducts não está definido');
       showToast('Erro', 'Serviço de produtos não disponível. Verifique o console.', 'error');
+      // Mostrar erro no HTML para depuração
+      document.getElementById('errorMessages').innerHTML = 
+        '<div class="alert alert-danger">Serviço de produtos não disponível. Tente recarregar a página.</div>';
       return;
     }
     
@@ -1092,6 +1115,9 @@ async function salvarProduto() {
     if (typeof firestoreProducts.addProduct !== 'function') {
       console.error('ERRO CRÍTICO: firestoreProducts.addProduct não é uma função');
       showToast('Erro', 'API de produtos está configurada incorretamente. Contate o suporte.', 'error');
+      // Mostrar erro no HTML para depuração
+      document.getElementById('errorMessages').innerHTML = 
+        '<div class="alert alert-danger">API de produtos está configurada incorretamente. Método addProduct não encontrado.</div>';
       return;
     }
     
@@ -1216,7 +1242,6 @@ async function salvarProduto() {
     showToast('Erro', 'Falha ao processar dados do produto. Detalhes no console.', 'error');
     hideLoading();
   }
-}
 }
 
 // Abrir modal de confirmação de exclusão

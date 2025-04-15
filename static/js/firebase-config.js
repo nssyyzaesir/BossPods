@@ -8,39 +8,65 @@ const firebaseConfig = {
   appId: "1:123456789012:web:abc123def456ghi789jkl"
 };
 
-// Inicializar Firebase (com fallback para modo de desenvolvimento local)
+// Variáveis de estado do Firebase
 let firebaseInitialized = false;
 let firestoreDB = null;
 let firebaseAuth = null;
-let localDevMode = true; // Forçar modo de desenvolvimento local por enquanto
+let localDevMode = false; // Não forçando mais o modo de desenvolvimento local
+let currentUser = null;
+let authInitialized = false;
+let dbInitialized = false;
 
-// Verificar se estamos em modo de desenvolvimento local 
-console.log("Utilizando modo de desenvolvimento local para autenticação e armazenamento");
+// Inicialização do Firebase (na ordem correta)
+console.log("Inicializando Firebase...");
 
-// Deixando comentado para futuro uso real com Firebase
-// try {
-//   // Inicializar Firebase
-//   firebase.initializeApp(firebaseConfig);
-//   
-//   // Obter instâncias
-//   firestoreDB = firebase.firestore();
-//   
-//   // Autenticação
-//   firebaseAuth = firebase.auth();
-//   
-//   // Marcar como inicializado
-//   firebaseInitialized = true;
-//   localDevMode = false;
-//   
-//   console.log("Firebase inicializado com sucesso");
-// } catch (error) {
-//   console.warn("Erro ao inicializar Firebase, usando modo de desenvolvimento local:", error);
-//   firebaseInitialized = false;
-//   localDevMode = true;
-// }
-
-// Forçando modo de desenvolvimento local
-console.log("Utilizando modo de desenvolvimento local para autenticação e armazenamento");
+try {
+  // 1. Inicializar o app Firebase
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+    console.log("Firebase App inicializado com sucesso");
+  } else {
+    console.log("Firebase App já estava inicializado");
+  }
+  
+  // 2. Inicializar Authentication
+  firebaseAuth = firebase.auth();
+  console.log("Firebase Auth inicializado");
+  
+  // 3. Inicializar Firestore
+  firestoreDB = firebase.firestore();
+  console.log("Firestore inicializado");
+  
+  // 4. Configurar o listener de autenticação
+  firebaseAuth.onAuthStateChanged((user) => {
+    console.log("Estado de autenticação alterado:", user ? "Usuário autenticado" : "Usuário não autenticado");
+    currentUser = user;
+    authInitialized = true;
+    
+    // Atualizar estado
+    if (user) {
+      console.log("Usuário autenticado:", user.email);
+      localStorage.setItem('currentUser', JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName
+      }));
+      localStorage.setItem('lastLoginTime', new Date().getTime());
+    }
+  });
+  
+  // Marcar como inicializado
+  firebaseInitialized = true;
+  dbInitialized = true;
+  localDevMode = false;
+  
+  console.log("Firebase completamente inicializado com sucesso");
+} catch (error) {
+  console.error("Erro ao inicializar Firebase:", error);
+  console.warn("Usando modo de desenvolvimento local devido ao erro");
+  firebaseInitialized = false;
+  localDevMode = true;
+}
 
 // API Firebase Auth
 const firebaseAuthAPI = {
