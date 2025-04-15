@@ -9,11 +9,11 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SESSION_SECRET", "dev_secret_key")
 
-# Rota principal - tela de entrada
+# Rota principal - redireciona para tela de login
 @app.route('/')
 def index():
-    """Render the initial screen"""
-    return render_template('index.html')
+    """Redirect to login page"""
+    return redirect(url_for('login'))
 
 # Rota para a loja
 @app.route('/loja')

@@ -15,10 +15,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // Inicialmente mostrar mensagem de carregamento
   showErrorMessage('Conectando ao serviço de autenticação...', 'info');
   
-  // Limpar qualquer sessão existente no localStorage
-  localStorage.removeItem('currentUser');
-  localStorage.removeItem('lastLoginTime');
-  console.log('Sessão existente removida para garantir novo login');
+  // Forçar logout de qualquer usuário existente
+  function forceLogout() {
+    // Limpar qualquer sessão existente no localStorage
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('lastLoginTime');
+    console.log('Sessão existente removida para garantir novo login');
+    
+    // Se o Firebase estiver inicializado, também fazer logout na API
+    if (typeof firebaseInitialized !== 'undefined' && firebaseInitialized) {
+      firebaseAuthAPI.logout()
+        .then(() => {
+          console.log('Usuário deslogado com sucesso');
+          showErrorMessage('Sessão encerrada. Digite suas credenciais para acessar o painel.', 'info');
+        })
+        .catch(error => {
+          console.error('Erro ao fazer logout:', error);
+        });
+    }
+  }
+  
+  // Executar logout forçado
+  forceLogout();
   
   // Verificar se o Firebase foi inicializado
   const firebaseCheckInterval = setInterval(() => {
@@ -27,31 +45,24 @@ document.addEventListener('DOMContentLoaded', () => {
       clearInterval(firebaseCheckInterval);
       console.log('Firebase inicializado, verificando autenticação...');
       
-      // Verificar se já está logado
+      // Verificar se há usuário autenticado e forçar logout
       firebaseAuthAPI.getCurrentUser()
         .then(user => {
           console.log('Verificação inicial de usuário:', user);
           
           if (user) {
-            console.log('Usuário já autenticado:', user.email);
+            console.log('Usuário autenticado encontrado:', user.email);
+            console.log('Realizando logout para garantir nova autenticação...');
             
-            // Verificar se o usuário é admin
-            firebaseAuthAPI.isAdmin(user)
-              .then(isAdmin => {
-                console.log('Verificação se usuário é admin:', isAdmin);
-                
-                if (isAdmin) {
-                  // Redirecionar para dashboard
-                  console.log('Usuário é admin, redirecionando para dashboard');
-                  redirectToDashboard();
-                } else {
-                  // Logout (usuário não é admin)
-                  console.log('Usuário não é admin, realizando logout');
-                  firebaseAuthAPI.logout()
-                    .then(() => {
-                      showLoginError('Você não tem permissão para acessar o painel de administração');
-                    });
-                }
+            // Forçar logout mesmo que já esteja autenticado
+            firebaseAuthAPI.logout()
+              .then(() => {
+                console.log('Logout realizado com sucesso');
+                showErrorMessage('Digite suas credenciais para acessar o painel de administrador.', 'info');
+              })
+              .catch(error => {
+                console.error('Erro ao realizar logout forçado:', error);
+                showLoginError('Erro ao verificar sessão. Tente novamente.');
               });
           } else {
             console.log('Nenhum usuário autenticado, aguardando login');
