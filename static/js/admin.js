@@ -1088,11 +1088,24 @@ async function salvarProduto() {
       return;
     }
     
-    // Verificar se o usuário está autenticado
-    const currentUser = await firebaseAuthAPI.getCurrentUser();
-    if (!currentUser) {
+    // Verificar se o usuário está autenticado (usando localStorage)
+    const userString = localStorage.getItem('currentUser');
+    const authToken = localStorage.getItem('authToken');
+    
+    if (!userString || !authToken) {
       console.error('ERRO: Usuário não está autenticado');
       showToast('Erro', 'Você precisa estar autenticado para salvar produtos.', 'error');
+      // Redirecionar para login
+      window.location.href = '/login';
+      return;
+    }
+    
+    const currentUser = JSON.parse(userString);
+    
+    // Verificar se o usuário é administrador
+    if (currentUser.role !== 'admin') {
+      console.error('ERRO: Usuário não tem permissão de administrador');
+      showToast('Erro', 'Você não tem permissão para salvar produtos.', 'error');
       // Redirecionar para login
       window.location.href = '/login';
       return;
