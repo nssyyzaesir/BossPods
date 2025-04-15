@@ -1050,9 +1050,12 @@ function getNivelText(nivel) {
 function truncateText(text, maxLength) {
   if (!text) return '';
   
-  if (text.length <= maxLength) return text;
+  // Converter para string se não for
+  const textStr = String(text);
   
-  return text.substring(0, maxLength) + '...';
+  if (textStr.length <= maxLength) return textStr;
+  
+  return textStr.substring(0, maxLength) + '...';
 }
 
 // Função para atualizar gráficos do dashboard
