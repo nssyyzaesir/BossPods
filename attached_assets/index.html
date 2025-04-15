@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>BossPods - Painel Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: #0d0d0d;
+      color: white;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #ff00ff;
+      text-shadow: 0 0 10px #ff00ff;
+    }
+    .produto {
+  background: #1a1a1a;
+  border: 2px solid #6e00ff;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 10px #6e00ff80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+    .produto input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #111;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    .produto input {
+  width: 80%;
+  max-width: 300px;
+  margin-bottom: 10px;
+  padding: 8px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  text-align: center;
+}
+.produto img {
+  display: block;
+  margin: 10px auto;
+  max-width: 100%;
+  border-radius: 6px;
+}
+.produto button {
+  max-width: 300px;
+}
+    button, .btn-remover {
+      padding: 10px;
+      font-weight: bold;
+      width: 100%;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button {
+      background: #6e00ff;
+      border: 2px solid #6e00ff;
+      color: white;
+      margin-top: 10px;
+      box-shadow: 0 0 12px #6e00ff88;
+    }
+    .btn-remover {
+      background: transparent;
+      color: #ff004c;
+      border: 2px solid #ff004c;
+    }
+    .btn-remover:hover {
+      background-color: #ff004c;
+      color: black;
+      box-shadow: 0 0 12px #ff004c;
+    }
+    #modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1a1a1a;
+      color: white;
+      padding: 20px;
+      font-size: 16px;
+      border: 2px solid #6e00ff;
+      border-radius: 8px;
+      box-shadow: 0 0 20px #6e00ff;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #logModal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 600px;
+      background: #1a1a1a;
+      border: 2px solid #ffaa00;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 25px #ffaa00cc;
+      z-index: 9999;
+      color: white;
+      text-align: left;
+    }
+    input#pesquisaNome {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      background: #111;
+      color: white;
+      border: 1px solid #6e00ff;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>BossPods - Painel Admin</h1>
+
+<div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+<input type="text" id="pesquisaNome" placeholder="Buscar produto por nome...">
+<button onclick="adicionarProduto()">+ Novo Produto</button>
+<button onclick="apagarTudo()" style="background:#2b0000; border:2px solid #ff0000; color:#ff0000; box-shadow: 0 0 12px #ff000088;">Apagar Tudo</button>
+</div>
+
+<div id="admin-container"></div>
+
+<div id="modal">Alterações salvas com sucesso!</div>
+
+<div id="logModal">
+  <h2 style="color:#ffaa00;">Logs de Alterações</h2>
+  <div id="logList" style="font-size:14px; padding:10px;"></div>
+  <button onclick="fecharLogs()" style="margin-top:10px; width:100%; padding:10px; background:#222; color:#ffaa00; border:2px solid #ffaa00; border-radius:6px;">Fechar</button>
+</div>
+
+<script>
+  function gerarID() {
+    return '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  const produtosDefault = [
+    { id: gerarID(), nome: "Pod Uva", preco: 55.9, estoque: 5, imagem: "https://via.placeholder.com/300x200?text=Uva" }
+  ];
+
+  if (!localStorage.getItem("produtos")) {
+    localStorage.setItem("produtos", JSON.stringify(produtosDefault));
+  }
+
+  function carregarProdutos() {
+    return JSON.parse(localStorage.getItem("produtos")) || [];
+  }
+
+  function salvarProdutos(p) {
+    localStorage.setItem("produtos", JSON.stringify(p));
+  }
+
+  function adicionarProduto() {
+    const produtos = carregarProdutos();
+    produtos.push({
+      id: gerarID(),
+      nome: "Novo Pod",
+      preco: 0,
+      estoque: 0,
+      imagem: "https://via.placeholder.com/300x200?text=Novo"
+    });
+    salvarProdutos(produtos);
+    renderAdmin();
+  }
+
+  function salvar(id) {
+    const produtos = carregarProdutos();
+    const index = produtos.findIndex(p => p.id === id);
+    const produto = produtos[index];
+
+    let alteracoes = [];
+
+    const nomeNovo = document.getElementById(`nome-${id}`).value;
+    if (produto.nome !== nomeNovo) {
+      alteracoes.push(`Nome: "${produto.nome}" → "${nomeNovo}"`);
+      produto.nome = nomeNovo;
+    }
+
+    const precoNovo = parseFloat(document.getElementById(`preco-${id}`).value);
+    if (produto.preco !== precoNovo) {
+      alteracoes.push(`Preço: R$${produto.preco} → R$${precoNovo}`);
+      produto.preco = precoNovo;
+    }
+
+    const estoqueNovo = parseInt(document.getElementById(`estoque-${id}`).value);
+    if (produto.estoque !== estoqueNovo) {
+      alteracoes.push(`Estoque: ${produto.estoque} → ${estoqueNovo}`);
+      produto.estoque = estoqueNovo;
+    }
+
+    const imagemNova = document.getElementById(`imagem-${id}`).value;
+    if (produto.imagem !== imagemNova) {
+      alteracoes.push(`Imagem URL alterada`);
+      produto.imagem = imagemNova;
+    }
+
+    salvarProdutos(produtos);
+
+    if (alteracoes.length > 0) {
+      const logs = JSON.parse(localStorage.getItem("logs") || "[]");
+      const agora = new Date().toLocaleString("pt-BR");
+      logs.push({
+        id,
+        texto: `Alterações em <b>${produto.nome}</b> (${agora}):<br>- ` + alteracoes.join("<br>- ")
+      });
+      localStorage.setItem("logs", JSON.stringify(logs));
+    }
+
+    mostrarModal();
+  }
+
+  function mostrarModal() {
+    const modal = document.getElementById("modal");
+    modal.style.display = "block";
+    modal.style.opacity = "1";
+    setTimeout(() => {
+      modal.style.opacity = "0";
+      setTimeout(() => modal.style.display = "none", 300);
+    }, 2000);
+  }
+
+  function abrirLogs() {
+    const logs = JSON.parse(localStorage.getItem("logs") || "[]");
+    const container = document.getElementById("logList");
+    if (logs.length === 0) {
+      container.innerHTML = "Nenhum log encontrado.";
+    } else {
+      container.innerHTML = logs.reverse().map(l => `• ${l.texto}`).join("<hr style='border:1px dashed #444;'>");
+    }
+    document.getElementById("logModal").style.display = "block";
+  }
+
+  function fecharLogs() {
+    document.getElementById("logModal").style.display = "none";
+  }
+
+  function renderAdmin(filtro = "") {
+    const produtos = carregarProdutos();
+    const container = document.getElementById("admin-container");
+    container.innerHTML = "";
+
+    produtos.forEach(prod => {
+      if (prod.nome.toLowerCase().includes(filtro.toLowerCase())) {
+        const id = prod.id;
+        const div = document.createElement("div");
+        div.className = "produto";
+        div.innerHTML = `
+          <label>Nome:</label>
+          <input type="text" id="nome-${id}" value="${prod.nome}">
+          <label>Preço:</label>
+          <input type="number" id="preco-${id}" value="${prod.preco}">
+          <label>Estoque:</label>
+          <input type="number" id="estoque-${id}" value="${prod.estoque}">
+          <label>Imagem (URL):</label>
+          <input type="text" id="imagem-${id}" value="${prod.imagem}" oninput="document.getElementById('preview-${id}').src = this.value">
+          <img id="preview-${id}" src="${prod.imagem}" style="width:100%; margin-top:10px; border-radius:6px;">
+          <button onclick="salvar('${id}')">Salvar Alterações</button>
+          <button class="btn-remover" onclick="excluirProduto('${id}')">Excluir Produto</button>
+        `;
+        container.appendChild(div);
+      }
+    });
+  }
+
+  function excluirProduto(id) {
+    const produtos = carregarProdutos().filter(p => p.id !== id);
+    salvarProdutos(produtos);
+    renderAdmin();
+  }
+
+  function apagarTudo() {
+  if (confirm("Tem certeza que quer apagar todos os produtos? Isso não tem volta, porra!")) {
+    localStorage.removeItem("produtos");
+    renderAdmin();
+    mostrarModalTexto("Todos os produtos foram apagados!");
+  }
+}
+
+// opcional: mesma modal mas com texto customizado
+function mostrarModalTexto(texto) {
+  const modal = document.getElementById("modal");
+  modal.innerHTML = texto;
+  modal.style.display = "block";
+  modal.style.opacity = "1";
+  setTimeout(() => {
+    modal.style.opacity = "0";
+    setTimeout(() => {
+      modal.style.display = "none";
+      modal.innerHTML = "Alterações salvas com sucesso!";
+    }, 300);
+  }, 2000);
+}
+
+  document.getElementById("pesquisaNome").addEventListener("input", (e) => {
+    renderAdmin(e.target.value);
+  });
+
+  renderAdmin();
+</script>
+
+</body>
+</html>
