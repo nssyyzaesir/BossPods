@@ -28,30 +28,38 @@ document.addEventListener('DOMContentLoaded', () => {
 // Verificar se o usuário está autenticado
 async function verificarAutenticacao() {
   try {
-    const user = await firebaseAuth.getCurrentUser();
+    console.log('Iniciando verificação de autenticação...');
+    const user = await firebaseAuthAPI.getCurrentUser();
+    console.log('Resultado getCurrentUser:', user);
     
     if (!user) {
       // Usuário não está autenticado, redirecionar para login
+      console.log('Usuário não autenticado, redirecionando para login');
       window.location.href = '/login';
       return;
     }
     
     // Verificar se o usuário é admin
-    const isAdmin = await firebaseAuth.isAdmin(user);
+    console.log('Verificando se usuário é admin...');
+    const isAdmin = await firebaseAuthAPI.isAdmin(user);
+    console.log('Resultado isAdmin:', isAdmin);
     
     if (!isAdmin) {
       // Usuário não é admin, mostrar mensagem e redirecionar
+      console.log('Usuário não é admin, redirecionando');
       alert('Você não tem permissão para acessar esta página');
       window.location.href = '/';
       return;
     }
     
+    console.log('Autenticação bem-sucedida, usuário é admin');
     // Atualizar nome do usuário no menu
     document.getElementById('userDisplayName').textContent = user.displayName || user.email;
     
   } catch (error) {
     console.error('Erro ao verificar autenticação:', error);
-    showToast('Erro', 'Falha ao verificar autenticação. Tente novamente.', 'error');
+    console.error('Detalhes do erro:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    showToast('Erro', 'Falha ao verificar autenticação. Tente novamente. Detalhes no console.', 'error');
   }
 }
 
@@ -91,7 +99,7 @@ function setupEventHandlers() {
     e.preventDefault();
     
     try {
-      await firebaseAuth.logout();
+      await firebaseAuthAPI.logout();
       window.location.href = '/login';
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
@@ -1017,9 +1025,12 @@ function adicionarTagAoContainer(tag) {
 // Salvar produto
 async function salvarProduto() {
   try {
+    console.log('Iniciando salvamento de produto...');
+    
     // Validar formulário
     const form = document.getElementById('produtoForm');
     if (!form.checkValidity()) {
+      console.log('Formulário inválido');
       form.reportValidity();
       return;
     }
@@ -1034,6 +1045,16 @@ async function salvarProduto() {
     const descricao = document.getElementById('descricao').value;
     const imagem = document.getElementById('imagem').value;
     const tags = currentTags;
+    
+    console.log('Dados do formulário:', {
+      id: id || 'novo produto',
+      nome,
+      categoria,
+      preco,
+      estoque,
+      em_promocao,
+      tags
+    });
     
     // Preparar dados do produto
     const produtoData = {
@@ -1053,31 +1074,39 @@ async function salvarProduto() {
     
     // Mostrar loading
     showLoading();
+    console.log('Enviando dados para o servidor...');
     
     // Salvar no Firestore
     if (id) {
       // Atualizar produto existente
+      console.log('Atualizando produto existente com ID:', id);
       await firestoreProducts.updateProduct(id, produtoData);
       showToast('Sucesso', 'Produto atualizado com sucesso', 'success');
     } else {
       // Adicionar novo produto
-      await firestoreProducts.addProduct(produtoData);
+      console.log('Criando novo produto');
+      const novoProduto = await firestoreProducts.addProduct(produtoData);
+      console.log('Produto criado com sucesso:', novoProduto);
       showToast('Sucesso', 'Produto adicionado com sucesso', 'success');
     }
     
     // Fechar modal
+    console.log('Fechando modal...');
     const modal = bootstrap.Modal.getInstance(document.getElementById('produtoModal'));
     modal.hide();
     
     // Recarregar dados
+    console.log('Recarregando dados...');
     await carregarDados();
     
     // Esconder loading
     hideLoading();
+    console.log('Produto salvo com sucesso!');
     
   } catch (error) {
     console.error('Erro ao salvar produto:', error);
-    showToast('Erro', 'Falha ao salvar produto. Tente novamente.', 'error');
+    console.error('Detalhes do erro:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    showToast('Erro', 'Falha ao salvar produto. Detalhes no console.', 'error');
     hideLoading();
   }
 }
