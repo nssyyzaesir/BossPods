@@ -79,7 +79,7 @@ async function verificarAutenticacao() {
     
     if (!firebaseUser) {
       console.log('Usuário não autenticado, redirecionando para página de login');
-      showToast('Acesso Negado', 'Você precisa fazer login para acessar esta área', 'error');
+      showToast('Acesso Negado', 'Você precisa fazer login como administrador para acessar esta área', 'error');
       
       // Pequeno atraso para mostrar o toast
       setTimeout(() => {

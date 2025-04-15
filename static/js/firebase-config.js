@@ -105,32 +105,66 @@ function initializeFirebase() {
   }
 }
 
-// Forçar reset de autenticação para garantir login limpo
+// Apenas inicializar Firebase sem forçar logout
 (async function() {
   try {
-    // Limpar localStorage por segurança
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('lastLoginTime');
-    
     // Inicializar Firebase
     initializeFirebase();
     
-    // Forçar logout para garantir tela de login limpa
-    // Pequeno atraso para garantir que o Firebase foi inicializado
-    setTimeout(async () => {
-      if (firebase && firebase.auth) {
-        try {
-          console.log("Forçando logout para garantir reset do sistema...");
-          await firebase.auth().signOut();
-          console.log("Logout forçado realizado com sucesso");
-        } catch (error) {
-          console.error("Erro ao fazer logout forçado:", error);
+    // NÃO forçamos logout, apenas verificamos se estamos na página de admin
+    const currentPage = window.location.pathname;
+    
+    // Verificar se estamos na página de admin
+    if (currentPage === '/admin') {
+      console.log("Verificando autorização para acessar a página de administração...");
+      
+      // Pequeno atraso para garantir que o Firebase foi inicializado
+      setTimeout(async () => {
+        if (firebase && firebase.auth) {
+          try {
+            // Verificar se o usuário atual tem permissão de administrador
+            const currentUser = firebase.auth().currentUser;
+            
+            if (currentUser && currentUser.email) {
+              if (currentUser.email === ADMIN_EMAIL) {
+                console.log("Acesso permitido para o administrador:", currentUser.email);
+              } else {
+                console.log("Acesso negado para usuário não-admin:", currentUser.email);
+                alert("Você não tem permissão para acessar esta área.");
+                window.location.href = '/loja';
+              }
+            } else {
+              console.log("Usuário não autenticado tentando acessar a área restrita");
+              alert("Você precisa fazer login como administrador para acessar esta área.");
+              window.location.href = '/login';
+            }
+          } catch (error) {
+            console.error("Erro ao verificar permissão:", error);
+          }
         }
-      }
-    }, 1000);
+      }, 1000);
+    } else if (currentPage === '/login') {
+      // Na página de login, verificamos se já temos um usuário autenticado
+      setTimeout(async () => {
+        if (firebase && firebase.auth) {
+          const currentUser = firebase.auth().currentUser;
+          
+          if (currentUser) {
+            console.log("Usuário já autenticado:", currentUser.email);
+            // Redirecionar para a página apropriada
+            if (currentUser.email === ADMIN_EMAIL) {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/loja';
+            }
+          } else {
+            console.log("Nenhum usuário autenticado, permanecendo na página de login");
+          }
+        }
+      }, 1000);
+    }
   } catch (error) {
-    console.error("Erro ao inicializar com logout:", error);
+    console.error("Erro ao inicializar Firebase:", error);
   }
 })();
 
