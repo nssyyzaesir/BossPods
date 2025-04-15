@@ -9,6 +9,11 @@ let currentSortOrder = 'asc';
 let serverMode = false; // Set to false for localStorage mode, true for server mode
 const apiUrl = '/api';
 
+// Variáveis para controle de notificações
+let notificacoesExibidas = [];
+const ESTOQUE_CRITICO = 0;
+const ESTOQUE_BAIXO = 5;
+
 // DOM Ready
 document.addEventListener('DOMContentLoaded', function() {
   // Check if we're using server or localStorage mode
@@ -31,6 +36,12 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize charts
   initCharts();
+  
+  // Configurar verificação de estoque baixo a cada 5 minutos
+  setTimeout(function checkLowStock() {
+    verificarEstoqueBaixo();
+    setTimeout(checkLowStock, 300000); // 5 minutos
+  }, 3000); // primeira verificação após 3 segundos
   
   // Setup event listeners
   document.getElementById('btnAddProduct').addEventListener('click', function() {
@@ -1407,4 +1418,122 @@ function applyFilters() {
   const stockFilter = document.querySelector('input[name="stockFilter"]:checked')?.value || '';
   
   renderAdmin(searchTerm, categoryFilter, stockFilter);
+}
+
+// Funções para notificações de estoque baixo
+function verificarEstoqueBaixo() {
+  // Limpar notificações antigas da memória (mais de 1 hora)
+  const umaHoraAtras = new Date();
+  umaHoraAtras.setHours(umaHoraAtras.getHours() - 1);
+  
+  notificacoesExibidas = notificacoesExibidas.filter(n => 
+    new Date(n.data) > umaHoraAtras
+  );
+  
+  // Obter produtos com estoque baixo ou crítico
+  const produtosEstoqueCritico = produtos.filter(p => 
+    p.estoque === ESTOQUE_CRITICO && 
+    !notificacoesExibidas.some(n => n.id === p.id && n.tipo === 'critico')
+  );
+  
+  const produtosEstoqueBaixo = produtos.filter(p => 
+    p.estoque > ESTOQUE_CRITICO && 
+    p.estoque <= ESTOQUE_BAIXO && 
+    !notificacoesExibidas.some(n => n.id === p.id && n.tipo === 'baixo')
+  );
+  
+  // Exibir notificações críticas primeiro
+  produtosEstoqueCritico.forEach(produto => {
+    exibirNotificacaoEstoque(produto, 'critico');
+  });
+  
+  // Depois exibir outras notificações de estoque baixo
+  setTimeout(() => {
+    produtosEstoqueBaixo.forEach((produto, index) => {
+      setTimeout(() => {
+        exibirNotificacaoEstoque(produto, 'baixo');
+      }, index * 800); // Exibir com atraso entre cada notificação
+    });
+  }, produtosEstoqueCritico.length ? 800 : 0);
+}
+
+function exibirNotificacaoEstoque(produto, tipo) {
+  const container = document.getElementById('notificationContainer');
+  const notification = document.createElement('div');
+  notification.className = `stock-notification ${tipo === 'critico' ? 'critical' : 'warning'}`;
+  
+  let mensagem = '';
+  let titulo = '';
+  
+  if (tipo === 'critico') {
+    titulo = 'Estoque Zero!';
+    mensagem = `O produto "${produto.nome}" está com estoque zerado. É necessário fazer um pedido imediatamente.`;
+  } else {
+    titulo = 'Estoque Baixo';
+    mensagem = `O produto "${produto.nome}" está com apenas ${produto.estoque} unidades em estoque.`;
+  }
+  
+  notification.innerHTML = `
+    <div class="stock-notification-header">
+      <h5 class="stock-notification-title">${titulo}</h5>
+      <button type="button" class="stock-notification-close" aria-label="Fechar">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    <div class="stock-notification-content">${mensagem}</div>
+    <div class="stock-notification-action">
+      <button class="stock-notification-btn view-product" data-id="${produto.id}">
+        Ver Produto
+      </button>
+    </div>
+  `;
+  
+  // Registrar na lista de notificações exibidas
+  notificacoesExibidas.push({
+    id: produto.id,
+    tipo: tipo,
+    data: new Date().toISOString()
+  });
+  
+  // Adicionar ao contêiner de notificações
+  container.appendChild(notification);
+  
+  // Mostrar com um pequeno atraso para animar
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 100);
+  
+  // Configurar botão de fechar
+  notification.querySelector('.stock-notification-close').addEventListener('click', () => {
+    notification.classList.remove('show');
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  });
+  
+  // Configurar botão de ver produto
+  notification.querySelector('.view-product').addEventListener('click', () => {
+    // Fechar notificação
+    notification.classList.remove('show');
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+    
+    // Abrir modal de edição do produto
+    editarProduto(produto.id);
+  });
+  
+  // Auto-remover após 10 segundos para notificações não críticas
+  if (tipo !== 'critico') {
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.classList.remove('show');
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.remove();
+          }
+        }, 300);
+      }
+    }, 10000);
+  }
 }

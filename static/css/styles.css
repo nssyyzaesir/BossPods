@@ -846,3 +846,118 @@ body {
   margin-bottom: 1rem;
   display: block;
 }
+
+/* Notificações de Estoque Baixo */
+.notification-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  max-width: 350px;
+  max-height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.stock-notification {
+  background-color: var(--dark-surface);
+  color: var(--text-light);
+  border-left: 4px solid var(--danger-color);
+  box-shadow: 0 0 15px rgba(255, 51, 102, 0.5), 0 0 5px rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  margin-top: 10px;
+  border-radius: 4px;
+  animation: slideIn 0.3s ease-out forwards, pulse 2s infinite alternate;
+  transition: all 0.3s ease;
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.stock-notification.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.stock-notification.critical {
+  border-left-color: var(--danger-color);
+  box-shadow: 0 0 15px rgba(255, 51, 102, 0.5), 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.stock-notification.warning {
+  border-left-color: var(--warning-color);
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5), 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.stock-notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stock-notification-title {
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.stock-notification-close {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.stock-notification-close:hover {
+  opacity: 1;
+}
+
+.stock-notification-content {
+  font-size: 0.85rem;
+}
+
+.stock-notification-action {
+  margin-top: 10px;
+  text-align: right;
+}
+
+.stock-notification-btn {
+  background-color: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.stock-notification-btn:hover {
+  background-color: var(--primary-color);
+  color: var(--dark-surface);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 10px rgba(255, 51, 102, 0.5), 0 0 5px rgba(0, 0, 0, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(255, 51, 102, 0.7), 0 0 8px rgba(0, 0, 0, 0.5);
+  }
+}
