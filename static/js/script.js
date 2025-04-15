@@ -5,10 +5,32 @@ let autoSaveTimeout;
 let currentSortField = 'nome';
 let currentSortOrder = 'asc';
 
+// Variables for AJAX
+let serverMode = false; // Set to false for localStorage mode, true for server mode
+const apiUrl = '/api';
+
 // DOM Ready
 document.addEventListener('DOMContentLoaded', function() {
-  // Load products from localStorage
-  carregarProdutos();
+  // Check if we're using server or localStorage mode
+  fetch('/api/produtos')
+    .then(response => {
+      serverMode = response.ok;
+      console.log(`Using ${serverMode ? 'server' : 'localStorage'} mode`);
+      // Load data after determining mode
+      carregarProdutos();
+      
+      // If server mode, also load tags
+      if (serverMode) {
+        carregarTags();
+      }
+    })
+    .catch(err => {
+      console.log('Using localStorage mode due to error:', err);
+      carregarProdutos();
+    });
+  
+  // Initialize charts
+  initCharts();
   
   // Setup event listeners
   document.getElementById('btnAddProduct').addEventListener('click', function() {
@@ -16,12 +38,21 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('productForm').reset();
     document.getElementById('productId').value = '';
     document.getElementById('imagePreview').classList.add('d-none');
+    document.getElementById('tagsContainer').innerHTML = '';
     
     const modal = new bootstrap.Modal(document.getElementById('productModal'));
     modal.show();
   });
   
   document.getElementById('btnViewLogs').addEventListener('click', abrirLogs);
+  document.getElementById('btnInsights').addEventListener('click', function() {
+    const insightsTab = new bootstrap.Tab(document.getElementById('insights-tab'));
+    insightsTab.show();
+    
+    // Refresh charts when tab is shown
+    refreshInsights();
+  });
+  
   document.getElementById('btnDeleteAll').addEventListener('click', function() {
     document.getElementById('confirmationMessage').textContent = 'Tem certeza que deseja apagar todos os produtos? Esta ação não pode ser desfeita.';
     document.getElementById('confirmAction').textContent = 'Sim, apagar';
@@ -77,6 +108,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
+  // Tags system
+  document.getElementById('productTags').addEventListener('input', function() {
+    renderTagsFromInput(this.value);
+  });
+  
+  // Add common tags
+  document.querySelectorAll('.cyber-btn-tag').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tag = this.dataset.tag;
+      addTag(tag);
+    });
+  });
+  
+  // Bind filter events
+  document.getElementById('applyFilters').addEventListener('click', applyFilters);
+  document.getElementById('clearFilters').addEventListener('click', clearFilters);
+  
   // Sort buttons
   document.getElementById('sortByName').addEventListener('click', function() {
     toggleSort('nome');
@@ -90,8 +138,42 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleSort('preco');
   });
   
+  // Export buttons
+  document.getElementById('btnExportJSON').addEventListener('click', function() {
+    exportData('json');
+  });
+  
+  document.getElementById('btnExportCSV').addEventListener('click', function() {
+    exportData('csv');
+  });
+  
+  // Import
+  document.getElementById('btnImport').addEventListener('click', function() {
+    // Reset UI
+    document.getElementById('fileInput').value = '';
+    document.getElementById('clearBeforeImport').checked = false;
+    document.getElementById('confirmImport').disabled = true;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('importModal'));
+    modal.show();
+  });
+  
+  document.getElementById('fileInput').addEventListener('change', function() {
+    document.getElementById('confirmImport').disabled = this.files.length === 0;
+  });
+  
+  document.getElementById('confirmImport').addEventListener('click', function() {
+    importData();
+  });
+  
   // Setup autosave
   setupAutoSave();
+  
+  // Initialize insights tab
+  document.getElementById('insights-tab').addEventListener('shown.bs.tab', function () {
+    refreshInsights();
+  });
 });
 
 // Generate ID
@@ -448,97 +530,627 @@ function toggleSort(campo) {
   }
 }
 
+// Tags management
+function renderTagsFromInput(input) {
+  const tagsContainer = document.getElementById('tagsContainer');
+  tagsContainer.innerHTML = '';
+  
+  if (!input.trim()) return;
+  
+  const tags = input.split(',').map(t => t.trim()).filter(t => t);
+  
+  tags.forEach(tag => {
+    const tagSpan = document.createElement('span');
+    const tagClass = getTagClass(tag);
+    tagSpan.className = `cyber-btn-tag ${tagClass} me-1 mb-1 active`;
+    tagSpan.textContent = `#${tag}`;
+    tagsContainer.appendChild(tagSpan);
+  });
+}
+
+function getTagClass(tag) {
+  const tagMap = {
+    'ice': 'tag-ice',
+    'frutado': 'tag-frutado',
+    'forte': 'tag-forte',
+    'tabaco': 'tag-tabaco',
+    'mentolado': 'tag-mentolado'
+  };
+  
+  return tagMap[tag.toLowerCase()] || 'tag-default';
+}
+
+function addTag(tag) {
+  const tagsInput = document.getElementById('productTags');
+  const currentTags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t);
+  
+  if (!currentTags.includes(tag)) {
+    currentTags.push(tag);
+    tagsInput.value = currentTags.join(', ');
+    renderTagsFromInput(tagsInput.value);
+  }
+}
+
+// Apply filters
+function applyFilters() {
+  let searchTerm = document.getElementById('searchInput').value;
+  let categoria = document.getElementById('filterCategory').value;
+  let tagFilter = document.getElementById('filterTag').value;
+  let precoMin = document.getElementById('filterPriceMin').value ? parseFloat(document.getElementById('filterPriceMin').value) : null;
+  let precoMax = document.getElementById('filterPriceMax').value ? parseFloat(document.getElementById('filterPriceMax').value) : null;
+  let estoqueBaixo = document.getElementById('filterLowStock').checked;
+  let estoqueZero = document.getElementById('filterZeroStock').checked;
+  let emPromocao = document.getElementById('filterPromotion').checked;
+  
+  renderAdmin(searchTerm, categoria, estoqueBaixo ? 'baixo' : '', estoqueZero ? 'zerado' : '', precoMin, precoMax, tagFilter, emPromocao);
+}
+
+function clearFilters() {
+  document.getElementById('filterCategory').value = '';
+  document.getElementById('filterTag').value = '';
+  document.getElementById('filterPriceMin').value = '';
+  document.getElementById('filterPriceMax').value = '';
+  document.getElementById('filterLowStock').checked = false;
+  document.getElementById('filterZeroStock').checked = false;
+  document.getElementById('filterPromotion').checked = false;
+  
+  renderAdmin(document.getElementById('searchInput').value);
+}
+
+// Load tags
+function carregarTags() {
+  if (serverMode) {
+    fetch(`${apiUrl}/tags`)
+      .then(response => response.json())
+      .then(tags => {
+        populateTagsDropdown(tags);
+      })
+      .catch(error => {
+        console.error('Erro ao carregar tags:', error);
+      });
+  } else {
+    // Get unique tags from products in localStorage
+    const allTags = [];
+    produtos.forEach(produto => {
+      if (produto.tags) {
+        const produtoTags = typeof produto.tags === 'string' ? JSON.parse(produto.tags) : produto.tags;
+        allTags.push(...produtoTags);
+      }
+    });
+    
+    // Remove duplicates
+    const uniqueTags = [...new Set(allTags)];
+    populateTagsDropdown(uniqueTags);
+  }
+}
+
+function populateTagsDropdown(tags) {
+  const tagSelect = document.getElementById('filterTag');
+  
+  // Clear existing options except the first one
+  while (tagSelect.options.length > 1) {
+    tagSelect.options.remove(1);
+  }
+  
+  // Add tags
+  tags.forEach(tag => {
+    const option = document.createElement('option');
+    option.value = tag;
+    option.textContent = `#${tag}`;
+    tagSelect.appendChild(option);
+  });
+}
+
+// Insights and Charts
+function initCharts() {
+  // Initialize with empty data, will be populated later
+  const categoriesCtx = document.getElementById('categoriesChart');
+  const topStockCtx = document.getElementById('topStockChart');
+  
+  if (categoriesCtx) {
+    window.categoriesChart = new Chart(categoriesCtx, {
+      type: 'doughnut',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          backgroundColor: [
+            '#b833ff', '#00b8ff', '#33ff99', '#ff9933', '#ff3366', 
+            '#8080a0', '#33ccff', '#cc0033', '#7a00cc', '#0080b3'
+          ],
+          borderColor: '#16213e',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#e0e0ff'
+            }
+          }
+        }
+      }
+    });
+  }
+  
+  if (topStockCtx) {
+    window.topStockChart = new Chart(topStockCtx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Quantidade em Estoque',
+          data: [],
+          backgroundColor: 'rgba(184, 51, 255, 0.6)',
+          borderColor: '#b833ff',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: {
+              color: '#8080a0'
+            },
+            grid: {
+              color: 'rgba(128, 128, 160, 0.1)'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: '#8080a0'
+            },
+            grid: {
+              color: 'rgba(128, 128, 160, 0.1)'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: '#e0e0ff'
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+function refreshInsights() {
+  if (window.categoriesChart && window.topStockChart) {
+    // Get categories data
+    const categoryCounts = {};
+    produtos.forEach(produto => {
+      if (!categoryCounts[produto.categoria]) {
+        categoryCounts[produto.categoria] = 0;
+      }
+      categoryCounts[produto.categoria]++;
+    });
+    
+    // Update categories chart
+    window.categoriesChart.data.labels = Object.keys(categoryCounts);
+    window.categoriesChart.data.datasets[0].data = Object.values(categoryCounts);
+    window.categoriesChart.update();
+    
+    // Get top stock products
+    const topStock = [...produtos]
+      .sort((a, b) => b.estoque - a.estoque)
+      .slice(0, 5);
+    
+    // Update top stock chart
+    window.topStockChart.data.labels = topStock.map(p => p.nome);
+    window.topStockChart.data.datasets[0].data = topStock.map(p => p.estoque);
+    window.topStockChart.update();
+    
+    // Update low stock and zero stock tables
+    updateStockTables();
+  }
+}
+
+function updateStockTables() {
+  // Zero stock table
+  const zeroStockTable = document.getElementById('zeroStockTable');
+  const lowStockTable = document.getElementById('lowStockTable');
+  
+  // Reset tables
+  zeroStockTable.innerHTML = '';
+  lowStockTable.innerHTML = '';
+  
+  // Get zero stock products
+  const zeroStockProducts = produtos.filter(p => p.estoque === 0);
+  
+  if (zeroStockProducts.length === 0) {
+    zeroStockTable.innerHTML = '<tr><td colspan="4" class="text-center">Nenhum produto com estoque zerado.</td></tr>';
+  } else {
+    zeroStockProducts.forEach(produto => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${produto.nome}</td>
+        <td>${produto.categoria}</td>
+        <td>${formatarPreco(produto.preco)}</td>
+        <td>
+          <button class="btn cyber-btn-sm cyber-btn-primary" onclick="editarProduto('${produto.id}')">
+            <i class="bi bi-pencil"></i>
+          </button>
+        </td>
+      `;
+      zeroStockTable.appendChild(row);
+    });
+  }
+  
+  // Get low stock products (1-5)
+  const lowStockProducts = produtos.filter(p => p.estoque > 0 && p.estoque <= 5);
+  
+  if (lowStockProducts.length === 0) {
+    lowStockTable.innerHTML = '<tr><td colspan="4" class="text-center">Nenhum produto com estoque baixo.</td></tr>';
+  } else {
+    lowStockProducts.forEach(produto => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${produto.nome}</td>
+        <td>${produto.categoria}</td>
+        <td class="stock-critical">${produto.estoque}</td>
+        <td>
+          <button class="btn cyber-btn-sm cyber-btn-primary" onclick="editarProduto('${produto.id}')">
+            <i class="bi bi-pencil"></i>
+          </button>
+        </td>
+      `;
+      lowStockTable.appendChild(row);
+    });
+  }
+  
+  // Update stats
+  document.getElementById('zeroStockCount').textContent = zeroStockProducts.length;
+}
+
+// Export and Import
+function exportData(format) {
+  if (serverMode) {
+    // Download directly from server endpoint
+    window.location.href = `${apiUrl}/export?format=${format}`;
+  } else {
+    // Export from localStorage
+    if (format === 'json') {
+      downloadJSON(produtos, 'produtos.json');
+    } else if (format === 'csv') {
+      downloadCSV(produtos, 'produtos.csv');
+    }
+  }
+}
+
+function downloadJSON(data, filename) {
+  const jsonString = JSON.stringify(data, null, 2);
+  downloadFile(jsonString, 'application/json', filename);
+}
+
+function downloadCSV(data, filename) {
+  // Create CSV header
+  let csvContent = 'ID,Nome,Preço,Estoque,Categoria,Tags,Em Promoção,Imagem,Data de Criação,Última Atualização\n';
+  
+  // Add data rows
+  data.forEach(item => {
+    const tags = item.tags ? (typeof item.tags === 'string' ? item.tags : JSON.stringify(item.tags)) : '';
+    
+    const row = [
+      item.id,
+      `"${item.nome.replace(/"/g, '""')}"`,
+      item.preco,
+      item.estoque,
+      item.categoria,
+      `"${tags.replace(/"/g, '""')}"`,
+      item.em_promocao ? 'Sim' : 'Não',
+      `"${item.imagem || ''}"`,
+      item.dataInclusao || '',
+      item.ultimaAtualizacao || ''
+    ];
+    
+    csvContent += row.join(',') + '\n';
+  });
+  
+  downloadFile(csvContent, 'text/csv', filename);
+}
+
+function downloadFile(content, type, filename) {
+  const blob = new Blob([content], { type });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function importData() {
+  const fileInput = document.getElementById('fileInput');
+  const clearBeforeImport = document.getElementById('clearBeforeImport').checked;
+  
+  if (fileInput.files.length === 0) {
+    showModal('Nenhum arquivo selecionado.', 'exclamation-circle', 'text-warning');
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  
+  if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+    showModal('Formato de arquivo inválido. Por favor, selecione um arquivo JSON.', 'x-circle', 'text-danger');
+    return;
+  }
+  
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      
+      if (!Array.isArray(importedData)) {
+        throw new Error('O arquivo não contém um array de produtos válido.');
+      }
+      
+      // Clear existing products if requested
+      if (clearBeforeImport) {
+        produtos = [];
+        registrarLog('limpar', 'todos', 'Todos os Produtos', { 
+          message: 'Limpeza antes da importação'
+        });
+      }
+      
+      // Check if each item has at least nome, preco and estoque
+      const validItems = importedData.filter(item => 
+        item.nome && (item.preco !== undefined) && (item.estoque !== undefined)
+      );
+      
+      // Ensure each item has an ID
+      validItems.forEach(item => {
+        if (!item.id) {
+          item.id = gerarID();
+        }
+        
+        // Add to produtos
+        const existingIndex = produtos.findIndex(p => p.id === item.id);
+        
+        if (existingIndex >= 0) {
+          // Update existing
+          produtos[existingIndex] = { ...item };
+        } else {
+          // Add new
+          produtos.push(item);
+        }
+      });
+      
+      // Log the import
+      registrarLog('importar', 'batch', 'Importação em Lote', {
+        count: validItems.length
+      });
+      
+      // Save, render and show confirmation
+      salvarProdutos(produtos);
+      renderAdmin();
+      updateStats();
+      refreshInsights();
+      
+      // Close the modal and show success message
+      bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+      showModal(`Importados ${validItems.length} produtos com sucesso!`);
+      
+    } catch (error) {
+      showModal(`Erro ao processar o arquivo: ${error.message}`, 'x-circle', 'text-danger');
+    }
+  };
+  
+  reader.onerror = function() {
+    showModal('Erro ao ler o arquivo.', 'x-circle', 'text-danger');
+  };
+  
+  reader.readAsText(file);
+}
+
 // Render products admin panel
-function renderAdmin(filtro = "", filtroCategoria = "", filtroEstoque = "", ordenacao = "nome-asc") {
+function renderAdmin(filtro = "", filtroCategoria = "", filtroEstoque = "", filtroEstoqueZerado = "", 
+                    precoMin = null, precoMax = null, tagFilter = "", emPromocao = false) {
   const container = document.getElementById('productsContainer');
   container.innerHTML = '';
   
-  let produtosFiltrados = [...produtos];
-  
-  // Apply search filter
-  if (filtro) {
-    const termoBusca = filtro.toLowerCase();
-    produtosFiltrados = produtosFiltrados.filter(produto => 
-      produto.nome.toLowerCase().includes(termoBusca) || 
-      produto.categoria.toLowerCase().includes(termoBusca)
-    );
-  }
-  
-  // Apply category filter
-  if (filtroCategoria) {
-    produtosFiltrados = produtosFiltrados.filter(produto => 
-      produto.categoria === filtroCategoria
-    );
-  }
-  
-  // Apply stock filter
-  if (filtroEstoque === 'baixo') {
-    produtosFiltrados = produtosFiltrados.filter(produto => produto.estoque <= 5);
-  } else if (filtroEstoque === 'médio') {
-    produtosFiltrados = produtosFiltrados.filter(produto => produto.estoque > 5 && produto.estoque <= 20);
-  } else if (filtroEstoque === 'alto') {
-    produtosFiltrados = produtosFiltrados.filter(produto => produto.estoque > 20);
-  }
-  
-  // Sort products
-  produtosFiltrados.sort((a, b) => {
-    let valorA, valorB;
+  // Se não estamos no modo de servidor, carregar dos dados em memória
+  if (!serverMode) {
+    let produtosFiltrados = [...produtos];
     
-    if (currentSortField === 'nome') {
-      valorA = a.nome.toLowerCase();
-      valorB = b.nome.toLowerCase();
-    } else if (currentSortField === 'preco') {
-      valorA = a.preco;
-      valorB = b.preco;
-    } else if (currentSortField === 'estoque') {
-      valorA = a.estoque;
-      valorB = b.estoque;
-    } else {
-      valorA = a[currentSortField];
-      valorB = b[currentSortField];
+    // Apply search filter
+    if (filtro) {
+      const termoBusca = filtro.toLowerCase();
+      produtosFiltrados = produtosFiltrados.filter(produto => 
+        produto.nome.toLowerCase().includes(termoBusca) || 
+        produto.categoria.toLowerCase().includes(termoBusca)
+      );
     }
     
-    if (currentSortOrder === 'asc') {
-      return valorA > valorB ? 1 : -1;
-    } else {
-      return valorA < valorB ? 1 : -1;
+    // Apply category filter
+    if (filtroCategoria) {
+      produtosFiltrados = produtosFiltrados.filter(produto => 
+        produto.categoria === filtroCategoria
+      );
     }
-  });
+    
+    // Apply stock level filters
+    if (filtroEstoque === 'baixo') {
+      produtosFiltrados = produtosFiltrados.filter(produto => produto.estoque > 0 && produto.estoque <= 5);
+    }
+    
+    if (filtroEstoqueZerado === 'zerado') {
+      produtosFiltrados = produtosFiltrados.filter(produto => produto.estoque === 0);
+    }
+    
+    // Apply price range filter
+    if (precoMin !== null) {
+      produtosFiltrados = produtosFiltrados.filter(produto => produto.preco >= precoMin);
+    }
+    
+    if (precoMax !== null) {
+      produtosFiltrados = produtosFiltrados.filter(produto => produto.preco <= precoMax);
+    }
+    
+    // Apply tag filter
+    if (tagFilter) {
+      produtosFiltrados = produtosFiltrados.filter(produto => {
+        if (!produto.tags) return false;
+        const tags = typeof produto.tags === 'string' ? JSON.parse(produto.tags) : produto.tags;
+        return tags.includes(tagFilter);
+      });
+    }
+    
+    // Apply promotion filter
+    if (emPromocao) {
+      produtosFiltrados = produtosFiltrados.filter(produto => produto.em_promocao === true);
+    }
+    
+    // Sort products
+    produtosFiltrados.sort((a, b) => {
+      let valorA, valorB;
+      
+      if (currentSortField === 'nome') {
+        valorA = a.nome.toLowerCase();
+        valorB = b.nome.toLowerCase();
+      } else if (currentSortField === 'preco') {
+        valorA = a.preco;
+        valorB = b.preco;
+      } else if (currentSortField === 'estoque') {
+        valorA = a.estoque;
+        valorB = b.estoque;
+      } else {
+        valorA = a[currentSortField];
+        valorB = b[currentSortField];
+      }
+      
+      if (currentSortOrder === 'asc') {
+        return valorA > valorB ? 1 : -1;
+      } else {
+        return valorA < valorB ? 1 : -1;
+      }
+    });
   
+    renderProdutos(produtosFiltrados, container);
+  } else {
+    // Modo Servidor - carregar da API com filtros
+    // Construir URL com os filtros
+    const params = new URLSearchParams();
+    
+    if (filtro) params.set('search', filtro);
+    if (filtroCategoria) params.set('categoria', filtroCategoria);
+    if (filtroEstoque === 'baixo') params.set('estoque_baixo', 'true');
+    if (filtroEstoqueZerado === 'zerado') params.set('estoque_zerado', 'true');
+    if (precoMin !== null) params.set('preco_min', precoMin);
+    if (precoMax !== null) params.set('preco_max', precoMax);
+    if (tagFilter) params.set('tag', tagFilter);
+    if (emPromocao) params.set('em_promocao', 'true');
+    
+    params.set('sort_field', currentSortField);
+    params.set('sort_order', currentSortOrder);
+    
+    // Mostrar indicador de carregamento
+    container.innerHTML = `
+      <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
+        <p class="mt-2 text-muted">Carregando produtos...</p>
+      </div>
+    `;
+    
+    // Buscar dados da API
+    fetch(`${apiUrl}/produtos?${params.toString()}`)
+      .then(response => response.json())
+      .then(data => {
+        // Atualizar variável local de produtos
+        produtos = data;
+        // Atualizar estatísticas
+        updateStats();
+        // Renderizar os produtos
+        renderProdutos(data, container);
+      })
+      .catch(error => {
+        console.error('Erro ao carregar produtos:', error);
+        container.innerHTML = `
+          <div class="col-12 text-center py-5">
+            <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+            <p class="mt-3 text-danger">Erro ao carregar produtos.</p>
+            <p class="text-muted">Detalhes: ${error.message}</p>
+          </div>
+        `;
+      });
+  }
+}
+
+// Função auxiliar para renderizar produtos no contêiner
+function renderProdutos(produtosFiltrados, container) {
   // Display results
   if (produtosFiltrados.length === 0) {
     container.innerHTML = `
       <div class="col-12 text-center py-5">
         <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
         <p class="mt-3 text-muted">Nenhum produto encontrado.</p>
-        ${filtro ? `<p class="text-muted">Tente uma busca diferente.</p>` : ''}
+        <p class="text-muted">Tente uma busca diferente ou limpe os filtros.</p>
       </div>
     `;
   } else {
+    container.innerHTML = ''; // Limpar o container
+    
     produtosFiltrados.forEach(produto => {
       const col = document.createElement('div');
       col.className = 'col-12 col-sm-6 col-md-4 col-lg-3 mb-4 fade-in';
       
       const estoqueClass = getEstoqueClass(produto.estoque);
       
+      // Preparar tags para exibição
+      let tagsHTML = '';
+      if (produto.tags) {
+        try {
+          // Garantir que as tags sejam array
+          const tagsArray = typeof produto.tags === 'string' ? JSON.parse(produto.tags) : produto.tags;
+          
+          if (Array.isArray(tagsArray) && tagsArray.length > 0) {
+            tagsHTML = '<div class="product-tags mt-2">';
+            tagsArray.forEach(tag => {
+              const tagClass = getTagClass(tag);
+              tagsHTML += `<span class="product-tag ${tagClass}">#${tag}</span>`;
+            });
+            tagsHTML += '</div>';
+          }
+        } catch (e) {
+          console.error('Erro ao processar tags:', e);
+        }
+      }
+      
+      // Adicionar badge de promoção se aplicável
+      const promocaoBadge = produto.em_promocao ? 
+        '<div class="product-promotion-badge"><i class="bi bi-tag-fill"></i> Promoção</div>' : '';
+      
       col.innerHTML = `
         <div class="product-card">
+          ${promocaoBadge}
           <div class="product-img-container">
-            <img src="${produto.imagem}" class="product-img" alt="${produto.nome}">
+            <img src="${produto.imagem || 'https://via.placeholder.com/150?text=Sem+Imagem'}" class="product-img" alt="${produto.nome}">
           </div>
           <div class="product-content">
             <div class="product-category">${produto.categoria}</div>
-            <h3 class="product-title">${produto.nome}</h3>
+            <h5 class="product-title">${produto.nome}</h5>
             <div class="product-price">${formatarPreco(produto.preco)}</div>
             <div class="product-stock ${estoqueClass}">
-              <i class="bi bi-box-seam"></i> Estoque: <strong>${produto.estoque}</strong>
+              <i class="bi bi-box"></i> Estoque: ${produto.estoque}
             </div>
+            ${tagsHTML}
             <div class="product-actions">
-              <button class="btn cyber-btn cyber-btn-primary" onclick="editarProduto('${produto.id}')">
-                <i class="bi bi-pencil"></i> Editar
+              <button class="btn cyber-btn-sm cyber-btn-primary me-2" onclick="editarProduto('${produto.id}')">
+                <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn cyber-btn cyber-btn-danger" onclick="excluirProduto('${produto.id}')">
-                <i class="bi bi-trash"></i> Excluir
+              <button class="btn cyber-btn-sm cyber-btn-danger" onclick="excluirProduto('${produto.id}')">
+                <i class="bi bi-trash"></i>
               </button>
             </div>
           </div>
@@ -564,9 +1176,40 @@ window.editarProduto = function(id) {
   document.getElementById('productName').value = produto.nome;
   document.getElementById('productPrice').value = produto.preco;
   document.getElementById('productStock').value = produto.estoque;
-  document.getElementById('productImage').value = produto.imagem;
+  document.getElementById('productImage').value = produto.imagem || '';
   document.getElementById('productCategory').value = produto.categoria;
   
+  // Handle tags
+  const tagsInput = document.getElementById('productTags');
+  const tagsContainer = document.getElementById('tagsContainer');
+  tagsContainer.innerHTML = '';
+  
+  if (produto.tags) {
+    let tags = produto.tags;
+    // Convert to array if stored as string
+    if (typeof tags === 'string') {
+      try {
+        tags = JSON.parse(tags);
+      } catch (e) {
+        console.error('Erro ao processar tags:', e);
+        tags = [];
+      }
+    }
+    
+    if (Array.isArray(tags)) {
+      tagsInput.value = tags.join(', ');
+      renderTagsFromInput(tagsInput.value);
+    } else {
+      tagsInput.value = '';
+    }
+  } else {
+    tagsInput.value = '';
+  }
+  
+  // Handle promotion flag
+  document.getElementById('productPromotion').checked = produto.em_promocao || false;
+  
+  // Image preview
   const previewContainer = document.getElementById('imagePreview');
   const previewImg = previewContainer.querySelector('img');
   
