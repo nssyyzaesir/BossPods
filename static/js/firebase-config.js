@@ -8,6 +8,10 @@ const firebaseConfig = {
   appId: "1:319819159324:web:953f64130fe51842600cd9"
 };
 
+// Credenciais do administrador
+const ADMIN_EMAIL = 'nsyzadmin@gmail.com';
+const ADMIN_PASSWORD = 'nsyzadmin123';
+
 // Variáveis de estado do Firebase
 let firebaseInitialized = false;
 let firestoreDB = null;
@@ -48,8 +52,9 @@ try {
       console.log("Usuário autenticado:", user.email);
       
       // Verificar se é o admin baseado no email
-      const isAdmin = user.email === 'nsyzadmin@gmail.com';
+      const isAdmin = user.email === ADMIN_EMAIL;
       
+      // Salvar dados do usuário no localStorage
       localStorage.setItem('currentUser', JSON.stringify({
         uid: user.uid,
         email: user.email,
@@ -58,15 +63,26 @@ try {
       }));
       localStorage.setItem('lastLoginTime', new Date().getTime());
       
-      // Se for admin, verificar se está na página de login e redirecionar para admin
-      if (isAdmin && window.location.pathname === '/login') {
-        window.location.href = '/admin';
-      }
+      // Redirecionamento baseado no tipo de usuário e localização atual
+      const currentPath = window.location.pathname;
       
-      // Se estiver tentando acessar admin e não for admin, bloquear
-      if (!isAdmin && window.location.pathname === '/admin') {
-        alert('Você não tem permissão para acessar esta área.');
-        window.location.href = '/loja';
+      if (isAdmin) {
+        // Se for admin na página de login, redirecionar para admin
+        if (currentPath === '/login') {
+          window.location.href = '/admin';
+        }
+      } else {
+        // Se for usuário normal tentando acessar área administrativa
+        if (currentPath === '/admin') {
+          alert('Você não tem permissão para acessar esta área.');
+          window.location.href = '/loja';
+        }
+      }
+    } else {
+      // Se não há usuário autenticado e está em página restrita
+      if (window.location.pathname === '/admin') {
+        alert('Você precisa fazer login como administrador para acessar esta área.');
+        window.location.href = '/login';
       }
     }
   });
@@ -188,9 +204,20 @@ const firestoreProducts = {
   
   // Verificar autenticação do usuário
   _checkAuthentication() {
-    if (!currentUser) {
-      console.error("Usuário não autenticado");
-      throw new Error("Usuário não autenticado. Faça login novamente.");
+    // Verificar primeiro diretamente no firebase.auth()
+    const firebaseUser = firebase.auth().currentUser;
+    
+    if (!firebaseUser) {
+      // Depois verificar na variável local para compatibilidade
+      if (!currentUser) {
+        console.error("Usuário não autenticado");
+        throw new Error("Usuário não autenticado. Faça login novamente.");
+      }
+      // Se temos currentUser mas não firebase.auth().currentUser, usar o currentUser
+      console.warn("Usando currentUser local em vez de firebase.auth().currentUser");
+    } else {
+      // Se temos firebase.auth().currentUser, atualizar nossa variável local
+      currentUser = firebaseUser;
     }
     
     // Verificar se é administrador
@@ -198,6 +225,8 @@ const firestoreProducts = {
       console.error("Usuário não é administrador");
       throw new Error("Você não tem permissão para realizar esta operação.");
     }
+    
+    console.log("Usuário autenticado e é administrador:", currentUser.email);
   },
   
   // Log de operação com detalhes
@@ -637,8 +666,8 @@ const fakeAuth = {
   users: [
     {
       uid: 'admin123',
-      email: 'nsyzadmin@gmail.com',
-      password: 'nsyzadmin123',
+      email: ADMIN_EMAIL, // Usando a constante global definida no topo
+      password: ADMIN_PASSWORD, // Usando a constante global definida no topo
       displayName: 'Administrador NSYZ',
       role: 'admin'
     },

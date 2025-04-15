@@ -21,11 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Adicionar botão ao DOM
   loginBtn.parentNode.appendChild(createAccountBtn);
   
-  // Mode do formulário
+  // Modo do formulário
   const formModeInput = document.getElementById('formMode');
   
-  // E-mail específico do administrador
+  // Credenciais fixas do administrador
   const ADMIN_EMAIL = 'nsyzadmin@gmail.com';
+  const ADMIN_PASSWORD = 'nsyzadmin123';
   
   // Inicialmente mostrar mensagem de carregamento
   showErrorMessage('Conectando ao serviço de autenticação...', 'info');
@@ -51,8 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
       loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
       createAccountBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
       displayNameGroup.classList.add('d-none');
-      document.querySelector('.login-header h4').textContent = 'Acesso Administrativo';
-      document.querySelector('.login-header p').textContent = 'Digite suas credenciais para acessar o painel.';
+      document.querySelector('.login-header h4').textContent = 'Acesso ao Sistema';
+      document.querySelector('.login-header p').textContent = 'Digite suas credenciais para acessar o sistema.';
     }
   });
   
@@ -123,13 +124,14 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Tentando login com email:', email);
         
         try {
-          // Login com Firebase
-          const userCredential = await firebaseAuthAPI.login(email, password);
-          console.log('Login bem-sucedido:', userCredential);
-          
-          // Verificar se é o email do administrador
-          if (email === ADMIN_EMAIL) {
-            console.log('Usuário administrador:', email);
+          // Verificar se é o administrador com email/senha específica
+          if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+            console.log('Credenciais de administrador válidas');
+            
+            // Fazer login via Firebase
+            const userCredential = await firebaseAuthAPI.login(email, password);
+            console.log('Login de administrador bem-sucedido:', userCredential);
+            
             showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');
             
             // Redirecionar para o painel admin
@@ -137,14 +139,29 @@ document.addEventListener('DOMContentLoaded', () => {
               window.location.href = '/admin';
             }, 500);
           } else {
-            // Usuário normal, redirecionar para a loja
-            console.log('Usuário normal:', email);
-            showNotification('Login realizado', 'Bem-vindo à loja BOSSPODS', 'success');
-            
-            // Redirecionar para a loja
-            setTimeout(() => {
-              window.location.href = '/loja';
-            }, 500);
+            // Usuário normal ou credenciais inválidas
+            try {
+              // Tentar login normal
+              const userCredential = await firebaseAuthAPI.login(email, password);
+              console.log('Login de usuário normal bem-sucedido:', userCredential);
+              
+              // Se for o email do admin mas senha errada, mostrar erro específico
+              if (email === ADMIN_EMAIL) {
+                showLoginError('Senha incorreta para o administrador');
+                return;
+              }
+              
+              // Login bem-sucedido para usuário normal
+              showNotification('Login realizado', 'Bem-vindo à loja BOSSPODS', 'success');
+              
+              // Redirecionar para a loja
+              setTimeout(() => {
+                window.location.href = '/loja';
+              }, 500);
+            } catch (error) {
+              console.error('Erro ao fazer login de usuário normal:', error);
+              showLoginError('Email ou senha incorretos');
+            }
           }
         } catch (error) {
           console.error('Erro ao fazer login:', error);
@@ -158,9 +175,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Tentando criar conta com email:', email);
         
         try {
-          // Verificar se é uma tentativa de criar conta de admin (não permitido)
+          // Verificar se é uma tentativa de criar conta com o email do admin (não permitido)
           if (email === ADMIN_EMAIL) {
-            showLoginError('Este email já está registrado como administrador. Faça login ou use outro email.');
+            showLoginError('Este email está reservado para o administrador do sistema. Por favor, use outro email.');
             return;
           }
           

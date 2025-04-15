@@ -2,14 +2,14 @@
 
 // Configurações
 const AUTH_CONFIG = {
-  // E-mail do administrador autorizado
+  // E-mail e senha do administrador
   ADMIN_EMAIL: 'nsyzadmin@gmail.com',
   
   // Rotas que exigem autenticação de administrador
   ADMIN_ROUTES: ['/admin']
 };
 
-// Verificar se a página atual exige autenticação
+// Verificar se a página atual exige autenticação de administrador
 function isCurrentRouteProtected() {
   // Obter caminho atual
   const currentPath = window.location.pathname;
@@ -18,7 +18,7 @@ function isCurrentRouteProtected() {
   return AUTH_CONFIG.ADMIN_ROUTES.includes(currentPath);
 }
 
-// Verificar autenticação usando Firebase Auth
+// Verificar autenticação diretamente usando Firebase Auth
 async function checkAuthentication() {
   // Se a página atual não exige autenticação, não verificar
   if (!isCurrentRouteProtected()) {
@@ -29,9 +29,18 @@ async function checkAuthentication() {
   try {
     console.log('Verificando autenticação para rota protegida de admin...');
     
-    // Obter usuário atual do Firebase Auth
-    const user = await firebaseAuthAPI.getCurrentUser();
+    // Verificar se o Firebase Auth está disponível
+    if (!firebase || !firebase.auth) {
+      console.error('Firebase Auth não está disponível');
+      alert('Erro no sistema de autenticação. Tente novamente mais tarde.');
+      window.location.href = '/login';
+      return false;
+    }
     
+    // Obter usuário atual diretamente do Firebase Auth
+    const user = firebase.auth().currentUser;
+    
+    // Verificar se há usuário autenticado
     if (!user) {
       console.log('Usuário não autenticado, redirecionando para login');
       alert('Você precisa fazer login para acessar esta área');
@@ -64,7 +73,7 @@ async function checkAuthentication() {
 document.addEventListener('DOMContentLoaded', () => {
   // Verificar se o Firebase foi inicializado
   const firebaseCheckInterval = setInterval(() => {
-    if (typeof firebaseInitialized !== 'undefined' && firebaseInitialized) {
+    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
       // Firebase inicializado
       clearInterval(firebaseCheckInterval);
       console.log('Firebase inicializado para gerenciamento de autenticação');
