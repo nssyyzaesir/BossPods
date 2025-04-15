@@ -7,6 +7,9 @@ let carrinhoItems = [];
 
 // Inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
+  // Verificar autenticação e configurar acesso de admin
+  verificarAutenticacao();
+  
   // Configurar escuta em tempo real para produtos
   setupProdutosListener();
   
@@ -19,6 +22,34 @@ document.addEventListener('DOMContentLoaded', () => {
   // Inicializar tooltips e popovers do Bootstrap
   initBootstrapComponents();
 });
+
+// Verificar autenticação e mostrar botão de admin se aplicável
+function verificarAutenticacao() {
+  // Credenciais do administrador
+  const ADMIN_EMAIL = 'nsyzaesir@gmail.com';
+  
+  // Esperar até que o Firebase Auth esteja inicializado
+  const authCheckInterval = setInterval(() => {
+    if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && firebase.auth) {
+      clearInterval(authCheckInterval);
+      
+      // Verificar estado de autenticação
+      firebase.auth().onAuthStateChanged((user) => {
+        const adminBtn = document.getElementById('adminBtn');
+        
+        if (user && user.email === ADMIN_EMAIL) {
+          // Mostrar botão de admin se o usuário for o administrador
+          adminBtn.classList.remove('d-none');
+          console.log('Usuário admin autenticado, botão de administração visível');
+        } else {
+          // Esconder botão de admin para outros usuários
+          adminBtn.classList.add('d-none');
+          console.log('Usuário não é admin ou não está autenticado');
+        }
+      });
+    }
+  }, 500);
+}
 
 // Configurar escuta em tempo real para produtos
 function setupProdutosListener() {
