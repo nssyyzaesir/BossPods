@@ -12,29 +12,32 @@ const firebaseConfig = {
 let firebaseInitialized = false;
 let firestoreDB = null;
 let firebaseAuth = null;
-let localDevMode = true;
+let localDevMode = true; // Forçar modo de desenvolvimento local por enquanto
 
-// Tentar inicializar Firebase
-try {
-  // Inicializar Firebase
-  firebase.initializeApp(firebaseConfig);
-  
-  // Obter instâncias
-  firestoreDB = firebase.firestore();
-  
-  // Autenticação
-  firebaseAuth = firebase.auth();
-  
-  // Marcar como inicializado
-  firebaseInitialized = true;
-  localDevMode = false;
-  
-  console.log("Firebase inicializado com sucesso");
-} catch (error) {
-  console.warn("Erro ao inicializar Firebase, usando modo de desenvolvimento local:", error);
-  firebaseInitialized = false;
-  localDevMode = true;
-}
+// Deixando comentado para futuro uso real com Firebase
+// try {
+//   // Inicializar Firebase
+//   firebase.initializeApp(firebaseConfig);
+//   
+//   // Obter instâncias
+//   firestoreDB = firebase.firestore();
+//   
+//   // Autenticação
+//   firebaseAuth = firebase.auth();
+//   
+//   // Marcar como inicializado
+//   firebaseInitialized = true;
+//   localDevMode = false;
+//   
+//   console.log("Firebase inicializado com sucesso");
+// } catch (error) {
+//   console.warn("Erro ao inicializar Firebase, usando modo de desenvolvimento local:", error);
+//   firebaseInitialized = false;
+//   localDevMode = true;
+// }
+
+// Forçando modo de desenvolvimento local
+console.log("Utilizando modo de desenvolvimento local para autenticação e armazenamento");
 
 // API Firebase Auth
 const firebaseAuthAPI = {
@@ -478,6 +481,13 @@ const fakeAuth = {
       email: 'admin@bosspods.com',
       password: 'admin123',
       displayName: 'Administrador',
+      role: 'admin'
+    },
+    {
+      uid: 'admin456',
+      email: 'gmail@nsyz',
+      password: 'admin123',
+      displayName: 'Novo Administrador',
       role: 'admin'
     },
     {
