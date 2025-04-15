@@ -1,0 +1,104 @@
+1. AUTENTICAÇÃO AVANÇADA COM FIREBASE AUTH + TOKENS
+	•	Painel com login e senha
+	•	Tokens JWT armazenados com expiração e refresh
+	•	Painel principal só libera se o token for válido
+	•	Múltiplos níveis de usuários:
+	•	root → acesso total
+	•	admin → acesso limitado
+	•	operador → apenas leitura
+
+⸻
+
+2. BACKEND INTELIGENTE COM FIRESTORE (Firebase)
+	•	Produtos, logs, categorias, vendas, carrinho: tudo salvo na nuvem
+	•	Atualização em tempo real entre loja e admin
+	•	Queries dinâmicas, com filtros, ordenações e paginações
+	•	Logs de cada operação salvos com ID do usuário + data
+
+⸻
+
+3. DASHBOARD ANALÍTICO INTELIGENTE (TABELAS + GRÁFICOS)
+	•	Gráfico de vendas (semana/mês/ano)
+	•	Produtos mais acessados
+	•	Clientes mais frequentes
+	•	Tabela dinâmica com busca, filtros e ações por linha
+	•	Ranking de produtos com base em:
+	•	vendas
+	•	edição
+	•	estoque baixo
+	•	visualizações
+
+⸻
+
+4. SISTEMA DE PEDIDOS COMPLETO COM STATUS
+	•	Carrinho gera pedido
+	•	Admin recebe pedido no painel com:
+	•	nome do cliente
+	•	endereço
+	•	status atual: pendente / pago / enviado / entregue
+	•	integração com WhatsApp e envio automático
+
+⸻
+
+5. API INTERNA PRÓPRIA NO PROJETO
+	•	/api/produtos
+	•	/api/pedidos
+	•	/api/login
+	•	Simula backend real no Firebase com segurança ativada
+	•	Pode conectar o admin e a loja sem depender de LocalStorage
+
+⸻
+
+6. PAGAMENTO INTEGRADO COM PIX DINÂMICO
+	•	Integração com API do Mercado Pago ou Gerencianet
+	•	Gera QR Code Pix com valor do carrinho
+	•	Após pagar, status do pedido muda automaticamente
+
+⸻
+
+7. SISTEMA DE CUPONS & PROGRAMAS DE FIDELIDADE
+	•	Adição de cupons com:
+	•	código
+	•	desconto %
+	•	validade
+	•	quantidade de usos
+	•	Acumula pontos por compra (ex: 1 ponto a cada R$10)
+	•	Pode resgatar prêmios ou frete grátis
+
+⸻
+
+8. MODOS DE FUNCIONAMENTO DINÂMICOS
+	•	Modo “Loja Aberta” vs “Loja Fechada”
+	•	Fecha pedidos temporariamente (feriado, férias)
+	•	Modo “Revendedor”
+	•	Preços especiais se o usuário for revendedor
+
+⸻
+
+9. SISTEMA DE NOTIFICAÇÕES
+	•	Notificações internas no admin
+	•	“Estoque de Pod Uva esgotando”
+	•	“Novo pedido recebido de João”
+	•	“Erro ao atualizar imagem do produto X”
+	•	Som + popup
+	•	Marcar como lida
+
+⸻
+
+10. SISTEMA DE AÇÕES MASSIVAS NO ADMIN
+	•	Selecionar múltiplos produtos
+	•	Ações em lote:
+	•	deletar vários
+	•	atualizar categoria
+	•	alterar estoque com base em regra
+	•	aplicar cupom pra todos
+
+⸻
+
+11. BACKUP AUTOMÁTICO DIÁRIO
+	•	Gera .json de:
+	•	Produtos
+	•	Vendas
+	•	Logs
+	•	Salva no Firebase Storage
+	•	Envia backup automático por e-mail se configurado

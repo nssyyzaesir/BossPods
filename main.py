@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session
 from app import app, db
 from models import Produto, LogAtividade
 import os
@@ -6,6 +6,10 @@ import json
 from datetime import datetime
 import csv
 import io
+from auth_routes import auth_bp, login_required, admin_required
+
+# Registrar blueprint de autenticação
+app.register_blueprint(auth_bp, url_prefix='/auth')
 
 @app.route('/')
 def index():
@@ -13,8 +17,9 @@ def index():
     return render_template('loja.html')
     
 @app.route('/admin')
+@login_required
 def admin():
-    """Render the admin interface"""
+    """Render the admin interface - protegido por autenticação"""
     return render_template('admin.html')
     
 @app.route('/carrinho')
@@ -84,8 +89,9 @@ def get_produtos():
     return jsonify([produto.to_dict() for produto in produtos])
 
 @app.route('/api/produtos', methods=['POST'])
+@admin_required
 def add_produto():
-    """Adiciona um novo produto"""
+    """Adiciona um novo produto - requer autenticação admin"""
     data = request.json
     
     # Converter tags para o formato correto
@@ -115,8 +121,9 @@ def get_produto(id):
     return jsonify(produto.to_dict())
 
 @app.route('/api/produtos/<int:id>', methods=['PUT'])
+@admin_required
 def update_produto(id):
-    """Atualiza um produto"""
+    """Atualiza um produto - requer autenticação admin"""
     produto = Produto.query.get_or_404(id)
     data = request.json
     
