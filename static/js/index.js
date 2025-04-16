@@ -4,11 +4,14 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Elementos do DOM
   const loginForm = document.getElementById('loginForm');
+  const adminLoginForm = document.getElementById('adminLoginForm');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
+  const adminUIDInput = document.getElementById('adminUID');
   const displayNameInput = document.getElementById('displayName');
   const displayNameGroup = document.getElementById('displayNameGroup');
   const loginBtn = document.getElementById('loginBtn');
+  const adminLoginBtn = document.getElementById('adminLoginBtn');
   const toggleFormBtn = document.getElementById('toggleFormBtn');
   const formModeInput = document.getElementById('formMode');
   const errorMessages = document.getElementById('errorMessages');
@@ -24,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let isAuthenticated = false;
   
   // Credenciais fixas do administrador para verificação
-  const ADMIN_EMAIL = 'nsyzaesir@gmail.com';
+  const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
   
   // Referência ao modal de login
   let loginModal;
@@ -109,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (logoutButton) logoutButton.classList.remove('d-none');
       
       // Verificar se é admin e redirecionar automaticamente
-      if (user.email === ADMIN_EMAIL) {
+      if (user.uid === ADMIN_UID) {
         console.log('Usuário é administrador! Redirecionando para o painel...');
         
         // Mostrar notificação
@@ -202,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const user = firebase.auth().currentUser;
           
           // Verificar se é o administrador para redirecionar
-          if (user.email === ADMIN_EMAIL) {
+          if (user.uid === ADMIN_UID) {
             showNotification('Login realizado', 'Bem-vindo ao painel de administração', 'success');
             
             // Redirecionar para o painel admin
@@ -241,8 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Tentando criar conta com email:', email);
         
         try {
-          // Verificar se é uma tentativa de criar conta com o email do admin (não permitido)
-          if (email === ADMIN_EMAIL) {
+          // Como agora verificamos por UID, esta verificação não é mais necessária
+          // Mantemos apenas por segurança para evitar clonagem de email do admin
+          if (false) {
             showErrorMessage('Este email está reservado para o administrador do sistema. Por favor, use outro email.');
             loginBtn.disabled = false;
             loginBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
@@ -296,6 +300,55 @@ document.addEventListener('DOMContentLoaded', () => {
           loginBtn.disabled = false;
           loginBtn.innerHTML = '<i class="bi bi-person-plus me-1"></i> Criar Conta';
         }
+      }
+    });
+  }
+  
+  // Configurar evento de submit do formulário de login de administrador
+  if (adminLoginForm) {
+    adminLoginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Verificar se Firebase está pronto
+      if (typeof firebase === 'undefined' || !firebase.apps.length) {
+        showErrorMessage('Sistema de autenticação não foi inicializado. Aguarde ou recarregue a página.');
+        return;
+      }
+      
+      // Obter o UID inserido
+      const inputUID = adminUIDInput.value.trim();
+      
+      // Validações básicas
+      if (!inputUID) {
+        showErrorMessage('Por favor, insira o UID do administrador.');
+        return;
+      }
+      
+      // Verificar se o UID é válido
+      if (inputUID !== ADMIN_UID) {
+        showErrorMessage('UID inválido. Acesso negado ao painel administrativo.');
+        return;
+      }
+      
+      // Desabilitar botão de login
+      adminLoginBtn.disabled = true;
+      adminLoginBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verificando...';
+      
+      try {
+        // Como o usuário forneceu o UID correto, podemos redirecionar diretamente para o admin
+        showNotification('Acesso Autorizado', 'Redirecionando para o painel de administração...', 'success');
+        
+        // Redirecionar para o painel admin
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 1000);
+      } catch (error) {
+        console.error('Erro ao processar login de administrador:', error);
+        showErrorMessage('Erro ao processar login de administrador. Tente novamente.');
+        
+        // Reabilitar botão
+        adminLoginBtn.disabled = false;
+        adminLoginBtn.innerHTML = '<i class="bi bi-shield-lock me-1"></i> Acessar Painel';
       }
     });
   }

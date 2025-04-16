@@ -711,56 +711,108 @@
         <div class="modal-body">
           <!-- Área para mensagens de erro/depuração -->
           <div id="errorMessages" class="mb-3"></div>
-          
-          <!-- Cabeçalho do formulário -->
-          <div class="login-header text-center mb-4">
-            <h4 id="loginFormTitle">Acesso ao Sistema</h4>
-            <p class="text-muted" id="loginFormSubtitle">Digite suas credenciais para acessar o sistema.</p>
-          </div>
-          
-          <!-- Formulário de login -->
-          <form id="loginForm">
-            <!-- Email -->
-            <div class="form-group">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control cyber-input glow-input" id="email" placeholder="email@exemplo.com" required>
-              <i class="bi bi-envelope form-control-icon"></i>
-            </div>
-            
-            <!-- Senha -->
-            <div class="form-group">
-              <label for="password" class="form-label">Senha</label>
-              <input type="password" class="form-control cyber-input glow-input" id="password" required>
-              <i class="bi bi-lock form-control-icon"></i>
-            </div>
-            
-            <!-- Nome para registro (inicialmente oculto) -->
-            <div class="form-group d-none" id="displayNameGroup">
-              <label for="displayName" class="form-label">Nome</label>
-              <input type="text" class="form-control cyber-input glow-input" id="displayName">
-              <i class="bi bi-person form-control-icon"></i>
-            </div>
-            
-            <!-- Botões de ação -->
-            <div class="d-grid gap-2 mt-4">
-              <!-- Botão de login -->
-              <button type="submit" class="btn cyber-btn cyber-btn-primary w-100" id="loginBtn">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+
+          <!-- Abas para escolher tipo de login -->
+          <ul class="nav nav-tabs cyber-tabs mb-4" id="loginTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="user-login-tab" data-bs-toggle="tab" data-bs-target="#user-login" type="button" role="tab" aria-controls="user-login" aria-selected="true">
+                <i class="bi bi-person me-1"></i> Login de Usuário
               </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="admin-login-tab" data-bs-toggle="tab" data-bs-target="#admin-login" type="button" role="tab" aria-controls="admin-login" aria-selected="false">
+                <i class="bi bi-shield-lock me-1"></i> Login de Administrador
+              </button>
+            </li>
+          </ul>
+
+          <!-- Conteúdo das abas -->
+          <div class="tab-content" id="loginTabsContent">
+            <!-- Aba de Login de Usuário -->
+            <div class="tab-pane fade show active" id="user-login" role="tabpanel" aria-labelledby="user-login-tab">
+              <!-- Cabeçalho do formulário -->
+              <div class="login-header text-center mb-4">
+                <h4 id="loginFormTitle">Acesso de Usuário</h4>
+                <p class="text-muted" id="loginFormSubtitle">Digite suas credenciais para acessar o sistema.</p>
+              </div>
               
-              <!-- Botão para alternar entre login e registro -->
-              <button type="button" class="btn cyber-btn cyber-btn-outline w-100" id="toggleFormBtn">
-                <i class="bi bi-person-plus me-1"></i> Criar Conta
-              </button>
+              <!-- Formulário de login de usuário -->
+              <form id="loginForm">
+                <!-- Email -->
+                <div class="form-group">
+                  <label for="email" class="form-label">Email</label>
+                  <input type="email" class="form-control cyber-input glow-input" id="email" placeholder="email@exemplo.com" required>
+                  <i class="bi bi-envelope form-control-icon"></i>
+                </div>
+                
+                <!-- Senha -->
+                <div class="form-group">
+                  <label for="password" class="form-label">Senha</label>
+                  <input type="password" class="form-control cyber-input glow-input" id="password" required>
+                  <i class="bi bi-lock form-control-icon"></i>
+                </div>
+                
+                <!-- Nome para registro (inicialmente oculto) -->
+                <div class="form-group d-none" id="displayNameGroup">
+                  <label for="displayName" class="form-label">Nome</label>
+                  <input type="text" class="form-control cyber-input glow-input" id="displayName">
+                  <i class="bi bi-person form-control-icon"></i>
+                </div>
+                
+                <!-- Botões de ação -->
+                <div class="d-grid gap-2 mt-4">
+                  <!-- Botão de login -->
+                  <button type="submit" class="btn cyber-btn cyber-btn-primary w-100" id="loginBtn">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                  </button>
+                  
+                  <!-- Botão para alternar entre login e registro -->
+                  <button type="button" class="btn cyber-btn cyber-btn-outline w-100" id="toggleFormBtn">
+                    <i class="bi bi-person-plus me-1"></i> Criar Conta
+                  </button>
+                </div>
+                
+                <!-- Modo de formulário -->
+                <input type="hidden" id="formMode" value="login">
+              </form>
+              
+              <div class="alert alert-info mt-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <span id="loginFormHint">Você precisa fazer login para acessar o sistema.</span>
+              </div>
             </div>
-            
-            <!-- Modo de formulário -->
-            <input type="hidden" id="formMode" value="login">
-          </form>
-          
-          <div class="alert alert-info mt-4">
-            <i class="bi bi-info-circle me-2"></i>
-            <span id="loginFormHint">Você precisa fazer login para acessar o sistema.</span>
+
+            <!-- Aba de Login de Administrador -->
+            <div class="tab-pane fade" id="admin-login" role="tabpanel" aria-labelledby="admin-login-tab">
+              <!-- Cabeçalho do formulário -->
+              <div class="login-header text-center mb-4">
+                <h4>Acesso Administrativo</h4>
+                <p class="text-muted">Digite o UID do administrador para acessar o painel.</p>
+              </div>
+              
+              <!-- Formulário de login de admin -->
+              <form id="adminLoginForm">
+                <!-- UID -->
+                <div class="form-group">
+                  <label for="adminUID" class="form-label">UID do Administrador</label>
+                  <input type="password" class="form-control cyber-input glow-input" id="adminUID" placeholder="Digite o UID do administrador" required>
+                  <i class="bi bi-shield-lock form-control-icon"></i>
+                </div>
+                
+                <!-- Botões de ação -->
+                <div class="d-grid gap-2 mt-4">
+                  <!-- Botão de login admin -->
+                  <button type="submit" class="btn cyber-btn cyber-btn-danger w-100" id="adminLoginBtn">
+                    <i class="bi bi-shield-lock me-1"></i> Acessar Painel
+                  </button>
+                </div>
+              </form>
+              
+              <div class="alert alert-warning mt-4">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <span>Acesso exclusivo para administradores autorizados do sistema.</span>
+              </div>
+            </div>
           </div>
         </div>
         <div class="scanner-line"></div>

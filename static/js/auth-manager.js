@@ -124,10 +124,10 @@ async function checkAuthentication() {
           return;
         }
         
-        console.log('Usuário autenticado:', user.email);
+        console.log('Usuário autenticado:', user.email, 'UID:', user.uid);
         
-        // Se for rota de admin, verificar se o email é o do administrador
-        if (isAdminRoute() && user.email !== AUTH_CONFIG.ADMIN_EMAIL) {
+        // Se for rota de admin, verificar se o UID é o do administrador
+        if (isAdminRoute() && user.uid !== AUTH_CONFIG.ADMIN_UID) {
           console.log('Usuário não é o administrador autorizado');
           showErrorAndRedirect('Você não tem permissão para acessar esta área.', '/loja');
           resolve(false);
@@ -156,7 +156,7 @@ async function checkAuthentication() {
 // Verificar se o usuário é admin
 function isAdminUser(user = currentUser) {
   if (!user) return false;
-  return user.email === AUTH_CONFIG.ADMIN_EMAIL;
+  return user.uid === AUTH_CONFIG.ADMIN_UID;
 }
 
 // Adicionar listener para mudanças de autenticação
