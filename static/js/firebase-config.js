@@ -9,8 +9,12 @@ const firebaseConfig = {
 };
 
 // Credenciais do administrador
-const ADMIN_EMAIL = 'nsyzaesir@gmail.com';
-const ADMIN_PASSWORD = 'nsyz123';
+const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+
+// Configurações de autenticação globais
+const AUTH_CONFIG = {
+  ADMIN_UID: ADMIN_UID
+};
 
 // Variáveis globais para acesso ao Firebase
 let firebaseInitialized = false;
@@ -112,7 +116,7 @@ function createProductsAPI(db) {
       try {
         // Verificar se usuário é admin
         const currentUser = firebase.auth().currentUser;
-        if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+        if (!currentUser || currentUser.uid !== ADMIN_UID) {
           throw new Error("Permissão negada: apenas administradores podem criar produtos");
         }
         
@@ -140,7 +144,7 @@ function createProductsAPI(db) {
       try {
         // Verificar se usuário é admin
         const currentUser = firebase.auth().currentUser;
-        if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+        if (!currentUser || currentUser.uid !== ADMIN_UID) {
           throw new Error("Permissão negada: apenas administradores podem atualizar produtos");
         }
         
@@ -164,7 +168,7 @@ function createProductsAPI(db) {
       try {
         // Verificar se usuário é admin
         const currentUser = firebase.auth().currentUser;
-        if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+        if (!currentUser || currentUser.uid !== ADMIN_UID) {
           throw new Error("Permissão negada: apenas administradores podem excluir produtos");
         }
         
@@ -217,7 +221,7 @@ function createProductsAPI(db) {
       try {
         // Verificar se usuário é admin
         const currentUser = firebase.auth().currentUser;
-        if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+        if (!currentUser || currentUser.uid !== ADMIN_UID) {
           console.error("Permissão negada: apenas administradores podem visualizar logs");
           return [];
         }
@@ -397,7 +401,7 @@ const firebaseAuthAPI = {
       await firebase.firestore().collection('users').doc(userCredential.user.uid).set({
         email: email,
         displayName: displayName || email.split('@')[0],
-        role: email === ADMIN_EMAIL ? 'admin' : 'user',
+        role: userCredential.user.uid === ADMIN_UID ? 'admin' : 'user',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       
@@ -419,7 +423,7 @@ const firebaseAuthAPI = {
       const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
       
       // Verificar se é o admin
-      if (email === ADMIN_EMAIL) {
+      if (userCredential.user.uid === ADMIN_UID) {
         // Atualizar perfil e permissões no Firestore
         await firebase.firestore().collection('users').doc(userCredential.user.uid).set({
           email: email,
@@ -454,7 +458,7 @@ const firebaseAuthAPI = {
   // Verificar se um usuário é admin
   async isAdmin(user) {
     if (!user) return false;
-    return user.email === ADMIN_EMAIL;
+    return user.uid === ADMIN_UID;
   },
   
   // Obter usuário atual
@@ -468,8 +472,8 @@ function isAdminUser(user) {
   // Se não tiver usuário, não é admin
   if (!user) return false;
   
-  // Verifica o email do usuário
-  return user.email === ADMIN_EMAIL;
+  // Verifica o UID do usuário
+  return user.uid === ADMIN_UID;
 }
 
 // Inicializa o Firebase quando o script é carregado
