@@ -8,13 +8,8 @@ const firebaseConfig = {
   appId: "1:319819159324:web:953f64130fe51842600cd9"
 };
 
-// Credenciais do administrador
+// Credenciais do administrador - usamos a configuração de AUTH_CONFIG do auth-manager.js
 const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
-
-// Configurações de autenticação globais
-const AUTH_CONFIG = {
-  ADMIN_UID: ADMIN_UID
-};
 
 // Variáveis globais para acesso ao Firebase
 let firebaseInitialized = false;

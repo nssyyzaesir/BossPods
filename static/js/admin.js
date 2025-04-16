@@ -46,10 +46,28 @@ async function verificarAutenticacao() {
   try {
     console.log('Iniciando verificação de autenticação para o painel de administração...');
     
-    // Constante com o email de administrador autorizado
-    const ADMIN_EMAIL = 'nsyzaesir@gmail.com';
+    // Constante com o UID de administrador autorizado
+    const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
     
-    // Verificar se o gerenciador de autenticação está disponível
+    // Verificar se temos o UID do administrador no localStorage (login direto com UID)
+    const storedAdminUID = localStorage.getItem('adminUID');
+    if (storedAdminUID === ADMIN_UID) {
+      console.log('Autenticação de administrador encontrada no localStorage');
+      // Autenticação bem-sucedida por UID armazenado, atualizar UI e carregar dados
+      
+      // Atualizar nome do usuário na UI
+      const userDisplayName = document.getElementById('userDisplayName');
+      if (userDisplayName) {
+        userDisplayName.textContent = 'Administrador';
+      }
+      
+      // Carregar dados iniciais
+      carregarDados();
+      
+      return true;
+    }
+    
+    // Verificar se o gerenciador de autenticação está disponível (login com email/senha)
     if (typeof window.auth !== 'undefined' && window.auth.isAdminUser) {
       // Usar o gerenciador de autenticação
       const currentUser = await window.auth.checkAuthentication();
@@ -57,6 +75,12 @@ async function verificarAutenticacao() {
       if (!currentUser) {
         console.log('Usuário não autenticado, redirecionando para página de login');
         showToast('Acesso Negado', 'Você precisa fazer login para acessar esta área', 'error');
+        
+        // Pequeno atraso para mostrar o toast
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+        
         return false;
       }
       
@@ -79,7 +103,7 @@ async function verificarAutenticacao() {
       const userDisplayName = document.getElementById('userDisplayName');
       if (userDisplayName) {
         const user = firebase.auth().currentUser;
-        userDisplayName.textContent = user.displayName || user.email || 'Admin';
+        userDisplayName.textContent = user ? (user.displayName || user.email || 'Administrador') : 'Administrador';
       }
       
       // Carregar dados iniciais
@@ -94,6 +118,23 @@ async function verificarAutenticacao() {
           unsubscribe(); // Parar de escutar após primeira verificação
           
           if (!user) {
+            // Verificar novamente se temos o UID no localStorage antes de redirecionar
+            if (storedAdminUID === ADMIN_UID) {
+              console.log('UID do admin encontrado no localStorage, permitindo acesso');
+              
+              // Atualizar nome do usuário na UI
+              const userDisplayName = document.getElementById('userDisplayName');
+              if (userDisplayName) {
+                userDisplayName.textContent = 'Administrador';
+              }
+              
+              // Carregar dados iniciais
+              carregarDados();
+              
+              resolve(true);
+              return;
+            }
+            
             console.log('Usuário não autenticado, redirecionando para página de login');
             showToast('Acesso Negado', 'Você precisa fazer login para acessar esta área', 'error');
             
@@ -106,7 +147,7 @@ async function verificarAutenticacao() {
             return;
           }
           
-          if (user.email !== ADMIN_EMAIL) {
+          if (user.uid !== ADMIN_UID) {
             console.log('Usuário não é o administrador autorizado');
             showToast('Acesso Negado', 'Você não tem permissão para acessar esta área.', 'error');
             
@@ -125,7 +166,7 @@ async function verificarAutenticacao() {
           // Atualizar nome do usuário na UI
           const userDisplayName = document.getElementById('userDisplayName');
           if (userDisplayName) {
-            userDisplayName.textContent = user.displayName || user.email || 'Admin';
+            userDisplayName.textContent = user.displayName || user.email || 'Administrador';
           }
           
           // Carregar dados iniciais

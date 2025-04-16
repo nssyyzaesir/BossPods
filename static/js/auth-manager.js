@@ -155,6 +155,13 @@ async function checkAuthentication() {
 
 // Verificar se o usuário é admin
 function isAdminUser(user = currentUser) {
+  // Verificar pelo localStorage (login com UID do admin)
+  const storedAdminUID = localStorage.getItem('adminUID');
+  if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
+    return true;
+  }
+  
+  // Verificar pelo usuário atual (login normal)
   if (!user) return false;
   return user.uid === AUTH_CONFIG.ADMIN_UID;
 }
@@ -198,6 +205,7 @@ function logout() {
         // Limpar dados de autenticação local
         localStorage.removeItem('currentUser');
         localStorage.removeItem('lastLoginTime');
+        localStorage.removeItem('adminUID'); // Remover identificação de admin
         
         // Redirecionar para a página inicial
         window.location.href = '/';
