@@ -223,6 +223,13 @@ function logout() {
 // Função para verificar se uma função protegida pode ser executada
 // Útil para proteger funções admin como criar produto, editar estoque, etc.
 function canExecuteAdminFunction(operation = 'operação administrativa') {
+  // Verificar se temos autenticação via UID no localStorage
+  const storedAdminUID = localStorage.getItem('adminUID');
+  if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
+    console.log('Permissão concedida para operação administrativa via localStorage UID');
+    return true;
+  }
+  
   // Verificar se tem um usuário logado
   if (!currentUser) {
     alert(`Você precisa estar logado para realizar esta ${operation}.`);
@@ -265,7 +272,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Se for rota administrativa
         if (isAdminRoute()) {
-          if (!user) {
+          // Verificar se temos a autenticação no localStorage (admin com UID)
+          const storedAdminUID = localStorage.getItem('adminUID');
+          if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
+            console.log('Acesso admin permitido via localStorage UID');
+            // Não redirecionar - permissão concedida via UID
+          } else if (!user) {
             redirectToLogin('Você precisa fazer login para acessar esta área');
           } else if (!isAdminUser(user)) {
             showErrorAndRedirect('Você não tem permissão para acessar esta área.', '/loja');

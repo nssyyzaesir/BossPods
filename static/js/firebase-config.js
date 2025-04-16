@@ -109,10 +109,16 @@ function createProductsAPI(db) {
     // Criar produto
     async createProduct(produto) {
       try {
-        // Verificar se usuário é admin
-        const currentUser = firebase.auth().currentUser;
-        if (!currentUser || currentUser.uid !== ADMIN_UID) {
-          throw new Error("Permissão negada: apenas administradores podem criar produtos");
+        // Verificar primeiro se temos o UID do admin no localStorage (login via UID)
+        const storedAdminUID = localStorage.getItem('adminUID');
+        if (storedAdminUID === ADMIN_UID) {
+          console.log("Permissão para criar produto concedida via localStorage UID");
+        } else {
+          // Verificar se usuário é admin via Firebase Auth
+          const currentUser = firebase.auth().currentUser;
+          if (!currentUser || currentUser.uid !== ADMIN_UID) {
+            throw new Error("Permissão negada: apenas administradores podem criar produtos");
+          }
         }
         
         const docRef = await db.collection('produtos').add({
@@ -137,10 +143,16 @@ function createProductsAPI(db) {
     // Atualizar produto
     async updateProduct(id, produto) {
       try {
-        // Verificar se usuário é admin
-        const currentUser = firebase.auth().currentUser;
-        if (!currentUser || currentUser.uid !== ADMIN_UID) {
-          throw new Error("Permissão negada: apenas administradores podem atualizar produtos");
+        // Verificar primeiro se temos o UID do admin no localStorage (login via UID)
+        const storedAdminUID = localStorage.getItem('adminUID');
+        if (storedAdminUID === ADMIN_UID) {
+          console.log("Permissão para atualizar produto concedida via localStorage UID");
+        } else {
+          // Verificar se usuário é admin via Firebase Auth
+          const currentUser = firebase.auth().currentUser;
+          if (!currentUser || currentUser.uid !== ADMIN_UID) {
+            throw new Error("Permissão negada: apenas administradores podem atualizar produtos");
+          }
         }
         
         await db.collection('produtos').doc(id).update({
@@ -161,10 +173,16 @@ function createProductsAPI(db) {
     // Excluir produto
     async deleteProduct(id, nomeProduto) {
       try {
-        // Verificar se usuário é admin
-        const currentUser = firebase.auth().currentUser;
-        if (!currentUser || currentUser.uid !== ADMIN_UID) {
-          throw new Error("Permissão negada: apenas administradores podem excluir produtos");
+        // Verificar primeiro se temos o UID do admin no localStorage (login via UID)
+        const storedAdminUID = localStorage.getItem('adminUID');
+        if (storedAdminUID === ADMIN_UID) {
+          console.log("Permissão para excluir produto concedida via localStorage UID");
+        } else {
+          // Verificar se usuário é admin via Firebase Auth
+          const currentUser = firebase.auth().currentUser;
+          if (!currentUser || currentUser.uid !== ADMIN_UID) {
+            throw new Error("Permissão negada: apenas administradores podem excluir produtos");
+          }
         }
         
         // Obter nome do produto se não foi fornecido
@@ -214,11 +232,17 @@ function createProductsAPI(db) {
     // Obter logs
     async getLogs() {
       try {
-        // Verificar se usuário é admin
-        const currentUser = firebase.auth().currentUser;
-        if (!currentUser || currentUser.uid !== ADMIN_UID) {
-          console.error("Permissão negada: apenas administradores podem visualizar logs");
-          return [];
+        // Verificar primeiro se temos o UID do admin no localStorage (login via UID)
+        const storedAdminUID = localStorage.getItem('adminUID');
+        if (storedAdminUID === ADMIN_UID) {
+          console.log("Permissão para visualizar logs concedida via localStorage UID");
+        } else {
+          // Verificar se usuário é admin via Firebase Auth
+          const currentUser = firebase.auth().currentUser;
+          if (!currentUser || currentUser.uid !== ADMIN_UID) {
+            console.error("Permissão negada: apenas administradores podem visualizar logs");
+            return [];
+          }
         }
         
         const snapshot = await db.collection('logs_atividade')
@@ -264,17 +288,23 @@ function createStatsAPI(db) {
     // Obter estatísticas básicas
     async getBasicStats() {
       try {
-        // Verificar autenticação
-        const currentUser = firebase.auth().currentUser;
-        if (!currentUser) {
-          console.error("Usuário não autenticado para obter estatísticas");
-          return {
-            totalProdutos: 0,
-            valorTotal: 0,
-            estoqueBaixo: 0,
-            estoqueZerado: 0,
-            maioresEstoques: []
-          };
+        // Verificar primeiro se temos o UID do admin no localStorage (login via UID)
+        const storedAdminUID = localStorage.getItem('adminUID');
+        if (storedAdminUID === ADMIN_UID) {
+          console.log("Permissão para obter estatísticas concedida via localStorage UID");
+        } else {
+          // Verificar autenticação normal
+          const currentUser = firebase.auth().currentUser;
+          if (!currentUser) {
+            console.error("Usuário não autenticado para obter estatísticas");
+            return {
+              totalProdutos: 0,
+              valorTotal: 0,
+              estoqueBaixo: 0,
+              estoqueZerado: 0,
+              maioresEstoques: []
+            };
+          }
         }
         
         // Buscar todos os produtos
@@ -464,7 +494,14 @@ const firebaseAuthAPI = {
 
 // Verificar se usuário logado é admin
 function isAdminUser(user) {
-  // Se não tiver usuário, não é admin
+  // Verificar pelo localStorage (login com UID do admin)
+  const storedAdminUID = localStorage.getItem('adminUID');
+  if (storedAdminUID === ADMIN_UID) {
+    console.log("Usuário identificado como admin via localStorage UID");
+    return true;
+  }
+  
+  // Se não tiver usuário, não é admin pelo método tradicional
   if (!user) return false;
   
   // Verifica o UID do usuário
