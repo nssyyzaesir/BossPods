@@ -263,13 +263,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
           }
           
-          // Criar documento do usuário no Firestore
-          await firebase.firestore().collection('users').doc(userCredential.user.uid).set({
-            email: email,
-            displayName: displayName || email.split('@')[0],
-            role: 'user',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
+          try {
+            // Tentar criar documento do usuário no Firestore
+            // Esta operação pode falhar devido a permissões, mas não deve interromper o registro
+            await firebase.firestore().collection('users').doc(userCredential.user.uid).set({
+              email: email,
+              displayName: displayName || email.split('@')[0],
+              role: 'user',
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          } catch (firestoreError) {
+            // Registrar erro, mas não interromper o fluxo
+            console.log('Aviso: Não foi possível criar registro no Firestore:', firestoreError.message);
+            // O usuário foi criado com sucesso, apenas o registro no Firestore falhou
+          }
           
           console.log('Conta criada com sucesso');
           
