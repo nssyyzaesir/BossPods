@@ -6,7 +6,7 @@ let currentSortField = 'nome';
 let currentSortOrder = 'asc';
 
 // DOM Ready
-document.addEventListener('DOMContentLoaded', function() {
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
   // Load products from localStorage
   carregarProdutos();
   
@@ -604,4 +604,5 @@ function applyFilters() {
   const stockFilter = document.querySelector('input[name="stockFilter"]:checked')?.value || '';
   
   renderAdmin(searchTerm, categoryFilter, stockFilter);
-}
+    });
+  }
