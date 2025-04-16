@@ -335,29 +335,25 @@ document.addEventListener('DOMContentLoaded', () => {
       adminLoginBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verificando...';
       
       try {
-        // Como o usuário forneceu o UID correto, precisamos autenticá-lo no Firebase
-        // Para isso, vamos usar uma conta anônima temporária e atribuir o UID manualmente (simulação)
-        firebase.auth().signInAnonymously()
-          .then((userCredential) => {
-            // Armazenar o UID do admin na sessão local para identificação
-            localStorage.setItem('adminUID', ADMIN_UID);
-            
-            // Mostrar notificação
-            showNotification('Acesso Autorizado', 'Redirecionando para o painel de administração...', 'success');
-            
-            // Redirecionar para o painel admin
-            setTimeout(() => {
-              window.location.href = '/admin';
-            }, 1000);
-          })
-          .catch((error) => {
-            console.error('Erro ao autenticar administrador:', error);
-            showErrorMessage('Erro ao processar login de administrador. Tente novamente mais tarde.');
-            
-            // Reabilitar botão
-            adminLoginBtn.disabled = false;
-            adminLoginBtn.innerHTML = '<i class="bi bi-shield-lock me-1"></i> Acessar Painel';
-          });
+        // Como o usuário forneceu o UID correto, vamos autenticar diretamente por localStorage
+        // Não é necessário fazer login anônimo no Firebase
+        console.log('UID de administrador válido. Autorizando acesso...');
+        
+        // Armazenar o UID do admin na sessão local para identificação
+        localStorage.setItem('adminUID', ADMIN_UID);
+        
+        // Mostrar notificação
+        showNotification('Acesso Autorizado', 'Redirecionando para o painel de administração...', 'success');
+        
+        // Atualizar UI imediatamente para refletir autenticação
+        if (authOverlay) authOverlay.style.display = 'none';
+        if (loginButton) loginButton.classList.add('d-none');
+        if (logoutButton) logoutButton.classList.remove('d-none');
+        
+        // Redirecionar para o painel admin
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 1000);
       } catch (error) {
         console.error('Erro ao processar login de administrador:', error);
         showErrorMessage('Erro ao processar login de administrador. Tente novamente.');
@@ -378,6 +374,9 @@ document.addEventListener('DOMContentLoaded', () => {
           
           // Limpar dados de autenticação
           isAuthenticated = false;
+          
+          // Limpar localStorage para remover UID de admin
+          localStorage.removeItem('adminUID');
           
           // Atualizar UI
           if (authOverlay) authOverlay.style.display = 'flex';

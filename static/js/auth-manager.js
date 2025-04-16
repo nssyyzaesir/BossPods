@@ -30,6 +30,27 @@ function isProtectedRoute() {
   return AUTH_CONFIG.AUTH_ROUTES.includes(currentPath);
 }
 
+// Verificar se o usuário está autenticado como admin
+// Primeiro verifica o localStorage para login via UID
+// Depois verifica o Firebase Auth para login normal
+function checkAdminAuth() {
+  // Verificar autenticação via localStorage (login direto por UID)
+  const storedAdminUID = localStorage.getItem('adminUID');
+  if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
+    console.log('Usuário autenticado como admin via localStorage UID');
+    return true;
+  }
+  
+  // Verificar autenticação via Firebase Auth
+  const user = firebase.auth().currentUser;
+  if (user && user.uid === AUTH_CONFIG.ADMIN_UID) {
+    console.log('Usuário autenticado como admin via Firebase Auth');
+    return true;
+  }
+  
+  return false;
+}
+
 // Atualizar UI com base no estado de autenticação
 function updateAuthUI(user) {
   try {
@@ -38,8 +59,15 @@ function updateAuthUI(user) {
     const logoutButton = document.getElementById('logoutButton');
     const authOverlay = document.getElementById('authOverlay');
     
-    if (user) {
-      // Usuário autenticado
+    // Verificar se temos autenticação por UID (admin via UID)
+    const storedAdminUID = localStorage.getItem('adminUID');
+    const isAuthenticatedByUID = storedAdminUID === AUTH_CONFIG.ADMIN_UID;
+    
+    // Usuário está autenticado se tiver objeto user OU autenticação por UID
+    const isAuthenticated = user || isAuthenticatedByUID;
+    
+    if (isAuthenticated) {
+      // Usuário autenticado (via Firebase ou localStorage)
       if (loginButton) loginButton.classList.add('d-none');
       if (logoutButton) logoutButton.classList.remove('d-none');
       if (authOverlay) authOverlay.style.display = 'none';
@@ -57,7 +85,7 @@ function updateAuthUI(user) {
     // Botão de admin na loja
     const adminBtn = document.getElementById('adminBtn');
     if (adminBtn) {
-      if (user && user.uid === AUTH_CONFIG.ADMIN_UID) {
+      if (isAuthenticatedByUID || (user && user.uid === AUTH_CONFIG.ADMIN_UID)) {
         adminBtn.classList.remove('d-none');
       } else {
         adminBtn.classList.add('d-none');
@@ -66,8 +94,14 @@ function updateAuthUI(user) {
     
     // Nome do usuário no painel de admin
     const userDisplayName = document.getElementById('userDisplayName');
-    if (userDisplayName && user) {
-      userDisplayName.textContent = user.displayName || user.email;
+    if (userDisplayName) {
+      if (user) {
+        // Usuário autenticado via Firebase
+        userDisplayName.textContent = user.displayName || user.email;
+      } else if (isAuthenticatedByUID) {
+        // Admin autenticado via UID
+        userDisplayName.textContent = 'Administrador';
+      }
     }
     
     // Chamar listeners adicionais
@@ -83,7 +117,7 @@ function updateAuthUI(user) {
   }
 }
 
-// Verificar autenticação usando Firebase Auth
+// Verificar autenticação usando Firebase Auth ou localStorage
 async function checkAuthentication() {
   // Se a verificação já foi completada, retornar usuário atual
   if (authCheckComplete) {
@@ -95,6 +129,19 @@ async function checkAuthentication() {
     console.log('Página atual não requer autenticação');
     authCheckComplete = true;
     return true;
+  }
+  
+  // Verificar se temos autenticação por UID de admin no localStorage
+  // Isso permite login como admin sem estar autenticado no Firebase
+  if (isAdminRoute()) {
+    const storedAdminUID = localStorage.getItem('adminUID');
+    if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
+      console.log('Autenticação admin via localStorage UID encontrada');
+      authCheckComplete = true;
+      // Não temos um user real, então não atualizamos currentUser
+      // mas retornamos true para permitir acesso
+      return true;
+    }
   }
   
   try {
@@ -118,7 +165,7 @@ async function checkAuthentication() {
         
         // Verificar se há usuário autenticado
         if (!user) {
-          console.log('Usuário não autenticado, redirecionando para login');
+          console.log('Usuário não autenticado no Firebase, redirecionando para login');
           redirectToLogin('Você precisa fazer login para acessar esta área');
           resolve(false);
           return;
@@ -310,6 +357,7 @@ window.auth = {
   isAdminRoute,
   isProtectedRoute,
   isAdminUser,
+  checkAdminAuth,
   logout,
   canExecuteAdminFunction,
   getCurrentUser: () => currentUser,
