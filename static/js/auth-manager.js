@@ -3,8 +3,8 @@
 
 // Configurações de autenticação
 const AUTH_CONFIG = {
-  // E-mail do administrador autorizado
-  ADMIN_EMAIL: 'nsyzaesir@gmail.com',
+  // UID do administrador autorizado
+  ADMIN_UID: '96rupqrpWjbyKtSksDaISQ94y6l2',
   
   // Rotas que exigem autenticação de administrador
   ADMIN_ROUTES: ['/admin'],
@@ -57,7 +57,7 @@ function updateAuthUI(user) {
     // Botão de admin na loja
     const adminBtn = document.getElementById('adminBtn');
     if (adminBtn) {
-      if (user && user.email === AUTH_CONFIG.ADMIN_EMAIL) {
+      if (user && user.uid === AUTH_CONFIG.ADMIN_UID) {
         adminBtn.classList.remove('d-none');
       } else {
         adminBtn.classList.add('d-none');
