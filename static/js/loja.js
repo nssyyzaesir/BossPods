@@ -27,6 +27,20 @@ document.addEventListener('DOMContentLoaded', () => {
 function verificarAutenticacao() {
   console.log('Verificando autenticação para loja...');
   
+  // Verificar também se existe um adminUID no localStorage
+  const storedAdminUID = localStorage.getItem('adminUID');
+  if (storedAdminUID === '96rupqrpWjbyKtSksDaISQ94y6l2') {
+    console.log('Administrador detectado via localStorage, atualizando UI');
+    updateStoreUI({
+      uid: storedAdminUID,
+      isAdmin: true
+    });
+    
+    // Atualizar contador do carrinho
+    atualizarContadorCarrinho();
+    return;
+  }
+  
   // Verificar se o auth manager está disponível
   if (window.auth) {
     console.log('Auth Manager disponível, usando para verificação de autenticação');
@@ -39,7 +53,8 @@ function verificarAutenticacao() {
         // Atualizar contador do carrinho após autenticação
         atualizarContadorCarrinho();
       } else {
-        console.log('Usuário não autenticado, redirecionando...');
+        console.log('Usuário não autenticado na loja');
+        // Não redirecionamos, apenas mostramos o estado deslogado
       }
     });
     
@@ -65,10 +80,11 @@ function verificarAutenticacao() {
     const logoutButton = document.getElementById('logoutButton');
     
     if (user) {
-      console.log('Usuário autenticado na loja:', user.email);
+      console.log('Usuário autenticado na loja:', user.email || user.uid);
       
-      // Verificar se é admin
-      const isAdmin = user.email === 'nsyzaesir@gmail.com';
+      // Verificar se é admin pelo UID ou pela propriedade isAdmin já definida
+      const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+      const isAdmin = user.isAdmin || user.uid === ADMIN_UID;
       
       // Mostrar/ocultar botão de admin
       if (adminBtn) {

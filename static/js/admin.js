@@ -388,6 +388,16 @@ async function carregarDados() {
       `;
     }
     
+    // Aguardar até que o Firebase Auth confirme o estado de autenticação
+    console.log('Aguardando inicialização completa do Firebase Auth...');
+    await new Promise((resolve) => {
+      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        unsubscribe(); // Parar de escutar após a primeira verificação
+        console.log('Estado de autenticação do Firebase confirmado, prosseguindo com carregamento de dados');
+        resolve(user); // Resolver a promise com o usuário (ou null)
+      });
+    });
+    
     // Carregar produtos
     await carregarProdutos();
     
