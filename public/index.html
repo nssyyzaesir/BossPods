@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a12">
+  <meta name="msapplication-navbutton-color" content="#0a0a12">
+  <title>BOSSPODS | Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    :root {
+      --safe-area-inset-top: env(safe-area-inset-top, 0px);
+      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+      --app-height: 100%;
+      --primary-glow-color: rgba(184, 51, 255, 0.5);
+      --secondary-glow-color: rgba(0, 184, 255, 0.3);
+    }
+    
+    html {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-size: 16px;
+    }
+    
+    body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+      margin: 0;
+      padding: 0;
+      background: var(--bg-dark);
+      overscroll-behavior: none; /* Evita efeito de rebote em iOS */
+      -webkit-tap-highlight-color: transparent; /* Remove destacar toque em iOS */
+      font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+      cursor: default;
+      font-variant-numeric: tabular-nums;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .grid-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(rgba(10, 10, 20, 0.8) 1px, transparent 1px), 
+                        linear-gradient(90deg, rgba(10, 10, 20, 0.8) 1px, transparent 1px);
+      background-size: 30px 30px;
+      z-index: 1;
+      opacity: 0.7;
+    }
+    
+    .global-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 25% 25%, var(--primary-glow-color), transparent 50%),
+        radial-gradient(circle at 75% 75%, var(--secondary-glow-color), transparent 50%);
+      z-index: 2;
+      pointer-events: none;
+    }
+    
+    .login-screen {
+      position: relative;
+      z-index: 3;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding-top: var(--safe-area-inset-top);
+      padding-bottom: var(--safe-area-inset-bottom);
+    }
+    
+    .login-container {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .login-card {
+      max-width: 450px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-options {
+      display: flex;
+      justify-content: center;
+      gap: 2.5rem;
+      margin-top: 3rem;
+      flex-wrap: wrap; /* Permite quebra em telas menores */
+      padding: 0.5rem;
+    }
+    
+    .login-option {
+      text-align: center;
+      width: 120px;
+      opacity: 0.75;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      color: var(--text-light);
+      text-decoration: none;
+      margin-bottom: 1rem;
+      -webkit-tap-highlight-color: transparent; /* Remove destacar toque em iOS */
+      position: relative;
+    }
+    
+    .login-option:hover, .login-option:active, .login-option:focus {
+      opacity: 1;
+      transform: translateY(-8px);
+      color: var(--primary-color-light);
+    }
+    
+    .option-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      margin-bottom: 0.8rem;
+      font-size: 1.5rem;
+      color: inherit;
+      transition: all 0.3s ease;
+      -webkit-touch-callout: none; /* Impede menu de contexto no iOS */
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .option-icon::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .login-option:hover .option-icon::after, 
+    .login-option:active .option-icon::after, 
+    .login-option:focus .option-icon::after {
+      opacity: 1;
+    }
+    
+    .login-option:hover .option-icon, 
+    .login-option:active .option-icon,
+    .login-option:focus .option-icon {
+      background-color: rgba(184, 51, 255, 0.1);
+      border-color: var(--primary-color-light);
+      box-shadow: 
+        0 0 15px var(--primary-glow-color),
+        inset 0 0 10px rgba(184, 51, 255, 0.2);
+      transform: scale(1.05);
+    }
+    
+    .login-option .option-label {
+      font-weight: 500;
+      margin-top: 0.5rem;
+      transition: all 0.3s ease;
+    }
+    
+    .login-option:hover .option-label,
+    .login-option:active .option-label,
+    .login-option:focus .option-label {
+      text-shadow: 0 0 5px var(--primary-glow-color);
+    }
+    
+    .login-footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-dark);
+      padding-bottom: calc(1rem + var(--safe-area-inset-bottom)); /* Espaço adicional para notch */
+    }
+    
+    .login-logo {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    
+    .login-logo h1 {
+      font-size: 4rem;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      margin-bottom: 0.5rem;
+    }
+    
+    .login-logo p {
+      font-size: 1.1rem;
+      color: var(--text-dark);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    
+    .scanner-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--primary-color), transparent);
+      animation: scan 4s linear infinite;
+      opacity: 0.6;
+      z-index: 2;
+      pointer-events: none; /* Garante que não bloqueie interações */
+    }
+    
+    @keyframes scan {
+      0% {
+        top: 0;
+      }
+      100% {
+        top: 100%;
+      }
+    }
+    
+    .cyber-panel {
+      position: fixed;
+      top: calc(15px + var(--safe-area-inset-top)); /* Respeitando notch em iOS */
+      right: 15px;
+      z-index: 10;
+      display: flex;
+      gap: 0.8rem;
+    }
+    
+    .circle-button {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dark);
+      transition: all 0.3s;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent; /* Remove destacar toque em iOS */
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+    
+    .circle-button:hover, .circle-button:active, .circle-button:focus {
+      background-color: rgba(184, 51, 255, 0.1);
+      border-color: var(--primary-color-light);
+      color: var(--primary-color-light);
+      box-shadow: 0 0 10px rgba(184, 51, 255, 0.3);
+      transform: scale(1.05);
+    }
+    
+    .animated-bg-effect {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none; /* Garante que não bloqueie interações */
+    }
+    
+    .animated-bg-effect span {
+      position: absolute;
+      display: block;
+      width: 40px;
+      height: 40px;
+      background: rgba(184, 51, 255, 0.1);
+      animation: animate 25s linear infinite;
+      bottom: -150px;
+      border-radius: 50%;
+    }
+    
+    .animated-bg-effect span:nth-child(1) {
+      left: 10%;
+      width: 80px;
+      height: 80px;
+      animation-delay: 0s;
+      animation-duration: 20s;
+    }
+    
+    .animated-bg-effect span:nth-child(2) {
+      left: 20%;
+      width: 30px;
+      height: 30px;
+      animation-delay: 2s;
+      animation-duration: 15s;
+    }
+    
+    .animated-bg-effect span:nth-child(3) {
+      left: 30%;
+      width: 100px;
+      height: 100px;
+      animation-delay: 4s;
+      animation-duration: 25s;
+    }
+    
+    .animated-bg-effect span:nth-child(4) {
+      left: 40%;
+      width: 60px;
+      height: 60px;
+      animation-delay: 0s;
+      animation-duration: 18s;
+    }
+    
+    .animated-bg-effect span:nth-child(5) {
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      animation-delay: 3s;
+      animation-duration: 12s;
+    }
+    
+    .animated-bg-effect span:nth-child(6) {
+      left: 60%;
+      width: 100px;
+      height: 100px;
+      animation-delay: 6s;
+      animation-duration: 30s;
+    }
+    
+    .animated-bg-effect span:nth-child(7) {
+      left: 70%;
+      width: 40px;
+      height: 40px;
+      animation-delay: 5s;
+      animation-duration: 14s;
+    }
+    
+    .animated-bg-effect span:nth-child(8) {
+      left: 80%;
+      width: 70px;
+      height: 70px;
+      animation-delay: 1s;
+      animation-duration: 22s;
+    }
+    
+    .animated-bg-effect span:nth-child(9) {
+      left: 90%;
+      width: 30px;
+      height: 30px;
+      animation-delay: 0s;
+      animation-duration: 16s;
+    }
+    
+    @keyframes animate {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.3;
+      }
+      100% {
+        transform: translateY(-1000px) rotate(720deg);
+        opacity: 0;
+      }
+    }
+    
+    /* Cursor personalizado apenas para desktop */
+    @media (pointer: fine) {
+      body {
+        cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='%23b833ff' opacity='0.5'/></svg>") 8 8, auto;
+      }
+      
+      a, button, .login-option {
+        cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' stroke='%23b833ff' stroke-width='2' fill='transparent'/></svg>") 12 12, pointer;
+      }
+    }
+    
+    /* Estilo específico para PCs */
+    @media (min-width: 992px) {
+      .login-logo h1 {
+        font-size: 5rem;
+      }
+      
+      .login-options {
+        gap: 3rem;
+      }
+      
+      .login-option {
+        width: 140px;
+      }
+      
+      .option-icon {
+        width: 90px;
+        height: 90px;
+        font-size: 2rem;
+      }
+      
+      /* Efeito hover apenas para dispositivos não-touch */
+      .login-option:hover {
+        transform: translateY(-10px) scale(1.05);
+      }
+      
+      .login-option:hover .option-icon {
+        box-shadow: 
+          0 0 25px var(--primary-glow-color),
+          inset 0 0 15px rgba(184, 51, 255, 0.3);
+      }
+    }
+    
+    /* Media Queries para tablets */
+    @media (min-width: 768px) and (max-width: 991px) {
+      .login-logo h1 {
+        font-size: 4rem;
+      }
+      
+      .option-icon {
+        width: 80px;
+        height: 80px;
+        font-size: 1.8rem;
+      }
+    }
+    
+    /* Media Queries para dispositivos móveis */
+    @media (max-width: 767px) {
+      .login-logo h1 {
+        font-size: 3rem;
+      }
+      
+      .login-logo p {
+        font-size: 0.9rem;
+        letter-spacing: 3px;
+      }
+      
+      .login-options {
+        gap: 1.5rem;
+        margin-top: 2rem;
+      }
+      
+      .login-option {
+        width: 100px;
+      }
+      
+      .option-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.4rem;
+      }
+      
+      .cyber-panel {
+        top: calc(10px + var(--safe-area-inset-top));
+        right: 10px;
+      }
+      
+      .circle-button {
+        width: 38px;
+        height: 38px;
+        font-size: 0.9rem;
+      }
+    }
+    
+    /* Media Queries para dispositivos muito pequenos */
+    @media (max-width: 360px) {
+      .login-logo h1 {
+        font-size: 2.5rem;
+      }
+      
+      .login-logo p {
+        font-size: 0.8rem;
+        letter-spacing: 2px;
+      }
+      
+      .login-options {
+        gap: 1rem;
+      }
+      
+      .login-option {
+        width: 80px;
+      }
+      
+      .option-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+      }
+      
+      .cyber-panel {
+        top: calc(5px + var(--safe-area-inset-top));
+        right: 5px;
+        gap: 0.5rem;
+      }
+      
+      .circle-button {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+      }
+    }
+    
+    /* Adaptações específicas para dispositivos iOS */
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .login-screen {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      
+      .cyber-panel {
+        top: calc(15px + env(safe-area-inset-top));
+        right: calc(15px + env(safe-area-inset-right, 0px));
+      }
+      
+      .login-footer {
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+      }
+    }
+    
+    /* Animações específicas para desktop */
+    @media (prefers-reduced-motion: no-preference) {
+      .login-logo h1 {
+        animation: textGlow 3s ease-in-out infinite alternate;
+      }
+      
+      @keyframes textGlow {
+        0% {
+          text-shadow: 0 0 5px rgba(255, 255, 255, 0.3),
+                       0 0 10px rgba(184, 51, 255, 0.2);
+        }
+        100% {
+          text-shadow: 0 0 10px rgba(255, 255, 255, 0.4),
+                       0 0 20px rgba(184, 51, 255, 0.4),
+                       0 0 30px rgba(184, 51, 255, 0.2);
+        }
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Efeitos de fundo -->
+  <div class="grid-bg"></div>
+  <div class="global-glow"></div>
+  <div class="animated-bg-effect">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
+  
+  <!-- Overlay de autenticação - bloqueia interações até login -->
+  <div id="authOverlay" class="position-fixed w-100 h-100" style="
+    top: 0; 
+    left: 0; 
+    background: rgba(0, 0, 0, 0.5); 
+    backdrop-filter: blur(5px); 
+    z-index: 1030;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  ">
+    <div class="text-center">
+      <div class="spinner-border text-purple mb-3" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <h4 class="text-white">Verificando autenticação...</h4>
+      <p class="text-light">Você precisa fazer login para acessar o sistema</p>
+      <button id="openLoginBtn" class="btn cyber-btn cyber-btn-primary mt-3">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Fazer Login
+      </button>
+    </div>
+  </div>
+
+  <!-- Painel de navegação -->
+  <div class="cyber-panel">
+    <a href="#" id="loginButton" class="circle-button" aria-label="Login" data-bs-toggle="modal" data-bs-target="#loginModal">
+      <i class="bi bi-person-badge"></i>
+    </a>
+    <a href="#" id="logoutButton" class="circle-button d-none" aria-label="Logout">
+      <i class="bi bi-box-arrow-right"></i>
+    </a>
+    <a href="#" class="circle-button" aria-label="Informações">
+      <i class="bi bi-info-circle"></i>
+    </a>
+    <a href="#" class="circle-button" aria-label="Ajuda">
+      <i class="bi bi-question-circle"></i>
+    </a>
+  </div>
+
+  <!-- Tela de login -->
+  <div class="login-screen">
+    <div class="login-container">
+      <!-- Logo e título -->
+      <div class="login-logo text-center">
+        <h1 class="neon-text">BOSS<span class="text-purple">PODS</span></h1>
+        <p>Os melhores preços de pods e vapers</p>
+      </div>
+      
+      <!-- Opções de login -->
+      <div class="login-options">
+        <a href="/loja" class="login-option" aria-label="Acessar loja online">
+          <div class="option-icon">
+            <i class="bi bi-shop"></i>
+          </div>
+          <div class="option-label">Loja Online</div>
+        </a>
+        
+        <a href="/login" class="login-option" aria-label="Acessar painel administrativo">
+          <div class="option-icon">
+            <i class="bi bi-person-lock"></i>
+          </div>
+          <div class="option-label">Painel Admin</div>
+        </a>
+        
+        <a href="/carrinho" class="login-option" aria-label="Ver seu carrinho de compras">
+          <div class="option-icon">
+            <i class="bi bi-cart3"></i>
+          </div>
+          <div class="option-label">Meu Carrinho</div>
+        </a>
+      </div>
+      
+      <!-- Efeito scanner -->
+      <div class="scanner-line"></div>
+      
+      <!-- Rodapé -->
+      <div class="login-footer">
+        <p class="mb-0">BOSSPODS © 2025 | Todos os direitos reservados</p>
+        <small>v1.0.0</small>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Animação para elementos da página
+    document.addEventListener('DOMContentLoaded', () => {
+      // Verificar se o navegador não recomenda motion-reduced
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      
+      if (!prefersReducedMotion) {
+        const fadeInElements = document.querySelectorAll('.login-logo, .login-options, .login-footer');
+        
+        fadeInElements.forEach((el, index) => {
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(20px)';
+          el.style.transition = 'all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+          
+          setTimeout(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+          }, 300 + (index * 200));
+        });
+      }
+      
+      // Corrigir altura em dispositivos móveis
+      function setAppHeight() {
+        const doc = document.documentElement;
+        doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+      }
+      
+      window.addEventListener('resize', setAppHeight);
+      window.addEventListener('orientationchange', setAppHeight);
+      setAppHeight();
+      
+      // Impedir comportamento de scroll/bounce em dispositivos touch
+      document.body.addEventListener('touchmove', function(e) {
+        if (e.target === document.documentElement) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+      
+      // Melhor suporte para toque em dispositivos iOS
+      document.addEventListener('touchstart', function() {}, {passive: true});
+      
+      // Suporte para Android e correções específicas
+      if (/Android/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('android-device');
+      }
+      
+      // Suporte para dispositivos iOS
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('ios-device');
+      }
+    });
+  </script>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js" defer></script>
+  
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="/static/js/firebase-config.js" defer></script>
+  <script src="/static/js/auth-manager.js" defer></script>
+  <script src="/static/js/index.js" defer></script>
+  
+  <!-- Modal de Login -->
+  <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-card">
+        <div class="modal-header border-0">
+          <h5 class="modal-title neon-text" id="loginModalLabel">BOSS<span class="text-purple">PODS</span></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Área para mensagens de erro/depuração -->
+          <div id="errorMessages" class="mb-3"></div>
+
+          <!-- Abas para escolher tipo de login -->
+          <ul class="nav nav-tabs cyber-tabs mb-4" id="loginTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="user-login-tab" data-bs-toggle="tab" data-bs-target="#user-login" type="button" role="tab" aria-controls="user-login" aria-selected="true">
+                <i class="bi bi-person me-1"></i> Login de Usuário
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="admin-login-tab" data-bs-toggle="tab" data-bs-target="#admin-login" type="button" role="tab" aria-controls="admin-login" aria-selected="false">
+                <i class="bi bi-shield-lock me-1"></i> Login de Administrador
+              </button>
+            </li>
+          </ul>
+
+          <!-- Conteúdo das abas -->
+          <div class="tab-content" id="loginTabsContent">
+            <!-- Aba de Login de Usuário -->
+            <div class="tab-pane fade show active" id="user-login" role="tabpanel" aria-labelledby="user-login-tab">
+              <!-- Cabeçalho do formulário -->
+              <div class="login-header text-center mb-4">
+                <h4 id="loginFormTitle">Acesso de Usuário</h4>
+                <p class="text-muted" id="loginFormSubtitle">Digite suas credenciais para acessar o sistema.</p>
+              </div>
+              
+              <!-- Formulário de login de usuário -->
+              <form id="loginForm">
+                <!-- Email -->
+                <div class="form-group">
+                  <label for="email" class="form-label">Email</label>
+                  <input type="email" class="form-control cyber-input glow-input" id="email" placeholder="email@exemplo.com" required>
+                  <i class="bi bi-envelope form-control-icon"></i>
+                </div>
+                
+                <!-- Senha -->
+                <div class="form-group">
+                  <label for="password" class="form-label">Senha</label>
+                  <input type="password" class="form-control cyber-input glow-input" id="password" required>
+                  <i class="bi bi-lock form-control-icon"></i>
+                </div>
+                
+                <!-- Nome para registro (inicialmente oculto) -->
+                <div class="form-group d-none" id="displayNameGroup">
+                  <label for="displayName" class="form-label">Nome</label>
+                  <input type="text" class="form-control cyber-input glow-input" id="displayName">
+                  <i class="bi bi-person form-control-icon"></i>
+                </div>
+                
+                <!-- Botões de ação -->
+                <div class="d-grid gap-2 mt-4">
+                  <!-- Botão de login -->
+                  <button type="submit" class="btn cyber-btn cyber-btn-primary w-100" id="loginBtn">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                  </button>
+                  
+                  <!-- Botão para alternar entre login e registro -->
+                  <button type="button" class="btn cyber-btn cyber-btn-outline w-100" id="toggleFormBtn">
+                    <i class="bi bi-person-plus me-1"></i> Criar Conta
+                  </button>
+                </div>
+                
+                <!-- Modo de formulário -->
+                <input type="hidden" id="formMode" value="login">
+              </form>
+              
+              <div class="alert alert-info mt-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <span id="loginFormHint">Você precisa fazer login para acessar o sistema.</span>
+              </div>
+            </div>
+
+            <!-- Aba de Login de Administrador -->
+            <div class="tab-pane fade" id="admin-login" role="tabpanel" aria-labelledby="admin-login-tab">
+              <!-- Cabeçalho do formulário -->
+              <div class="login-header text-center mb-4">
+                <h4>Acesso Administrativo</h4>
+                <p class="text-muted">Digite o UID do administrador para acessar o painel.</p>
+              </div>
+              
+              <!-- Formulário de login de admin -->
+              <form id="adminLoginForm">
+                <!-- UID -->
+                <div class="form-group">
+                  <label for="adminUID" class="form-label">UID do Administrador</label>
+                  <input type="password" class="form-control cyber-input glow-input" id="adminUID" placeholder="Digite o UID do administrador" required>
+                  <i class="bi bi-shield-lock form-control-icon"></i>
+                </div>
+                
+                <!-- Botões de ação -->
+                <div class="d-grid gap-2 mt-4">
+                  <!-- Botão de login admin -->
+                  <button type="submit" class="btn cyber-btn cyber-btn-danger w-100" id="adminLoginBtn">
+                    <i class="bi bi-shield-lock me-1"></i> Acessar Painel
+                  </button>
+                </div>
+              </form>
+              
+              <div class="alert alert-warning mt-4">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <span>Acesso exclusivo para administradores autorizados do sistema.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="scanner-line"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Notificação Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toast" class="toast cyber-toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <strong class="me-auto" id="toastTitle">Notificação</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body" id="toastMessage">
+        Mensagem de notificação
+      </div>
+    </div>
+  </div>
+</body>
+</html>

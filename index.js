@@ -1,10 +1,16 @@
 import express from 'express';
 import admin from 'firebase-admin';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // // Atualizado pra testar commit de novo - porra do Git
 
@@ -30,9 +36,26 @@ function autenticarAdmin(req, res, next) {
   }
 }
 
-// Rota raiz só pra confirmar que tá vivo
+// Rota raiz para servir o arquivo HTML do frontend
 app.get('/', (req, res) => {
-  res.send('Servidor BossPods rodando com Firebase e Firestore, caralho!');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Rotas para os outros arquivos HTML
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/loja', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'loja.html'));
+});
+
+app.get('/carrinho', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'carrinho.html'));
 });
 
 // [CREATE] Adicionar novo produto

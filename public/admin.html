@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOSSPODS | Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body class="cyber-bg">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg cyber-navbar sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">
+        <span class="neon-text">BOSS<span class="text-purple">PODS</span></span>
+        <span class="nav-subtitle">Painel Admin</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" data-page="dashboard">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-page="produtos">
+              <i class="bi bi-box-seam"></i> Produtos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-page="logs">
+              <i class="bi bi-activity"></i> Logs
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-page="debugLogs" id="debugLogsBtn">
+              <i class="bi bi-bug"></i> Logs de Bugs
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/" target="_blank">
+              <i class="bi bi-shop"></i> Ver Loja
+            </a>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center">
+          <div class="me-3 text-end d-none d-md-block">
+            <div class="text-light">Olá, <span id="userDisplayName">Admin</span></div>
+            <small class="text-muted">Admin</small>
+          </div>
+          <button class="btn cyber-btn cyber-btn-sm cyber-btn-outline" id="logoutButton">
+            <i class="bi bi-box-arrow-right"></i> Sair
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Conteúdo principal -->
+  <div class="container-fluid py-4">
+    
+    <!-- Dashboard -->
+    <div class="page-content active" id="dashboard-page">
+      <!-- Área de mensagens de erro para depuração -->
+      <div id="errorMessages" class="mb-3"></div>
+      
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Dashboard</h2>
+        <button class="btn cyber-btn cyber-btn-sm" id="refreshDashboard">
+          <i class="bi bi-arrow-clockwise"></i> Atualizar
+        </button>
+      </div>
+      
+      <!-- Estatísticas -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="stats-card">
+            <div class="stats-icon">
+              <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="stats-info">
+              <h3 id="totalProdutos">0</h3>
+              <p>Produtos</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="stats-card">
+            <div class="stats-icon">
+              <i class="bi bi-currency-dollar"></i>
+            </div>
+            <div class="stats-info">
+              <h3 id="valorTotal">R$ 0,00</h3>
+              <p>Valor em Estoque</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="stats-card">
+            <div class="stats-icon warning">
+              <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="stats-info">
+              <h3 id="estoqueBaixo">0</h3>
+              <p>Estoque Baixo</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="stats-card">
+            <div class="stats-icon danger">
+              <i class="bi bi-x-circle"></i>
+            </div>
+            <div class="stats-info">
+              <h3 id="estoqueZerado">0</h3>
+              <p>Sem Estoque</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Gráficos e Tabelas -->
+      <div class="row">
+        <!-- Gráficos -->
+        <div class="col-md-7">
+          <div class="row">
+            <!-- Categorias -->
+            <div class="col-md-6">
+              <div class="cyber-card mb-4">
+                <div class="cyber-card-header">
+                  <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Categorias</h5>
+                </div>
+                <div class="cyber-card-body">
+                  <div class="chart-container">
+                    <canvas id="categoriasChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Estoque -->
+            <div class="col-md-6">
+              <div class="cyber-card mb-4">
+                <div class="cyber-card-header">
+                  <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Estoque</h5>
+                </div>
+                <div class="cyber-card-body">
+                  <div class="chart-container">
+                    <canvas id="estoqueChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Resumo de Estoque -->
+          <div class="cyber-card mb-4">
+            <div class="cyber-card-header">
+              <h5 class="mb-0"><i class="bi bi-box2"></i> Resumo de Estoque</h5>
+            </div>
+            <div class="cyber-card-body p-0">
+              <div class="table-responsive">
+                <table class="table cyber-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Produto</th>
+                      <th class="text-center">Estoque</th>
+                      <th class="text-end">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="resumoEstoque">
+                    <!-- Dados serão inseridos via JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Alertas e Atividade -->
+        <div class="col-md-5">
+          <!-- Alertas -->
+          <div class="cyber-card mb-4">
+            <div class="cyber-card-header">
+              <h5 class="mb-0"><i class="bi bi-bell"></i> Alertas</h5>
+            </div>
+            <div class="cyber-card-body p-0">
+              <div class="list-group" id="alertasList">
+                <!-- Alertas serão inseridos via JavaScript -->
+              </div>
+            </div>
+          </div>
+          
+          <!-- Atividade Recente -->
+          <div class="cyber-card mb-4">
+            <div class="cyber-card-header">
+              <h5 class="mb-0"><i class="bi bi-activity"></i> Atividade Recente</h5>
+            </div>
+            <div class="cyber-card-body p-0">
+              <div class="table-responsive">
+                <table class="table cyber-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Tipo</th>
+                      <th>Produto</th>
+                      <th>Detalhes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="atividadeRecente">
+                    <!-- Dados serão inseridos via JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Produtos -->
+    <div class="page-content" id="produtos-page">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Gerenciar Produtos</h2>
+        <div>
+          <button class="btn cyber-btn cyber-btn-primary me-2" id="novoProdutoBtn">
+            <i class="bi bi-plus-lg"></i> Novo Produto
+          </button>
+          <div class="btn-group">
+            <button class="btn cyber-btn" id="exportarBtn">
+              <i class="bi bi-download"></i> Exportar
+            </button>
+            <button class="btn cyber-btn" id="importarBtn">
+              <i class="bi bi-upload"></i> Importar
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Filtros -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="input-group mb-3">
+                <span class="input-group-text cyber-input-icon"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control cyber-input" id="searchProduto" placeholder="Buscar produto...">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select cyber-select mb-3" id="filtroCategoria">
+                <option value="">Todas Categorias</option>
+                <!-- Categorias serão inseridas via JavaScript -->
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select cyber-select mb-3" id="filtroEstoque">
+                <option value="">Todo Estoque</option>
+                <option value="estoque_baixo">Estoque Baixo</option>
+                <option value="estoque_zerado">Sem Estoque</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select cyber-select mb-3" id="filtroTag">
+                <option value="">Todas Tags</option>
+                <!-- Tags serão inseridas via JavaScript -->
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select cyber-select mb-3" id="ordenacao">
+                <option value="nome-asc">Nome (A-Z)</option>
+                <option value="nome-desc">Nome (Z-A)</option>
+                <option value="preco-asc">Preço (Menor)</option>
+                <option value="preco-desc">Preço (Maior)</option>
+                <option value="estoque-asc">Estoque (Menor)</option>
+                <option value="estoque-desc">Estoque (Maior)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tabela de Produtos -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-body p-0">
+          <div class="table-responsive scanner-effect">
+            <table class="table cyber-table mb-0">
+              <thead>
+                <tr>
+                  <th width="80">ID</th>
+                  <th width="60">Img</th>
+                  <th>Nome</th>
+                  <th>Categoria</th>
+                  <th>Preço</th>
+                  <th>Estoque</th>
+                  <th>Status</th>
+                  <th width="120">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="produtosList">
+                <!-- Produtos serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="cyber-card-footer">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <span id="produtosCount">0</span> produtos
+            </div>
+            <div class="cyber-pagination" id="produtosPagination">
+              <!-- Paginação será inserida via JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Logs -->
+    <div class="page-content" id="logs-page">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Logs de Atividade</h2>
+        <button class="btn cyber-btn" id="exportarLogsBtn">
+          <i class="bi bi-download"></i> Exportar Logs
+        </button>
+      </div>
+      
+      <!-- Filtros -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <select class="form-select cyber-select" id="filtroLog">
+                <option value="">Todos os Tipos</option>
+                <option value="criar">Criação</option>
+                <option value="editar">Edição</option>
+                <option value="excluir">Exclusão</option>
+                <option value="importar">Importação</option>
+                <option value="limpar">Limpeza</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tabela de Logs -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-body p-0">
+          <div class="table-responsive">
+            <table class="table cyber-table mb-0">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Tipo</th>
+                  <th>Produto</th>
+                  <th>Detalhes</th>
+                  <th width="100">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="logsList">
+                <!-- Logs serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Debug Logs -->
+    <div class="page-content" id="debugLogs-page">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Logs de Debug</h2>
+        <div>
+          <button class="btn cyber-btn cyber-btn-primary me-2" id="addDebugLogBtn">
+            <i class="bi bi-plus-lg"></i> Registrar Bug
+          </button>
+          <button class="btn cyber-btn" id="clearDebugLogsBtn">
+            <i class="bi bi-trash"></i> Limpar Logs
+          </button>
+          <button class="btn cyber-btn" id="exportDebugLogsBtn">
+            <i class="bi bi-download"></i> Exportar
+          </button>
+        </div>
+      </div>
+      
+      <!-- Filtros -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <select class="form-select cyber-select" id="filtroDebugLog">
+                <option value="">Todos os Níveis</option>
+                <option value="error">Erro</option>
+                <option value="warning">Aviso</option>
+                <option value="info">Informação</option>
+                <option value="debug">Debug</option>
+              </select>
+            </div>
+            <div class="col-md-8">
+              <div class="input-group">
+                <span class="input-group-text cyber-input-icon"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control cyber-input" id="searchDebugLog" placeholder="Buscar nos logs...">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tabela de Debug Logs -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-body p-0">
+          <div class="table-responsive scanner-effect">
+            <table class="table cyber-table mb-0">
+              <thead>
+                <tr>
+                  <th>Data/Hora</th>
+                  <th>Nível</th>
+                  <th>Origem</th>
+                  <th>Mensagem</th>
+                  <th width="100">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="debugLogsList">
+                <!-- Debug logs serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Produto -->
+  <div class="modal fade" id="produtoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title" id="produtoModalTitle">Novo Produto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="produtoForm">
+            <input type="hidden" id="produtoId">
+            <input type="hidden" id="tagsHidden" value="[]">
+            
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="nome" class="form-label">Nome do Produto</label>
+                  <input type="text" class="form-control cyber-input" id="nome" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="categoria" class="form-label">Categoria</label>
+                  <input type="text" class="form-control cyber-input" id="categoria" list="categoriasDatalist" required>
+                  <datalist id="categoriasDatalist">
+                    <!-- Categorias serão inseridas via JavaScript -->
+                  </datalist>
+                </div>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="preco" class="form-label">Preço (R$)</label>
+                  <input type="number" class="form-control cyber-input" id="preco" step="0.01" min="0" required>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="estoque" class="form-label">Estoque</label>
+                  <input type="number" class="form-control cyber-input" id="estoque" min="0" required>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label d-block">Em Promoção</label>
+                  <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" type="checkbox" id="promocao">
+                    <label class="form-check-label" for="promocao">Marcar como promoção</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="descricao" class="form-label">Descrição</label>
+              <textarea class="form-control cyber-input" id="descricao" rows="3"></textarea>
+            </div>
+            
+            <div class="mb-3">
+              <label for="imagem" class="form-label">URL da Imagem</label>
+              <input type="url" class="form-control cyber-input" id="imagem" placeholder="https://...">
+            </div>
+            
+            <div class="mb-3">
+              <label for="tagInput" class="form-label">Tags</label>
+              <div class="input-group mb-2">
+                <input type="text" class="form-control cyber-input" id="tagInput" placeholder="Adicionar tag...">
+                <button class="btn cyber-btn" type="button" id="addTagBtn">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+              <div id="tagsContainer" class="mt-2">
+                <!-- Tags serão inseridas aqui -->
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-primary" id="salvarProdutoBtn">Salvar Produto</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Exportação -->
+  <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title">Exportar Produtos</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Selecione o formato desejado para exportação:</p>
+          <div class="d-grid gap-2">
+            <button type="button" class="btn cyber-btn" id="exportarJSONBtn">
+              <i class="bi bi-filetype-json"></i> Exportar como JSON
+            </button>
+            <button type="button" class="btn cyber-btn" id="exportarCSVBtn">
+              <i class="bi bi-filetype-csv"></i> Exportar como CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Importação -->
+  <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title">Importar Produtos</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Selecione um arquivo JSON exportado anteriormente:</p>
+          <div class="mb-3">
+            <input class="form-control cyber-input" type="file" id="importFile" accept=".json">
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="limparAntesImportar">
+            <label class="form-check-label" for="limparAntesImportar">
+              Limpar produtos existentes antes de importar
+            </label>
+          </div>
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Atenção: Esta operação pode modificar ou substituir seus produtos existentes.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-primary" id="confirmarImportBtn">Importar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Detalhes do Log -->
+  <div class="modal fade" id="logDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title">Detalhes do Log</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Data:</label>
+            <div id="logDetailsData" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tipo:</label>
+            <div id="logDetailsTipo" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Produto:</label>
+            <div id="logDetailsProduto" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ID do Produto:</label>
+            <div id="logDetailsProdutoId" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Detalhes:</label>
+            <pre id="logDetailsJson" class="cyber-code"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmação -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmModalTitle">Confirmação</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="confirmModalText">Tem certeza que deseja realizar esta ação?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-primary" id="confirmBtn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Registro de Bug -->
+  <div class="modal fade" id="debugLogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title">Registrar Bug</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="debugLogForm">
+            <div class="mb-3">
+              <label for="debugLogNivel" class="form-label">Nível</label>
+              <select class="form-select cyber-select" id="debugLogNivel" required>
+                <option value="error">Erro</option>
+                <option value="warning">Aviso</option>
+                <option value="info">Informação</option>
+                <option value="debug">Debug</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="debugLogOrigem" class="form-label">Origem</label>
+              <input type="text" class="form-control cyber-input" id="debugLogOrigem" placeholder="Ex: Login, Produto, API, etc." required>
+            </div>
+            <div class="mb-3">
+              <label for="debugLogMensagem" class="form-label">Mensagem</label>
+              <textarea class="form-control cyber-input" id="debugLogMensagem" rows="3" placeholder="Descreva o bug ou informação..." required></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="debugLogDetalhes" class="form-label">Detalhes (opcional)</label>
+              <textarea class="form-control cyber-input" id="debugLogDetalhes" rows="5" placeholder="Informações adicionais, como passos para reproduzir..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-primary" id="salvarDebugLogBtn">Registrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Detalhes de Debug Log -->
+  <div class="modal fade" id="debugLogDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title">Detalhes do Log</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Data/Hora:</label>
+            <div id="debugLogDetailsData" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nível:</label>
+            <div id="debugLogDetailsNivel" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Origem:</label>
+            <div id="debugLogDetailsOrigem" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mensagem:</label>
+            <div id="debugLogDetailsMensagem"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Detalhes:</label>
+            <pre id="debugLogDetailsJson" class="cyber-code"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificação Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toast" class="toast cyber-toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <strong class="me-auto" id="toastTitle">Notificação</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body" id="toastMessage">
+        Mensagem de notificação
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <!-- Firebase com defer para garantir carregamento correto -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js" defer></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  
+  <!-- Scripts carregados na ordem correta com defer -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="/static/js/firebase-config.js" defer></script>
+  <script src="/static/js/auth-manager.js" defer></script>
+  <script src="/static/js/admin.js" defer></script>
+</body>
+</html>

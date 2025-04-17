@@ -1,0 +1,140 @@
+/* Estilos para a página de login */
+
+.login-card, .recovery-card, .register-card {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 20px rgba(184, 51, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-card::before, .recovery-card::before, .register-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--primary-color), 
+    var(--secondary-color),
+    var(--primary-color),
+    transparent);
+  z-index: 1;
+}
+
+.login-card::after, .recovery-card::after, .register-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--primary-color-dark), 
+    transparent);
+  opacity: 0.5;
+}
+
+.cyber-input-icon {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(184, 51, 255, 0.4);
+  border-right: none;
+  color: var(--primary-color-light);
+}
+
+.toggle-password {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(184, 51, 255, 0.4);
+  border-left: none;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+  color: var(--primary-color-light);
+}
+
+/* Scanner effect animation */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(850px);
+  }
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--primary-color), var(--secondary-color), var(--primary-color), transparent);
+  z-index: 1;
+  animation: scanline 8s linear infinite;
+  opacity: 0.5;
+}
+
+/* Glow pulse on submit button */
+.cyber-btn-primary {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cyber-btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(184, 51, 255, 0.5), 
+    rgba(0, 184, 255, 0.5));
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.5s ease;
+}
+
+.cyber-btn-primary:hover::after {
+  opacity: 0.2;
+}
+
+/* Logo animation */
+.neon-text {
+  animation: textPulse 2.5s infinite alternate;
+}
+
+@keyframes textPulse {
+  0% {
+    text-shadow: 0 0 7px #fff, 0 0 10px #fff, 0 0 15px var(--primary-color), 0 0 20px var(--primary-color);
+  }
+  100% {
+    text-shadow: 0 0 7px #fff, 0 0 10px #fff, 0 0 20px var(--primary-color), 0 0 30px var(--primary-color), 0 0 40px var(--primary-color);
+  }
+}
+
+/* Background cyber grid effect */
+.cyber-bg {
+  position: relative;
+}
+
+.cyber-bg::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(10, 10, 20, 0.9) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 10, 20, 0.9) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+  z-index: -1;
+  opacity: 0.3;
+}

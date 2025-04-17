@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOSSPODS | Carrinho</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/carrinho.css">
+</head>
+<body class="cyber-bg">
+
+  <!-- Barra de navegação -->
+  <nav class="navbar navbar-expand-lg cyber-navbar sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="/">
+        <span class="neon-text">BOSS<span class="text-purple">PODS</span></span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/"><i class="bi bi-house"></i> Início</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/#produtos"><i class="bi bi-grid"></i> Produtos</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/#promocoes"><i class="bi bi-fire"></i> Promoções</a>
+          </li>
+        </ul>
+        
+        <!-- Continuar comprando -->
+        <a href="/" class="btn cyber-btn me-2">
+          <i class="bi bi-arrow-left"></i> Continuar Comprando
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Conteúdo principal -->
+  <div class="container py-5">
+    <h1 class="mb-4 neon-text"><i class="bi bi-cart3"></i> Seu Carrinho</h1>
+    
+    <!-- Carrinho vazio -->
+    <div id="carrinhoVazio" class="text-center cyber-card py-5 d-none">
+      <div class="mb-4">
+        <i class="bi bi-cart-x display-1 text-muted"></i>
+      </div>
+      <h3>Seu carrinho está vazio</h3>
+      <p class="text-muted mb-4">Explore nossos produtos e adicione itens ao seu carrinho</p>
+      <a href="/" class="btn cyber-btn cyber-btn-primary">
+        <i class="bi bi-shop"></i> Ir para a Loja
+      </a>
+    </div>
+    
+    <!-- Carrinho com itens -->
+    <div id="carrinhoContent" class="row">
+      <div class="col-lg-8">
+        <div class="cyber-card mb-4">
+          <div class="cyber-card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-basket"></i> Itens do Carrinho</h5>
+            <button class="btn cyber-btn cyber-btn-sm cyber-btn-outline" id="limparCarrinhoBtn">
+              <i class="bi bi-trash"></i> Limpar Carrinho
+            </button>
+          </div>
+          <div class="cyber-card-body p-0">
+            <div class="table-responsive">
+              <table class="table cyber-table mb-0" id="tabelaCarrinho">
+                <thead>
+                  <tr>
+                    <th width="80"></th>
+                    <th>Produto</th>
+                    <th width="120">Preço</th>
+                    <th width="150">Quantidade</th>
+                    <th width="120">Subtotal</th>
+                    <th width="50"></th>
+                  </tr>
+                </thead>
+                <tbody id="carrinhoItems">
+                  <!-- Itens do carrinho serão inseridos aqui via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-4">
+        <div class="cyber-card mb-4">
+          <div class="cyber-card-header">
+            <h5 class="mb-0"><i class="bi bi-receipt"></i> Resumo do Pedido</h5>
+          </div>
+          <div class="cyber-card-body">
+            <!-- Itens e Valores -->
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal:</span>
+              <span id="subtotalResumo">R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 d-none" id="descontoRow">
+              <span>Desconto:</span>
+              <span id="descontoResumo">- R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Frete:</span>
+              <span id="freteResumo">Grátis</span>
+            </div>
+            <hr class="cyber-hr">
+            <div class="d-flex justify-content-between mb-4">
+              <strong>Total:</strong>
+              <strong class="text-purple" id="totalResumo">R$ 0,00</strong>
+            </div>
+            
+            <!-- Código de Desconto -->
+            <div class="mb-4">
+              <div class="input-group">
+                <input type="text" class="form-control cyber-input" id="cupomInput" placeholder="Código promocional">
+                <button class="btn cyber-btn" type="button" id="aplicarCupomBtn">Aplicar</button>
+              </div>
+            </div>
+            
+            <!-- Enviar por WhatsApp -->
+            <button class="btn cyber-btn cyber-btn-primary w-100 mb-2" id="pedidoWhatsAppBtn">
+              <i class="bi bi-whatsapp"></i> Enviar Pedido por WhatsApp
+            </button>
+            
+            <!-- Continuar Comprando -->
+            <a href="/" class="btn cyber-btn cyber-btn-outline w-100">
+              <i class="bi bi-arrow-left"></i> Continuar Comprando
+            </a>
+          </div>
+        </div>
+        
+        <!-- Métodos de Pagamento -->
+        <div class="cyber-card mb-4">
+          <div class="cyber-card-header">
+            <h5 class="mb-0"><i class="bi bi-credit-card"></i> Pagamento</h5>
+          </div>
+          <div class="cyber-card-body pb-0">
+            <p class="text-muted small mb-3">Aceitamos as seguintes formas de pagamento:</p>
+            <div class="payment-methods">
+              <span class="payment-method" title="Cartão de Crédito"><i class="bi bi-credit-card"></i></span>
+              <span class="payment-method" title="Cartão de Débito"><i class="bi bi-credit-card-2-front"></i></span>
+              <span class="payment-method" title="PIX"><i class="bi bi-qr-code"></i></span>
+              <span class="payment-method" title="Boleto"><i class="bi bi-upc-scan"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmação -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmModalTitle">Confirmação</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="confirmModalText">Tem certeza que deseja realizar esta ação?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-danger" id="confirmBtn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Pedido WhatsApp -->
+  <div class="modal fade" id="whatsappModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content cyber-modal">
+        <div class="modal-header">
+          <h5 class="modal-title">Finalizar Pedido via WhatsApp</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Complete seus dados para finalizar o pedido:</p>
+          
+          <form id="whatsappForm">
+            <div class="mb-3">
+              <label for="nomeCliente" class="form-label">Nome completo <span class="text-danger">*</span></label>
+              <input type="text" class="form-control cyber-input" id="nomeCliente" required>
+            </div>
+            
+            <div class="mb-3">
+              <label for="telefoneCliente" class="form-label">Telefone <span class="text-danger">*</span></label>
+              <input type="tel" class="form-control cyber-input" id="telefoneCliente" required placeholder="(00) 00000-0000">
+            </div>
+            
+            <div class="mb-3">
+              <label for="emailCliente" class="form-label">E-mail</label>
+              <input type="email" class="form-control cyber-input" id="emailCliente" placeholder="exemplo@email.com">
+            </div>
+            
+            <div class="mb-3">
+              <label for="enderecoCliente" class="form-label">Endereço de entrega <span class="text-danger">*</span></label>
+              <input type="text" class="form-control cyber-input" id="enderecoCliente" required>
+            </div>
+            
+            <div class="mb-3">
+              <label for="obsCliente" class="form-label">Observações para o pedido</label>
+              <textarea class="form-control cyber-input" id="obsCliente" rows="3" placeholder="Ex: Horário preferencial para entrega, referências, etc"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn cyber-btn cyber-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn cyber-btn cyber-btn-primary" id="enviarWhatsAppBtn">
+            <i class="bi bi-whatsapp"></i> Enviar Pedido
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificação Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toast" class="toast cyber-toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <strong class="me-auto" id="toastTitle">Notificação</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body" id="toastMessage">
+        Produto atualizado no carrinho
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/static/js/carrinho.js"></script>
+</body>
+</html>
