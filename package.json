@@ -2,6 +2,7 @@
   "name": "workspace",
   "version": "1.0.0",
   "main": "script.js",
+  "type": "module",
   "description": "",
   "author": "",
   "license": "ISC",
@@ -11,8 +12,10 @@
   "keywords": [],
   "dependencies": {
     "chart.js": "^4.4.8",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "firebase": "^11.6.0",
+    "firebase-admin": "^13.2.0",
     "webpack": "^5.99.5",
     "webpack-cli": "^6.0.1"
   }
