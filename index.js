@@ -93,8 +93,39 @@ app.get('/carrinho', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'carrinho.html'));
 });
 
-// Rota para obter produtos (protegida por autenticação)
-app.get('/produtos', autenticarToken, async (req, res) => {
+// Middleware para validação e sanitização de dados
+function validateProductData(req, res, next) {
+  try {
+    const produto = req.body;
+    
+    // Verificar se os campos obrigatórios existem
+    if (!produto.nome || typeof produto.nome !== 'string' || produto.nome.trim() === '') {
+      return res.status(400).json({ error: 'Nome do produto é obrigatório' });
+    }
+    
+    // Sanitizar e validar os campos
+    req.sanitizedData = {
+      nome: produto.nome.trim().substring(0, 100), // Limitar tamanho
+      descricao: produto.descricao ? produto.descricao.trim().substring(0, 1000) : '',
+      categoria: produto.categoria ? produto.categoria.trim().substring(0, 50) : '',
+      preco: typeof produto.preco === 'number' && produto.preco >= 0 ? produto.preco : 0,
+      estoque: typeof produto.estoque === 'number' && produto.estoque >= 0 ? Math.floor(produto.estoque) : 0,
+      imagem: produto.imagem ? produto.imagem.trim().substring(0, 500) : '',
+      destaque: !!produto.destaque, // Converter para boolean
+      novidade: !!produto.novidade, // Converter para boolean
+      tags: Array.isArray(produto.tags) ? produto.tags.map(tag => tag.trim()).filter(tag => tag !== '') : []
+    };
+    
+    next();
+  } catch (error) {
+    console.error('Erro na validação de dados:', error);
+    res.status(400).json({ error: 'Dados inválidos', detalhes: error.message });
+  }
+}
+
+// Rotas API para produtos (todas protegidas por autenticação)
+// Obter todos os produtos
+app.get('/api/produtos', autenticarToken, async (req, res) => {
   try {
     const snapshot = await db.collection('produtos').get();
     const produtos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -102,6 +133,140 @@ app.get('/produtos', autenticarToken, async (req, res) => {
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
     res.status(500).json({ error: 'Erro ao buscar produtos', detalhes: error.message });
+  }
+});
+
+// Criar novo produto
+app.post('/api/produtos', autenticarToken, validateProductData, async (req, res) => {
+  try {
+    const produto = req.sanitizedData;
+    
+    // Adicionar timestamps
+    produto.createdAt = admin.firestore.FieldValue.serverTimestamp();
+    produto.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+    
+    // Salvar no Firestore
+    const docRef = await db.collection('produtos').add(produto);
+    
+    // Registrar log
+    await db.collection('logs_atividade').add({
+      tipo: 'criar',
+      produto_id: docRef.id,
+      nome_produto: produto.nome,
+      usuario: req.user.email || req.user.uid,
+      detalhes: JSON.stringify(produto),
+      data: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    res.status(201).json({ 
+      id: docRef.id, 
+      ...produto,
+      message: 'Produto criado com sucesso' 
+    });
+  } catch (error) {
+    console.error('Erro ao criar produto:', error);
+    res.status(500).json({ error: 'Erro ao criar produto', detalhes: error.message });
+  }
+});
+
+// Atualizar produto existente
+app.put('/api/produtos/:id', autenticarToken, validateProductData, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const produto = req.sanitizedData;
+    
+    // Verificar se o produto existe
+    const docRef = db.collection('produtos').doc(id);
+    const doc = await docRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+    
+    // Adicionar timestamp de atualização
+    produto.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+    
+    // Atualizar no Firestore
+    await docRef.update(produto);
+    
+    // Registrar log
+    await db.collection('logs_atividade').add({
+      tipo: 'editar',
+      produto_id: id,
+      nome_produto: produto.nome,
+      usuario: req.user.email || req.user.uid,
+      detalhes: JSON.stringify(produto),
+      data: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    res.json({ 
+      id, 
+      ...produto,
+      message: 'Produto atualizado com sucesso' 
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar produto:', error);
+    res.status(500).json({ error: 'Erro ao atualizar produto', detalhes: error.message });
+  }
+});
+
+// Excluir produto
+app.delete('/api/produtos/:id', autenticarToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verificar se o produto existe
+    const docRef = db.collection('produtos').doc(id);
+    const doc = await docRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+    
+    // Obter dados do produto antes de excluir (para o log)
+    const produtoData = doc.data();
+    
+    // Excluir do Firestore
+    await docRef.delete();
+    
+    // Registrar log
+    await db.collection('logs_atividade').add({
+      tipo: 'excluir',
+      produto_id: id,
+      nome_produto: produtoData.nome || 'Produto sem nome',
+      usuario: req.user.email || req.user.uid,
+      detalhes: JSON.stringify({ id, ...produtoData }),
+      data: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    res.json({ 
+      message: 'Produto excluído com sucesso',
+      id
+    });
+  } catch (error) {
+    console.error('Erro ao excluir produto:', error);
+    res.status(500).json({ error: 'Erro ao excluir produto', detalhes: error.message });
+  }
+});
+
+// Obter logs de atividade
+app.get('/api/logs', autenticarToken, async (req, res) => {
+  try {
+    const snapshot = await db.collection('logs_atividade')
+      .orderBy('data', 'desc')
+      .limit(100)
+      .get();
+      
+    const logs = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      data: doc.data().data ? doc.data().data.toDate() : new Date()
+    }));
+    
+    res.json(logs);
+  } catch (error) {
+    console.error('Erro ao buscar logs:', error);
+    res.status(500).json({ error: 'Erro ao buscar logs', detalhes: error.message });
   }
 });
 

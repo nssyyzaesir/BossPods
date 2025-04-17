@@ -1,0 +1,34 @@
+Corrija os seguintes problemas no painel /admin do BossPods e adicione proteção avançada contra manipulação via DevTools:
+
+1. BUG de criação de produtos e exibição de logs:
+   - Corrigir o problema onde a criação de produtos só funciona após o Firebase ser autenticado corretamente.
+   - A função de salvar produto, editar e deletar deve respeitar a autenticação e só permitir ações quando for um admin logado.
+   - Certifique-se de que ao abrir o painel /admin, os produtos e logs só são carregados após onAuthStateChanged confirmar que o usuário é admin.
+   - Corrija qualquer erro onde os produtos não aparecem ou não atualizam após serem criados.
+   - A tabela de logs deve ser atualizada automaticamente após qualquer ação (criação, edição, exclusão).
+
+2. Segurança no lado do cliente:
+   - Adicione verificações no lado do cliente para impedir que usuários acessem o painel sem UID de admin.
+   - Bloqueie todos os botões e ações se o usuário não for autenticado.
+   - Proteja o código no front para dificultar a exposição de funções sensíveis via console do navegador.
+   - Minimize e ofusque os scripts JS na pasta /public para dificultar engenharia reversa.
+   - Use console.warn e console.error personalizados para capturar tentativas de inspeção com DevTools.
+   - (Opcional) Adicione um listener que detecta abertura de DevTools e bloqueia o uso com redirect ou overlay:
+     Exemplo:
+     ```js
+     if (window.outerHeight - window.innerHeight > 200 || window.outerWidth - window.innerWidth > 200) {
+       document.body.innerHTML = '<h1>Acesso bloqueado</h1>';
+     }
+     ```
+
+3. Backend:
+   - Garanta que as rotas do backend (POST, PUT, DELETE em /produtos) verifiquem o token Firebase e validem o UID do admin.
+   - Nenhuma rota crítica deve funcionar sem autenticação e verificação do UID.
+   - Se possível, sanitizar os dados recebidos (nome, preço, etc) para evitar injection ou lixo malicioso.
+
+4. Extras:
+   - Mantenha a UI leve e rápida.
+   - Faça os botões de feedback visual (loading, sucesso, erro) para ações de produtos.
+   - Confirme que erros no console do navegador sejam tratados e exibam mensagens amigáveis no sistema.
+
+Finalize e avise quando estiver tudo corrigido.

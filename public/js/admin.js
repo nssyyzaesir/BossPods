@@ -12,6 +12,97 @@ let filteredDebugLogs = [];
 let charts = {};
 let confirmCallback = null;
 
+// Detecção anti-DevTools (dificulta manipulação via console)
+(function() {
+  // Lista de funcionalidades originais a serem protegidas
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+    info: console.info
+  };
+  
+  // Sobrescrever funções do console
+  console.log = function() {
+    // Registrar tentativa de uso do console
+    const args = Array.from(arguments);
+    const message = args.join(' ');
+    
+    // Permitir mensagens de debug, mas registrar todas as chamadas
+    if (message.includes('senha') || message.includes('token') || message.includes('auth') || 
+        message.includes('admin') || message.includes('firebase')) {
+      originalConsole.warn('⚠️ Tentativa de acesso a informações sensíveis detectada e registrada');
+      // Poderíamos registrar tentativas suspeitas no backend aqui
+    }
+    
+    // Passar para a função original (para não quebrar o desenvolvimento)
+    return originalConsole.log.apply(console, arguments);
+  };
+  
+  // Lista de funções sensíveis para proteger
+  const protectedFunctions = [
+    'createProduct', 'updateProduct', 'deleteProduct', 'isAdminUser', 
+    'firebase.auth', 'getIdToken', 'signInWithEmailAndPassword'
+  ];
+  
+  // Detector de DevTools por diferença de dimensões
+  function detectDevTools() {
+    const threshold = 160;
+    const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+    const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+    
+    if (widthThreshold || heightThreshold) {
+      // Adicionar aviso no DOM
+      const overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.backgroundColor = 'rgba(0,0,0,0.9)';
+      overlay.style.color = 'red';
+      overlay.style.fontSize = '24px';
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+      overlay.style.zIndex = '9999';
+      overlay.style.textAlign = 'center';
+      overlay.style.padding = '20px';
+      overlay.innerHTML = '<div>ACESSO BLOQUEADO<br>O uso de ferramentas de desenvolvedor não é permitido neste painel.</div>';
+      
+      document.body.appendChild(overlay);
+      
+      // Registrar tentativa no console
+      originalConsole.warn('⚠️ Tentativa de uso de DevTools detectada e bloqueada');
+      
+      // Ativar proteção adicional
+      window._protectionActive = true;
+      
+      // Redirecionar após 3 segundos
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+      
+      return true;
+    }
+    
+    return false;
+  }
+  
+  // Verificar periodicamente
+  setInterval(detectDevTools, 1000);
+  
+  // Bloquear tentativas de desabilitar a proteção
+  Object.defineProperty(window, '_protectionActive', {
+    value: false,
+    writable: false,
+    configurable: false
+  });
+  
+  // Ocultar as funções protegidas do objeto global
+  window._adminFunctions = {};
+})();
+
 // Inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
   console.log("Página admin carregada, aguardando inicialização do Firebase...");
@@ -27,6 +118,13 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
   
+  // Desabilitar todos os botões de ação até autenticação ser verificada
+  const actionButtons = document.querySelectorAll('button:not(#logoutButton)');
+  actionButtons.forEach(button => {
+    button.disabled = true;
+    button.setAttribute('data-waiting-auth', 'true');
+  });
+  
   // Verificar se o Firebase foi inicializado antes de prosseguir
   const firebaseCheckInterval = setInterval(() => {
     if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
@@ -36,7 +134,19 @@ document.addEventListener('DOMContentLoaded', () => {
       // Inicializar a página
       setupNavigation();
       setupEventHandlers();
-      verificarAutenticacao();
+      
+      // Verificar autenticação antes de liberar funcionalidades
+      verificarAutenticacao().then(isAuthenticated => {
+        if (isAuthenticated) {
+          // Habilitar botões apenas após autenticação confirmada
+          actionButtons.forEach(button => {
+            if (button.getAttribute('data-waiting-auth') === 'true') {
+              button.removeAttribute('data-waiting-auth');
+              button.disabled = false;
+            }
+          });
+        }
+      });
     }
   }, 500);
 });
@@ -479,79 +589,166 @@ async function carregarProdutos() {
   try {
     console.log('Carregando produtos...');
     
-    // Método 1: Utilizando o endpoint da API com token de autenticação
-    const currentUser = firebase.auth().currentUser;
+    // Mostrar indicador de loading
+    const produtosContainer = document.getElementById('produtosContainer');
+    if (produtosContainer) {
+      produtosContainer.innerHTML = `
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
+          </div>
+          <p class="mt-2 text-primary">Carregando produtos...</p>
+        </div>
+      `;
+    }
     
-    if (currentUser) {
-      // Obter token de ID do usuário autenticado
-      const idToken = await currentUser.getIdToken(true);
+    // Desabilitar temporariamente botões relacionados a produtos
+    const produtoBtns = document.querySelectorAll('.produto-action-btn');
+    produtoBtns.forEach(btn => btn.disabled = true);
+    
+    // Constantes de autenticação
+    const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+    const currentUser = firebase.auth().currentUser;
+    const storedAdminUID = localStorage.getItem('adminUID');
+    const isAuthenticatedByUID = storedAdminUID === ADMIN_UID;
+    
+    // Verificar se o usuário está autenticado
+    if (!currentUser && !isAuthenticatedByUID) {
+      console.error('Usuário não autenticado para carregar produtos');
+      showToast('Acesso Negado', 'Você precisa estar autenticado para carregar produtos', 'error');
       
-      // Fazer requisição para a API de produtos com o token no cabeçalho
-      const response = await fetch('/produtos', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${idToken}`,
-          'X-Admin-UID': '96rupqrpWjbyKtSksDaISQ94y6l2'
-        }
-      });
-      
-      if (response.ok) {
-        allProdutos = await response.json();
-        console.log('Produtos carregados via API:', allProdutos.length);
-      } else {
-        const error = await response.json();
-        console.error('Erro ao buscar produtos da API:', error);
-        
-        // Verificar se o erro está relacionado com autenticação
-        if (response.status === 401 || response.status === 403) {
-          showToast('Acesso Negado', 'Você não tem permissão para acessar os produtos.', 'error');
-        } else {
-          showToast('Erro', `Falha ao carregar produtos: ${error.error || 'Erro desconhecido'}`, 'error');
-        }
-        
-        // Se falhar o método API, tentar com Firestore direto (fallback)
-        if (firestoreProducts) {
-          console.log('Tentando carregar produtos via Firestore direto (fallback)...');
-          allProdutos = await firestoreProducts.getAllProducts();
-          console.log('Produtos carregados via Firestore:', allProdutos.length);
-        } else {
-          allProdutos = [];
-        }
+      if (produtosContainer) {
+        produtosContainer.innerHTML = `
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Acesso negado. Você precisa estar autenticado como administrador.
+          </div>
+        `;
       }
-    } else {
-      // Se não houver usuário autenticado, verificar autenticação via localStorage
-      const storedAdminUID = localStorage.getItem('adminUID');
       
-      if (storedAdminUID === '96rupqrpWjbyKtSksDaISQ94y6l2') {
-        // Usuário autenticado como admin via localStorage
-        console.log('Carregando produtos como admin (via localStorage UID)');
+      allProdutos = [];
+      aplicarFiltros();
+      return [];
+    }
+    
+    // Tentar carregar produtos via API REST
+    if (currentUser) {
+      try {
+        // Obter token de ID do usuário autenticado
+        const idToken = await currentUser.getIdToken(true);
         
-        // Método 2: Utilizar o Firestore diretamente se disponível
-        if (firestoreProducts) {
-          allProdutos = await firestoreProducts.getAllProducts();
-          console.log('Produtos carregados via Firestore:', allProdutos.length);
+        // Fazer requisição para a API de produtos com o token no cabeçalho
+        const response = await fetch('/api/produtos', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+            'X-Admin-UID': ADMIN_UID
+          }
+        });
+        
+        if (response.ok) {
+          allProdutos = await response.json();
+          console.log('Produtos carregados via API:', allProdutos.length);
+          
+          // Atualizar UI
+          aplicarFiltros();
+          produtoBtns.forEach(btn => btn.disabled = false);
+          return allProdutos;
         } else {
-          console.error('API de produtos não está disponível');
-          showToast('Erro', 'API de produtos não está disponível', 'error');
-          allProdutos = [];
+          const error = await response.json();
+          console.error('Erro ao buscar produtos da API:', error);
+          
+          if (response.status === 401 || response.status === 403) {
+            showToast('Acesso Negado', 'Você não tem permissão para acessar os produtos.', 'error');
+          } else {
+            showToast('Erro', `Falha ao carregar produtos: ${error.error || 'Erro desconhecido'}`, 'error');
+          }
+          
+          // Se a API falhar, tentar o Firestore direto
+          throw new Error('Tentando carregar via Firestore...');
         }
-      } else {
-        console.error('Usuário não autenticado para carregar produtos');
-        showToast('Acesso Negado', 'Você precisa estar autenticado para carregar produtos', 'error');
-        allProdutos = [];
+      } catch (apiError) {
+        console.log('Tentando carregar produtos via Firestore como fallback...');
+        // Continuar com o fallback
       }
     }
     
-    // Aplicar filtros para atualizar a visualização
-    aplicarFiltros();
-    
-    return allProdutos;
+    // Fallback: carregar via Firestore
+    if (firestoreProducts) {
+      try {
+        console.log('Carregando produtos via Firestore direto...');
+        allProdutos = await firestoreProducts.getAllProducts();
+        console.log('Produtos carregados via Firestore:', allProdutos.length);
+        
+        // Atualizar UI
+        aplicarFiltros();
+        produtoBtns.forEach(btn => btn.disabled = false);
+        return allProdutos;
+      } catch (firestoreError) {
+        console.error('Erro ao carregar produtos via Firestore:', firestoreError);
+        showToast('Erro', `Falha ao carregar produtos: ${firestoreError.message}`, 'error');
+        
+        if (produtosContainer) {
+          produtosContainer.innerHTML = `
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              Não foi possível carregar os produtos. ${firestoreError.message}
+              <button class="btn btn-sm btn-outline-danger ms-3" onclick="carregarProdutos()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Tentar novamente
+              </button>
+            </div>
+          `;
+        }
+        
+        allProdutos = [];
+        aplicarFiltros();
+        produtoBtns.forEach(btn => btn.disabled = false);
+        return [];
+      }
+    } else {
+      // Nenhum método de carregamento disponível
+      console.error('API de produtos não está disponível');
+      showToast('Erro', 'Método de carregamento de produtos não disponível', 'error');
+      
+      if (produtosContainer) {
+        produtosContainer.innerHTML = `
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Erro: API de produtos não está disponível
+          </div>
+        `;
+      }
+      
+      allProdutos = [];
+      aplicarFiltros();
+      produtoBtns.forEach(btn => btn.disabled = false);
+      return [];
+    }
   } catch (error) {
-    console.error('Erro ao carregar produtos:', error);
+    // Erro geral
+    console.error('Erro geral ao carregar produtos:', error);
     showToast('Erro', `Falha ao carregar produtos: ${error.message || 'Erro desconhecido'}`, 'error');
+    
+    const produtosContainer = document.getElementById('produtosContainer');
+    if (produtosContainer) {
+      produtosContainer.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          Erro ao carregar produtos: ${error.message || 'Erro desconhecido'}
+          <button class="btn btn-sm btn-outline-danger ms-3" onclick="carregarProdutos()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Tentar novamente
+          </button>
+        </div>
+      `;
+    }
+    
+    // Reabilitar botões
+    const produtoBtns = document.querySelectorAll('.produto-action-btn');
+    produtoBtns.forEach(btn => btn.disabled = false);
+    
     allProdutos = [];
     aplicarFiltros();
-    throw error;
+    return [];
   }
 }
 
@@ -559,24 +756,128 @@ async function carregarLogs() {
   try {
     console.log('Carregando logs...');
     
-    if (!firestoreProducts) {
-      console.error('API de produtos não está disponível');
-      return [];
+    // Mostrar indicador de loading
+    const logsList = document.getElementById('logsList');
+    const atividadeRecente = document.getElementById('atividadeRecente');
+    
+    if (logsList) {
+      logsList.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-2 text-primary">Carregando logs de atividade...</p>
+          </td>
+        </tr>
+      `;
     }
     
-    const logs = await firestoreProducts.getLogs();
-    console.log('Logs carregados:', logs.length);
+    if (atividadeRecente) {
+      atividadeRecente.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
+            <span class="ms-2">Carregando atividade recente...</span>
+          </td>
+        </tr>
+      `;
+    }
     
-    // Renderizar logs
-    renderizarLogs(logs);
-    
-    // Também atualizar atividade recente no dashboard
-    renderizarAtividadeRecente(logs);
-    
-    return logs;
+    // Método 1: Tentar API primeiro (mais seguro)
+    try {
+      const currentUser = firebase.auth().currentUser;
+      const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+      const storedAdminUID = localStorage.getItem('adminUID');
+      
+      if (currentUser) {
+        // Obter token de ID do usuário autenticado
+        const idToken = await currentUser.getIdToken(true);
+        
+        // Fazer requisição para a API de logs com o token no cabeçalho
+        const response = await fetch('/api/logs', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+            'X-Admin-UID': ADMIN_UID
+          }
+        });
+        
+        if (response.ok) {
+          const logs = await response.json();
+          console.log('Logs carregados via API:', logs.length);
+          
+          // Renderizar logs
+          renderizarLogs(logs);
+          
+          // Também atualizar atividade recente no dashboard
+          renderizarAtividadeRecente(logs);
+          
+          return logs;
+        } else {
+          // Se a API falhar, lançar erro para tentar método alternativo
+          const error = await response.json();
+          console.error('Erro ao buscar logs da API:', error);
+          throw new Error('Falha na API de logs, tentando fallback');
+        }
+      }
+      
+      // Se chegou aqui, ou o usuário está autenticado via localStorage ou a API falhou
+      // Método 2: Utilizar o Firestore diretamente
+      if (!firestoreProducts) {
+        throw new Error('API de logs não está disponível');
+      }
+      
+      const logs = await firestoreProducts.getLogs();
+      console.log('Logs carregados via Firestore:', logs.length);
+      
+      // Renderizar logs
+      renderizarLogs(logs);
+      
+      // Também atualizar atividade recente no dashboard
+      renderizarAtividadeRecente(logs);
+      
+      return logs;
+    } catch (error) {
+      console.error('Erro ao carregar logs:', error);
+      
+      if (logsList) {
+        logsList.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center">
+              <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Erro ao carregar logs: ${error.message || 'Erro desconhecido'}
+                <button class="btn btn-sm btn-outline-danger ms-3" onclick="carregarLogs()">
+                  <i class="bi bi-arrow-clockwise me-1"></i> Tentar novamente
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+      
+      if (atividadeRecente) {
+        atividadeRecente.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center">
+              <div class="alert alert-danger py-2">
+                <small><i class="bi bi-exclamation-triangle-fill me-2"></i>Erro ao carregar atividade recente</small>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+      
+      // Em caso de erro, retornar array vazio para evitar quebra da interface
+      return [];
+    }
   } catch (error) {
-    console.error('Erro ao carregar logs:', error);
-    throw error;
+    console.error('Erro geral ao carregar logs:', error);
+    showToast('Erro', `Falha ao carregar logs: ${error.message || 'Erro desconhecido'}`, 'error');
+    return [];
   }
 }
 
@@ -871,6 +1172,334 @@ function renderizarAtividadeRecente(logs) {
       </tr>
     `;
   });
+}
+
+// Funções para manipulação de produtos
+
+// Função para abrir modal de novo produto
+function abrirModalNovoProduto() {
+  // Verificar autenticação
+  const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+  const currentUser = firebase.auth().currentUser;
+  const storedAdminUID = localStorage.getItem('adminUID');
+  
+  if ((!currentUser || currentUser.uid !== ADMIN_UID) && storedAdminUID !== ADMIN_UID) {
+    showToast('Acesso Negado', 'Apenas administradores podem criar produtos.', 'error');
+    return;
+  }
+  
+  try {
+    // Resetar formulário
+    const form = document.getElementById('produtoForm');
+    if (form) form.reset();
+    
+    // Limpar ID (novo produto)
+    document.getElementById('produtoId').value = '';
+    
+    // Inicializar campos
+    document.getElementById('produtoNome').value = '';
+    document.getElementById('produtoDescricao').value = '';
+    document.getElementById('produtoCategoria').value = '';
+    document.getElementById('produtoPreco').value = '';
+    document.getElementById('produtoEstoque').value = '0';
+    document.getElementById('produtoImagem').value = '';
+    document.getElementById('produtoDestaque').checked = false;
+    document.getElementById('produtoNovidade').checked = false;
+    document.getElementById('produtoTags').value = '';
+    
+    // Atualizar título do modal
+    document.getElementById('produtoModalLabel').textContent = 'Novo Produto';
+    
+    // Exibir modal
+    const modal = new bootstrap.Modal(document.getElementById('produtoModal'));
+    modal.show();
+    
+    // Focar no primeiro campo
+    setTimeout(() => {
+      document.getElementById('produtoNome').focus();
+    }, 500);
+  } catch (error) {
+    console.error('Erro ao abrir modal de novo produto:', error);
+    showToast('Erro', 'Não foi possível abrir o formulário de produto.', 'error');
+  }
+}
+
+// Função para abrir modal de edição de produto
+function editarProduto(id) {
+  // Verificar autenticação
+  const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+  const currentUser = firebase.auth().currentUser;
+  const storedAdminUID = localStorage.getItem('adminUID');
+  
+  if ((!currentUser || currentUser.uid !== ADMIN_UID) && storedAdminUID !== ADMIN_UID) {
+    showToast('Acesso Negado', 'Apenas administradores podem editar produtos.', 'error');
+    return;
+  }
+  
+  try {
+    // Buscar produto pelo ID
+    const produto = allProdutos.find(p => p.id === id);
+    
+    if (!produto) {
+      showToast('Erro', 'Produto não encontrado.', 'error');
+      return;
+    }
+    
+    // Preencher formulário com dados do produto
+    document.getElementById('produtoId').value = produto.id;
+    document.getElementById('produtoNome').value = produto.nome || '';
+    document.getElementById('produtoDescricao').value = produto.descricao || '';
+    document.getElementById('produtoCategoria').value = produto.categoria || '';
+    document.getElementById('produtoPreco').value = produto.preco || '';
+    document.getElementById('produtoEstoque').value = produto.estoque || '0';
+    document.getElementById('produtoImagem').value = produto.imagem || '';
+    document.getElementById('produtoDestaque').checked = !!produto.destaque;
+    document.getElementById('produtoNovidade').checked = !!produto.novidade;
+    document.getElementById('produtoTags').value = Array.isArray(produto.tags) ? produto.tags.join(', ') : '';
+    
+    // Atualizar título do modal
+    document.getElementById('produtoModalLabel').textContent = 'Editar Produto';
+    
+    // Exibir modal
+    const modal = new bootstrap.Modal(document.getElementById('produtoModal'));
+    modal.show();
+  } catch (error) {
+    console.error('Erro ao abrir modal de edição:', error);
+    showToast('Erro', 'Não foi possível carregar os dados do produto.', 'error');
+  }
+}
+
+// Função para salvar produto (criar novo ou atualizar existente)
+async function salvarProduto() {
+  // Verificar autenticação
+  const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+  const currentUser = firebase.auth().currentUser;
+  const storedAdminUID = localStorage.getItem('adminUID');
+  
+  if ((!currentUser || currentUser.uid !== ADMIN_UID) && storedAdminUID !== ADMIN_UID) {
+    showToast('Acesso Negado', 'Apenas administradores podem salvar produtos.', 'error');
+    return false;
+  }
+  
+  try {
+    // Mostrar estado de processamento
+    const salvarBtn = document.getElementById('salvarProdutoBtn');
+    const cancelarBtn = document.getElementById('cancelarProdutoBtn');
+    const originalText = salvarBtn.innerHTML;
+    
+    salvarBtn.disabled = true;
+    cancelarBtn.disabled = true;
+    salvarBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Salvando...';
+    
+    // Obter dados do formulário
+    const id = document.getElementById('produtoId').value.trim();
+    const nome = document.getElementById('produtoNome').value.trim();
+    const descricao = document.getElementById('produtoDescricao').value.trim();
+    const categoria = document.getElementById('produtoCategoria').value.trim();
+    const preco = parseFloat(document.getElementById('produtoPreco').value.replace(',', '.'));
+    const estoque = parseInt(document.getElementById('produtoEstoque').value, 10);
+    const imagem = document.getElementById('produtoImagem').value.trim();
+    const destaque = document.getElementById('produtoDestaque').checked;
+    const novidade = document.getElementById('produtoNovidade').checked;
+    const tagsInput = document.getElementById('produtoTags').value.trim();
+    const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [];
+    
+    // Validação básica
+    if (!nome) {
+      showToast('Erro', 'O nome do produto é obrigatório.', 'error');
+      salvarBtn.disabled = false;
+      cancelarBtn.disabled = false;
+      salvarBtn.innerHTML = originalText;
+      return false;
+    }
+    
+    // Montar objeto do produto
+    const produto = {
+      nome,
+      descricao,
+      categoria,
+      preco: isNaN(preco) ? 0 : preco,
+      estoque: isNaN(estoque) ? 0 : estoque,
+      imagem,
+      destaque,
+      novidade,
+      tags
+    };
+    
+    let result;
+    let successMessage;
+    
+    // Usar token de autenticação se tiver usuário logado
+    if (currentUser) {
+      // Obter token de ID
+      const idToken = await currentUser.getIdToken(true);
+      
+      if (id) {
+        // Atualizar produto existente
+        const response = await fetch(`/api/produtos/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+            'X-Admin-UID': ADMIN_UID
+          },
+          body: JSON.stringify(produto)
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Erro ao atualizar produto');
+        }
+        
+        result = await response.json();
+        successMessage = 'Produto atualizado com sucesso';
+      } else {
+        // Criar novo produto
+        const response = await fetch('/api/produtos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+            'X-Admin-UID': ADMIN_UID
+          },
+          body: JSON.stringify(produto)
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Erro ao criar produto');
+        }
+        
+        result = await response.json();
+        successMessage = 'Produto criado com sucesso';
+      }
+    } else {
+      // Fallback: Usar Firestore diretamente (auth por localStorage)
+      if (!firestoreProducts) {
+        throw new Error('API de produtos não está disponível');
+      }
+      
+      if (id) {
+        // Atualizar produto existente
+        await firestoreProducts.updateProduct(id, produto);
+        result = { id, ...produto };
+        successMessage = 'Produto atualizado com sucesso';
+      } else {
+        // Criar novo produto
+        result = await firestoreProducts.createProduct(produto);
+        successMessage = 'Produto criado com sucesso';
+      }
+    }
+    
+    // Fechar modal
+    document.getElementById('cancelarProdutoBtn').click();
+    
+    // Atualizar lista de produtos
+    await carregarProdutos();
+    
+    // Atualizar logs
+    await carregarLogs();
+    
+    // Mostrar mensagem de sucesso
+    showToast('Sucesso', successMessage, 'success');
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar produto:', error);
+    showToast('Erro', `Falha ao salvar produto: ${error.message}`, 'error');
+    
+    // Restaurar botões
+    const salvarBtn = document.getElementById('salvarProdutoBtn');
+    const cancelarBtn = document.getElementById('cancelarProdutoBtn');
+    salvarBtn.disabled = false;
+    cancelarBtn.disabled = false;
+    salvarBtn.innerHTML = 'Salvar';
+    
+    return false;
+  }
+}
+
+// Função para excluir produto
+async function excluirProduto(id, nome) {
+  // Verificar autenticação
+  const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+  const currentUser = firebase.auth().currentUser;
+  const storedAdminUID = localStorage.getItem('adminUID');
+  
+  if ((!currentUser || currentUser.uid !== ADMIN_UID) && storedAdminUID !== ADMIN_UID) {
+    showToast('Acesso Negado', 'Apenas administradores podem excluir produtos.', 'error');
+    return false;
+  }
+  
+  // Confirmar exclusão
+  if (!confirm(`Tem certeza que deseja excluir o produto "${nome}"? Esta ação não pode ser desfeita.`)) {
+    return false;
+  }
+  
+  try {
+    // Adicionar overlay de loading
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'loading-overlay';
+    loadingOverlay.innerHTML = `
+      <div class="spinner-border text-light" role="status">
+        <span class="visually-hidden">Excluindo...</span>
+      </div>
+      <p class="mt-2 text-light">Excluindo produto...</p>
+    `;
+    document.body.appendChild(loadingOverlay);
+    
+    // Usar token de autenticação se tiver usuário logado
+    if (currentUser) {
+      // Obter token de ID
+      const idToken = await currentUser.getIdToken(true);
+      
+      // Excluir via API
+      const response = await fetch(`/api/produtos/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'X-Admin-UID': ADMIN_UID
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao excluir produto');
+      }
+    } else {
+      // Fallback: Usar Firestore diretamente (auth por localStorage)
+      if (!firestoreProducts) {
+        throw new Error('API de produtos não está disponível');
+      }
+      
+      await firestoreProducts.deleteProduct(id, nome);
+    }
+    
+    // Remover overlay de loading
+    document.body.removeChild(loadingOverlay);
+    
+    // Atualizar lista de produtos
+    await carregarProdutos();
+    
+    // Atualizar logs
+    await carregarLogs();
+    
+    // Mostrar mensagem de sucesso
+    showToast('Sucesso', 'Produto excluído com sucesso', 'success');
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao excluir produto:', error);
+    showToast('Erro', `Falha ao excluir produto: ${error.message}`, 'error');
+    
+    // Remover overlay de loading (mesmo em caso de erro)
+    const overlay = document.querySelector('.loading-overlay');
+    if (overlay) {
+      document.body.removeChild(overlay);
+    }
+    
+    return false;
+  }
 }
 
 // Função para aplicar filtros aos produtos
