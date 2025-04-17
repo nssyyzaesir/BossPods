@@ -479,13 +479,68 @@ async function carregarProdutos() {
   try {
     console.log('Carregando produtos...');
     
-    if (!firestoreProducts) {
-      console.error('API de produtos não está disponível');
-      return;
-    }
+    // Método 1: Utilizando o endpoint da API com token de autenticação
+    const currentUser = firebase.auth().currentUser;
     
-    allProdutos = await firestoreProducts.getAllProducts();
-    console.log('Produtos carregados:', allProdutos.length);
+    if (currentUser) {
+      // Obter token de ID do usuário autenticado
+      const idToken = await currentUser.getIdToken(true);
+      
+      // Fazer requisição para a API de produtos com o token no cabeçalho
+      const response = await fetch('/produtos', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'X-Admin-UID': '96rupqrpWjbyKtSksDaISQ94y6l2'
+        }
+      });
+      
+      if (response.ok) {
+        allProdutos = await response.json();
+        console.log('Produtos carregados via API:', allProdutos.length);
+      } else {
+        const error = await response.json();
+        console.error('Erro ao buscar produtos da API:', error);
+        
+        // Verificar se o erro está relacionado com autenticação
+        if (response.status === 401 || response.status === 403) {
+          showToast('Acesso Negado', 'Você não tem permissão para acessar os produtos.', 'error');
+        } else {
+          showToast('Erro', `Falha ao carregar produtos: ${error.error || 'Erro desconhecido'}`, 'error');
+        }
+        
+        // Se falhar o método API, tentar com Firestore direto (fallback)
+        if (firestoreProducts) {
+          console.log('Tentando carregar produtos via Firestore direto (fallback)...');
+          allProdutos = await firestoreProducts.getAllProducts();
+          console.log('Produtos carregados via Firestore:', allProdutos.length);
+        } else {
+          allProdutos = [];
+        }
+      }
+    } else {
+      // Se não houver usuário autenticado, verificar autenticação via localStorage
+      const storedAdminUID = localStorage.getItem('adminUID');
+      
+      if (storedAdminUID === '96rupqrpWjbyKtSksDaISQ94y6l2') {
+        // Usuário autenticado como admin via localStorage
+        console.log('Carregando produtos como admin (via localStorage UID)');
+        
+        // Método 2: Utilizar o Firestore diretamente se disponível
+        if (firestoreProducts) {
+          allProdutos = await firestoreProducts.getAllProducts();
+          console.log('Produtos carregados via Firestore:', allProdutos.length);
+        } else {
+          console.error('API de produtos não está disponível');
+          showToast('Erro', 'API de produtos não está disponível', 'error');
+          allProdutos = [];
+        }
+      } else {
+        console.error('Usuário não autenticado para carregar produtos');
+        showToast('Acesso Negado', 'Você precisa estar autenticado para carregar produtos', 'error');
+        allProdutos = [];
+      }
+    }
     
     // Aplicar filtros para atualizar a visualização
     aplicarFiltros();
@@ -493,6 +548,9 @@ async function carregarProdutos() {
     return allProdutos;
   } catch (error) {
     console.error('Erro ao carregar produtos:', error);
+    showToast('Erro', `Falha ao carregar produtos: ${error.message || 'Erro desconhecido'}`, 'error');
+    allProdutos = [];
+    aplicarFiltros();
     throw error;
   }
 }

@@ -35,17 +35,51 @@ document.addEventListener('DOMContentLoaded', () => {
   // Botão para abrir o modal de login a partir do overlay
   if (openLoginBtn) {
     openLoginBtn.addEventListener('click', () => {
-      // Abrir modal usando Bootstrap
-      loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-      loginModal.show();
+      // Verificar se o Firebase está inicializado
+      if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+        // Abrir modal usando Bootstrap
+        loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+        loginModal.show();
+      } else {
+        console.log("Aguardando inicialização do Firebase antes de abrir o modal de login...");
+        // Mostrar uma notificação informando que o Firebase está sendo inicializado
+        showNotification("Sistema Iniciando", "Aguarde enquanto o sistema de autenticação é inicializado...", "info");
+        
+        // Verificar periodicamente até que o Firebase esteja pronto
+        const checkFirebaseInterval = setInterval(() => {
+          if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+            clearInterval(checkFirebaseInterval);
+            console.log("Firebase inicializado, abrindo modal de login");
+            loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+          }
+        }, 300);
+      }
     });
   }
 
   // Botão para abrir o modal de login no header
   if (loginButton) {
     loginButton.addEventListener('click', () => {
-      loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-      loginModal.show();
+      // Verificar se o Firebase está inicializado
+      if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+        loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+        loginModal.show();
+      } else {
+        console.log("Aguardando inicialização do Firebase antes de abrir o modal de login...");
+        // Mostrar uma notificação informando que o Firebase está sendo inicializado
+        showNotification("Sistema Iniciando", "Aguarde enquanto o sistema de autenticação é inicializado...", "info");
+        
+        // Verificar periodicamente até que o Firebase esteja pronto
+        const checkFirebaseInterval = setInterval(() => {
+          if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+            clearInterval(checkFirebaseInterval);
+            console.log("Firebase inicializado, abrindo modal de login");
+            loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+          }
+        }, 300);
+      }
     });
   }
 
