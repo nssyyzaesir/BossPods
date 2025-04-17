@@ -8,8 +8,59 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <!-- Estilo para overlay de violação de segurança -->
+  <style>
+    .security-breach-active {
+      animation: shake 0.5s linear;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    /* Estilos para bloqueio de interações durante violação de segurança */
+    .security-blocked * {
+      pointer-events: none !important;
+    }
+    
+    /* Overlay de violação de segurança pré-estilizado (backup caso o JS falhe) */
+    #securityBreachOverlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(5px);
+    }
+  </style>
 </head>
 <body class="cyber-bg">
+  
+  <!-- Overlay de violação de segurança -->
+  <div id="securityBreachOverlay" class="security-breach-overlay cyber-overlay">
+    <div class="security-breach-content cyber-panel">
+      <div class="security-breach-header">
+        <div class="cyber-glitch-effect">ALERTA DE SEGURANÇA</div>
+        <div class="cyber-scanner-line"></div>
+      </div>
+      <div class="security-breach-icon">
+        <i class="bi bi-shield-exclamation"></i>
+      </div>
+      <h3 class="cyber-text-glow">Violação de Segurança Detectada</h3>
+      <p class="security-breach-message">Tentativa de manipulação detectada. Esta ação foi registrada por motivos de segurança.</p>
+      <div class="security-breach-actions">
+        <button class="btn cyber-btn cyber-btn-danger" id="securityBreachBtn">Entendi</button>
+      </div>
+      <div class="cyber-fingerprint-scan"></div>
+    </div>
+  </div>
 
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg cyber-navbar sticky-top">
@@ -739,6 +790,21 @@
   <script src="/js/admin.js"></script>
 
   <!-- O firebase-config.js já inclui a configuração e inicialização do Firebase -->
+  
+  <!-- Overlay de violação de segurança - aparece em tentativas não autorizadas -->
+  <div id="securityBreachOverlay" class="security-breach-overlay" style="display: none;">
+    <div class="security-breach-content">
+      <i class="bi bi-exclamation-triangle-fill security-breach-icon"></i>
+      <h2 class="security-breach-title">Alerta de Segurança</h2>
+      <p class="security-breach-message">
+        Uma tentativa não autorizada de acesso foi detectada e registrada.
+        O sistema identificou uma possível violação de segurança.
+      </p>
+      <div class="security-breach-action">
+        <button id="securityBreachBtn" class="security-breach-btn">Entendi</button>
+      </div>
+    </div>
+  </div>
   
 </body>
 </html>

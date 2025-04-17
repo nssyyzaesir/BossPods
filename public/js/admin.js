@@ -45,62 +45,672 @@ let confirmCallback = null;
     'firebase.auth', 'getIdToken', 'signInWithEmailAndPassword'
   ];
   
-  // Detector de DevTools por diferença de dimensões
-  function detectDevTools() {
-    const threshold = 160;
-    const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-    const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-    
-    if (widthThreshold || heightThreshold) {
-      // Adicionar aviso no DOM
-      const overlay = document.createElement('div');
-      overlay.style.position = 'fixed';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.width = '100%';
-      overlay.style.height = '100%';
-      overlay.style.backgroundColor = 'rgba(0,0,0,0.9)';
-      overlay.style.color = 'red';
-      overlay.style.fontSize = '24px';
+  // Função para exibir o overlay de violação de segurança
+  function showSecurityBreachOverlay(mensagem = null) {
+    try {
+      const overlay = document.getElementById('securityBreachOverlay');
+      if (!overlay) return;
+      
+      // Atualizar mensagem se fornecida
+      if (mensagem) {
+        const messageElement = overlay.querySelector('.security-breach-message');
+        if (messageElement) {
+          messageElement.textContent = mensagem;
+        }
+      }
+      
+      // Exibir overlay
       overlay.style.display = 'flex';
-      overlay.style.alignItems = 'center';
-      overlay.style.justifyContent = 'center';
-      overlay.style.zIndex = '9999';
-      overlay.style.textAlign = 'center';
-      overlay.style.padding = '20px';
-      overlay.innerHTML = '<div>ACESSO BLOQUEADO<br>O uso de ferramentas de desenvolvedor não é permitido neste painel.</div>';
       
-      document.body.appendChild(overlay);
+      // Configurar botão para fechar overlay
+      const closeButton = overlay.querySelector('#securityBreachBtn');
+      if (closeButton) {
+        closeButton.addEventListener('click', function() {
+          overlay.style.display = 'none';
+        });
+      }
       
-      // Registrar tentativa no console
-      originalConsole.warn('⚠️ Tentativa de uso de DevTools detectada e bloqueada');
-      
-      // Ativar proteção adicional
-      window._protectionActive = true;
-      
-      // Redirecionar após 3 segundos
+      // Auto-fechar após 10 segundos para evitar bloqueio perpétuo
       setTimeout(() => {
-        window.location.href = '/';
-      }, 3000);
+        if (overlay.style.display === 'flex') {
+          overlay.style.display = 'none';
+        }
+      }, 10000);
       
       return true;
+    } catch (error) {
+      console.error('Erro ao exibir overlay de segurança:', error);
+      return false;
     }
-    
-    return false;
   }
   
-  // Verificar periodicamente
-  setInterval(detectDevTools, 1000);
+  // Detector de DevTools por diferença de dimensões
+  function detectDevTools() {
+    // Controle de estado para prevenção de duplicação
+    if (window._devToolsCheckActive) return;
+    window._devToolsCheckActive = true;
+    
+    // Constantes importantes
+    const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+    const threshold = 160;
+    
+    // Variáveis de estado
+    let devtoolsOpen = false;
+    let alertShown = false;
+    let accessBlocked = false;
+    let overlayElement = null;
+    let devtoolsDetections = 0;
+    let lastDetectionTime = 0;
+    
+    // Iniciar verificação periódica
+    const checkInterval = setInterval(checkDevTools, 800); // Verificação mais frequente
+    
+    // Detectar alterações nas dimensões da janela (que podem indicar abertura de DevTools)
+    window.addEventListener('resize', checkDevTools);
+    
+    // Verificar ocultação de elementos (outra técnica de detecção)
+    const debugDetector = document.createElement('div');
+    debugDetector.id = '_debugger-detector';
+    debugDetector.style.display = 'none';
+    document.body.appendChild(debugDetector);
+
+    // Função principal de verificação com melhorias
+    function checkDevTools() {
+      try {
+        // Verificações dimensionais
+        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+        
+        // Verificação adicional: console.debug modificado
+        const consoleCheck = (function() {
+          let f = false;
+          try {
+            const db = document.createElement('div');
+            db.id = '_debug-bar';
+            db.style.display = 'none';
+            db.setAttribute('style', 'display:none');
+            document.body.appendChild(db);
+            console.debug('debug');
+            f = db.style.display === 'block';
+            document.body.removeChild(db);
+          } catch (e) {
+            // Silenciar erros aqui para evitar exceções
+          }
+          return f;
+        })();
+        
+        // Verificar se elemento de debug está visível (terceira técnica)
+        const debugElementCheck = window.getComputedStyle(debugDetector).display === 'block';
+        
+        // Detectar se DevTools está aberto por qualquer uma das técnicas
+        if (widthThreshold || heightThreshold || consoleCheck || debugElementCheck) {
+          // Incrementar contador de detecções e verificar tempo
+          const currentTime = Date.now();
+          // Resetar contador se já passou muito tempo desde a última detecção
+          if (currentTime - lastDetectionTime > 10000) {
+            devtoolsDetections = 0;
+          }
+          
+          devtoolsDetections++;
+          lastDetectionTime = currentTime;
+          
+          if (!devtoolsOpen) {
+            devtoolsOpen = true;
+            
+            // Verificar se o usuário é um admin autorizado
+            const currentUser = firebase.auth().currentUser;
+            const storedAdminUID = localStorage.getItem('adminUID');
+            const isAuthorizedAdmin = (currentUser && currentUser.uid === ADMIN_UID) || storedAdminUID === ADMIN_UID;
+            
+            // Se não for admin autorizado, bloquear acesso
+            if (!isAuthorizedAdmin) {
+              if (!accessBlocked) {
+                accessBlocked = true;
+                
+                // Registrar tentativa no log de segurança
+              try {
+                const detalhes = {
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent,
+                  device: navigator.platform,
+                  url: window.location.href
+                };
+                
+                if (currentUser) {
+                  detalhes.uid = currentUser.uid;
+                  detalhes.email = currentUser.email;
+                }
+                
+                // Registrar no log se possível
+                if (firestoreProducts) {
+                  firestoreProducts.registrarLog(
+                    'seguranca', 
+                    'N/A', 
+                    'Painel Admin', 
+                    `Tentativa de acesso utilizando DevTools: ${JSON.stringify(detalhes)}`
+                  );
+                }
+                
+                // Registrar tentativa no console de forma mais discreta
+                originalConsole.warn('⚠️ Tentativa de uso não autorizado de DevTools detectada e bloqueada');
+              } catch (e) {
+                originalConsole.error('Erro ao registrar tentativa de acesso:', e);
+              }
+              
+              // Criar overlay de acesso negado com estilo cyberpunk
+              overlayElement = document.createElement('div');
+              overlayElement.className = 'access-denied-overlay';
+              overlayElement.innerHTML = `
+                <div>
+                  <i class="bi bi-shield-lock-fill mb-3" style="font-size: 5rem;"></i>
+                  <h2 class="glitch-text">ACESSO NEGADO</h2>
+                  <p>Esta ação não é permitida e foi registrada.</p>
+                  <div class="cyber-hr"></div>
+                  <p class="mt-4"><small>Feche o DevTools para continuar.</small></p>
+                </div>
+              `;
+              document.body.appendChild(overlayElement);
+              
+              // Desabilitar todas as interações com a interface
+              document.querySelectorAll('button, a, input, select, textarea').forEach(el => {
+                el.disabled = true;
+                if (el.tagName === 'A') {
+                  el.style.pointerEvents = 'none';
+                }
+              });
+              
+              // Interromper todas as requisições em andamento
+              if (window.stop) {
+                window.stop();
+              }
+              
+              // Desconectar usuário por segurança
+              firebase.auth().signOut().catch(e => originalConsole.error('Erro ao fazer logout:', e));
+              
+              // Limpar dados sensíveis
+              localStorage.removeItem('adminUID');
+              localStorage.removeItem('currentUser');
+              sessionStorage.clear();
+              
+              // Ativar proteção adicional
+              window._protectionActive = true;
+              
+              // Redirecionar após alguns segundos
+              setTimeout(() => {
+                window.location.href = '/login.html?error=security_violation';
+              }, 5000);
+            }
+          } else {
+            // Usuário é admin autorizado, apenas mostrar alerta
+            if (!alertShown) {
+              alertShown = true;
+              alert('⚠️ Modo de desenvolvedor detectado. Use esta ferramenta com responsabilidade. Apenas administradores autorizados podem acessar esta funcionalidade.');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro na detecção de DevTools:', error);
+      }
+      
+      // DevTools foram fechadas
+      if (devtoolsOpen) {
+        devtoolsOpen = false;
+        alertShown = false;
+        
+        // Se o acesso foi bloqueado mas o DevTools foi fechado, recarregar a página
+        if (accessBlocked && overlayElement) {
+          try {
+            // Remover overlay
+            document.body.removeChild(overlayElement);
+            overlayElement = null;
+            
+            // Reabilitar interações
+            document.querySelectorAll('button, a, input, select, textarea').forEach(el => {
+              el.disabled = false;
+              if (el.tagName === 'A') {
+                el.style.pointerEvents = 'auto';
+              }
+            });
+            
+            // Desativar proteção
+            window._protectionActive = false;
+            accessBlocked = false;
+            
+            // Recarregar a página para restaurar estado
+            window.location.reload();
+          } catch (e) {
+            console.error('Erro ao remover overlay:', e);
+          }
+        }
+      }
+    };
+    
+    // Executar verificação inicial
+    checkDevTools();
+    
+    // Já definimos o intervalo e listener acima, não precisamos duplicar
+    
+    // Detectar tentativas de debugging com console
+    const detectDebugging = () => {
+      if (!accessBlocked) {
+        const currentUser = firebase.auth().currentUser;
+        const storedAdminUID = localStorage.getItem('adminUID');
+        const isAuthorizedAdmin = (currentUser && currentUser.uid === ADMIN_UID) || storedAdminUID === ADMIN_UID;
+        
+        if (!isAuthorizedAdmin) {
+          accessBlocked = true;
+          originalConsole.warn('⚠️ Depuração não permitida! Esta ação foi registrada.');
+          
+          // Registrar no log se possível
+          if (firestoreProducts) {
+            const detalhes = {
+              timestamp: new Date().toISOString(),
+              userAgent: navigator.userAgent,
+              url: window.location.href
+            };
+            
+            firestoreProducts.registrarLog(
+              'seguranca', 
+              'N/A', 
+              'Painel Admin', 
+              `Tentativa de depuração detectada: ${JSON.stringify(detalhes)}`
+            );
+          }
+          
+          // Redirecionar para página de login com erro
+          window.location.href = '/login.html?error=security_violation';
+        }
+      }
+      return true;
+    };
+    
+    // Proteção contra manipulação do localStorage
+    const originalSetItem = localStorage.setItem;
+    const sensitiveKeys = ['adminUID', 'authToken', 'currentUser'];
+    
+    localStorage.setItem = function(key, value) {
+      // Verificar se é uma chave sensível
+      if (sensitiveKeys.includes(key)) {
+        const currentUser = firebase.auth().currentUser;
+        
+        // Se tentar definir adminUID, verificar se o valor é válido
+        if (key === 'adminUID' && value !== ADMIN_UID) {
+          console.error(`Tentativa de manipulação de ${key} detectada`);
+          
+          // Registrar no log se possível
+          if (firestoreProducts) {
+            firestoreProducts.registrarLog(
+              'seguranca', 
+              'N/A', 
+              'Painel Admin', 
+              `Tentativa de manipulação de localStorage: ${key}`
+            );
+          }
+          
+          // Mostrar overlay de violação de segurança
+          showSecurityBreachOverlay(`Violação de segurança detectada: Tentativa de manipulação não autorizada de dados sensíveis. Esta ação foi registrada e poderá resultar em bloqueio de acesso.`);
+          
+          // Não permitir a modificação
+          return;
+        }
+        
+        // Se não for o admin, não permitir modificação de chaves sensíveis
+        if (!currentUser || currentUser.uid !== ADMIN_UID) {
+          console.error(`Tentativa não autorizada de modificar ${key}`);
+          return;
+        }
+      }
+      
+      // Se passar pelas verificações, permitir a operação
+      return originalSetItem.call(localStorage, key, value);
+    };
+    
+    // Proteger variáveis críticas
+    Object.defineProperty(window, 'ADMIN_UID', {
+      value: ADMIN_UID,
+      writable: false,
+      configurable: false
+    });
+    
+    // Bloquear tentativas de desabilitar a proteção
+    Object.defineProperty(window, '_protectionActive', {
+      value: false,
+      writable: false,
+      configurable: false
+    });
+    
+    // Retornar função de limpeza
+    return () => {
+      clearInterval(checkInterval);
+      window.removeEventListener('resize', checkDevTools);
+      localStorage.setItem = originalSetItem;
+    };
+  }
   
-  // Bloquear tentativas de desabilitar a proteção
-  Object.defineProperty(window, '_protectionActive', {
-    value: false,
-    writable: false,
-    configurable: false
-  });
+  // Iniciar detecção
+  detectDevTools();
   
   // Ocultar as funções protegidas do objeto global
   window._adminFunctions = {};
+})();
+
+// Função para exibir o overlay de violação de segurança
+function showSecurityBreachOverlay(mensagem = null) {
+  try {
+    // Primeiro, tentar encontrar o overlay existente
+    let overlay = document.getElementById('securityBreachOverlay');
+    
+    // Se não existir, criar um novo dinamicamente
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'securityBreachOverlay';
+      overlay.className = 'security-breach-overlay cyber-overlay';
+      
+      // Criar conteúdo do overlay com estilo cyberpunk
+      overlay.innerHTML = `
+        <div class="security-breach-content cyber-panel">
+          <div class="security-breach-header">
+            <div class="cyber-glitch-effect">ALERTA DE SEGURANÇA</div>
+            <div class="cyber-scanner-line"></div>
+          </div>
+          <div class="security-breach-icon">
+            <i class="bi bi-shield-exclamation"></i>
+          </div>
+          <h3 class="cyber-text-glow">Violação de Segurança Detectada</h3>
+          <p class="security-breach-message">${mensagem || 'Tentativa de manipulação detectada. Esta ação foi registrada por motivos de segurança.'}</p>
+          <div class="security-breach-actions">
+            <button class="btn cyber-btn cyber-btn-danger" id="securityBreachBtn">Entendi</button>
+          </div>
+          <div class="cyber-fingerprint-scan"></div>
+        </div>
+      `;
+      
+      // Adicionar ao corpo do documento
+      document.body.appendChild(overlay);
+      
+      // Estilizar o overlay dinamicamente se não tiver CSS definido
+      const style = document.createElement('style');
+      style.textContent = `
+        .security-breach-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.9);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
+          backdrop-filter: blur(5px);
+          animation: pulseBackground 3s infinite;
+        }
+        
+        .security-breach-content {
+          width: 90%;
+          max-width: 500px;
+          background-color: rgba(20, 20, 28, 0.95);
+          border: 1px solid #ff3e3e;
+          box-shadow: 0 0 15px #ff3e3e, 0 0 30px rgba(255, 62, 62, 0.4);
+          color: #ffffff;
+          padding: 20px;
+          border-radius: 5px;
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .security-breach-header {
+          position: relative;
+          margin-bottom: 20px;
+          border-bottom: 1px solid #ff3e3e;
+          padding-bottom: 10px;
+        }
+        
+        .cyber-scanner-line {
+          position: absolute;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, #ff3e3e, transparent);
+          width: 100%;
+          top: 0;
+          left: 0;
+          animation: scanLine 2s infinite;
+        }
+        
+        .cyber-glitch-effect {
+          font-family: monospace;
+          font-weight: bold;
+          font-size: 20px;
+          color: #ff3e3e;
+          text-shadow: 0 0 5px #ff3e3e;
+          animation: glitchText 3s infinite;
+        }
+        
+        .security-breach-icon {
+          font-size: 40px;
+          color: #ff3e3e;
+          margin: 20px 0;
+          animation: pulse 2s infinite;
+        }
+        
+        .cyber-text-glow {
+          color: #ffffff;
+          text-shadow: 0 0 5px #ff3e3e;
+          margin-bottom: 15px;
+        }
+        
+        .security-breach-message {
+          margin-bottom: 20px;
+          font-size: 16px;
+        }
+        
+        .cyber-fingerprint-scan {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 4px;
+          background: linear-gradient(90deg, transparent, #00ffff, transparent);
+          animation: scanLine 3s infinite;
+        }
+        
+        .cyber-btn-danger {
+          background-color: #ff3e3e;
+          border: none;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 3px;
+          font-weight: bold;
+          transition: all 0.3s;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          box-shadow: 0 0 10px #ff3e3e;
+        }
+        
+        .cyber-btn-danger:hover {
+          background-color: #ff1a1a;
+          transform: translateY(-2px);
+          box-shadow: 0 0 15px #ff3e3e;
+        }
+        
+        @keyframes scanLine {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        @keyframes glitchText {
+          0%, 100% { opacity: 1; transform: translateX(0); }
+          40% { opacity: 1; transform: translateX(0); }
+          41% { opacity: 0.8; transform: translateX(5px); }
+          42% { opacity: 1; transform: translateX(0); }
+          43% { opacity: 0.8; transform: translateX(-5px); }
+          44% { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes pulseBackground {
+          0%, 100% { background-color: rgba(0, 0, 0, 0.9); }
+          50% { background-color: rgba(20, 0, 0, 0.9); }
+        }
+      `;
+      document.head.appendChild(style);
+    } else {
+      // Se overlay já existe, atualizar a mensagem
+      if (mensagem) {
+        const messageElement = overlay.querySelector('.security-breach-message');
+        if (messageElement) {
+          messageElement.textContent = mensagem;
+        }
+      }
+    }
+    
+    // Exibir overlay
+    overlay.style.display = 'flex';
+    
+    // Adicionar efeito de vibração à página
+    document.body.classList.add('security-breach-active');
+    
+    // Registrar tentativa no log de segurança
+    try {
+      if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+        window.firestoreProducts.registrarLog(
+          'seguranca', 
+          'N/A', 
+          'Painel Admin', 
+          `Violação de segurança: ${mensagem || 'Tentativa de manipulação detectada'}`
+        );
+      }
+    } catch (logError) {
+      console.error('Erro ao registrar log de segurança:', logError);
+    }
+    
+    // Configurar botão para fechar overlay
+    const closeButton = overlay.querySelector('#securityBreachBtn');
+    if (closeButton) {
+      // Remover eventos antigos para evitar duplicação
+      const newButton = closeButton.cloneNode(true);
+      closeButton.parentNode.replaceChild(newButton, closeButton);
+      
+      // Adicionar novo evento
+      newButton.addEventListener('click', function() {
+        overlay.style.display = 'none';
+        document.body.classList.remove('security-breach-active');
+      });
+    }
+    
+    // Auto-fechar após 15 segundos para evitar bloqueio perpétuo
+    setTimeout(() => {
+      if (overlay && overlay.style.display === 'flex') {
+        overlay.style.display = 'none';
+        document.body.classList.remove('security-breach-active');
+      }
+    }, 15000);
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao exibir overlay de segurança:', error);
+    return false;
+  }
+}
+
+// Proteção do console para dificultar manipulação via DevTools
+(function() {
+  try {
+    // Guardar referências originais do console
+    const originalConsole = {
+      log: console.log,
+      warn: console.warn,
+      error: console.error,
+      info: console.info,
+      debug: console.debug
+    };
+    
+    // Substituir métodos do console para detectar manipulação
+    console.log = function() {
+      const args = Array.from(arguments);
+      // Verificar se a chamada é interna ou externa (stack trace)
+      const stackTrace = new Error().stack || '';
+      const isInternalCall = stackTrace.includes('admin.js') || 
+                            stackTrace.includes('firebase') || 
+                            stackTrace.includes('auth-manager.js');
+      
+      // Se for chamada externa, possivelmente de DevTools, registrar
+      if (!isInternalCall && args[0] && typeof args[0] === 'string' && 
+          (args[0].includes('ADMIN_UID') || 
+           args[0].includes('token') || 
+           args[0].includes('firebase') ||
+           args[0].includes('auth'))) {
+        
+        // Possível tentativa de manipulação via console
+        showSecurityBreachOverlay('Tentativa de acesso a informações sensíveis via console detectada');
+        
+        // Tentar registrar no log de segurança
+        try {
+          if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+            window.firestoreProducts.registrarLog(
+              'seguranca', 
+              'N/A', 
+              'Painel Admin', 
+              `Possível tentativa de manipulação via console: ${args.join(' ').substring(0, 100)}`
+            );
+          }
+        } catch (e) {}
+        
+        return false;
+      }
+      
+      // Permitir log normal para chamadas internas
+      return originalConsole.log.apply(console, args);
+    };
+    
+    // Mesmo para console.warn
+    console.warn = function() {
+      const args = Array.from(arguments);
+      return originalConsole.warn.apply(console, args);
+    };
+    
+    // Mesmo para console.error
+    console.error = function() {
+      const args = Array.from(arguments);
+      return originalConsole.error.apply(console, args);
+    };
+    
+    // Proteger variáveis sensíveis no escopo global
+    if (typeof ADMIN_UID !== 'undefined') {
+      Object.defineProperty(window, 'ADMIN_UID', {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: ADMIN_UID
+      });
+    }
+    
+    // Ofuscar código crítico através de técnicas anti-debugging
+    setTimeout(function() {
+      // Verificação periódica de DevTools
+      setInterval(function() {
+        // Verificar se DevTools está aberto
+        const devToolsOpen = 
+          window.outerHeight - window.innerHeight > 100 || 
+          window.outerWidth - window.innerWidth > 100;
+          
+        if (devToolsOpen) {
+          const isAdmin = firebase.auth().currentUser && 
+                          firebase.auth().currentUser.uid === '96rupqrpWjbyKtSksDaISQ94y6l2';
+          
+          if (!isAdmin) {
+            showSecurityBreachOverlay('DevTools detectado. Por razões de segurança, esta ação foi registrada.');
+          }
+        }
+      }, 1000);
+    }, 3000);
+  } catch (e) {
+    // Silenciar erros para não afetar o funcionamento normal
+  }
 })();
 
 // Inicialização quando o DOM estiver pronto
@@ -485,7 +1095,10 @@ function setupEventHandlers() {
 // Carregar todos os dados necessários
 async function carregarDados() {
   try {
-    console.log('Carregando dados...');
+    console.log('Iniciando carregamento de dados...');
+    
+    // Constante com o UID do administrador autorizado
+    const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
     
     // Mostrar loading
     const errorMessages = document.getElementById('errorMessages');
@@ -493,45 +1106,180 @@ async function carregarDados() {
       errorMessages.innerHTML = `
         <div class="alert alert-info">
           <i class="bi bi-info-circle-fill me-2"></i>
-          Carregando dados...
+          Verificando autenticação e carregando dados...
         </div>
       `;
     }
     
-    // Aguardar até que o Firebase Auth confirme o estado de autenticação
-    console.log('Aguardando inicialização completa do Firebase Auth...');
-    await new Promise((resolve) => {
+    // Desabilitar todos os botões e controles durante o carregamento
+    const actionButtons = document.querySelectorAll('button:not(#logoutButton), a.btn');
+    actionButtons.forEach(button => {
+      button.disabled = true;
+      button.setAttribute('data-original-text', button.innerHTML);
+      button.innerHTML = '<i class="bi bi-hourglass-split"></i> Aguarde...';
+    });
+    
+    // Aguardar até que o Firebase Auth confirme o estado de autenticação e verificar se é admin
+    console.log('Aguardando inicialização completa do Firebase Auth e verificando permissões...');
+    const currentUser = await new Promise((resolve) => {
       const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
         unsubscribe(); // Parar de escutar após a primeira verificação
-        console.log('Estado de autenticação do Firebase confirmado, prosseguindo com carregamento de dados');
+        console.log('Estado de autenticação do Firebase confirmado');
         resolve(user); // Resolver a promise com o usuário (ou null)
       });
     });
     
-    // Carregar produtos
-    await carregarProdutos();
+    // Verificar se o usuário está autenticado e é o admin
+    if (!currentUser) {
+      console.error('Usuário não autenticado. Redirecionando para página de login...');
+      
+      if (errorMessages) {
+        errorMessages.innerHTML = `
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Acesso negado. Você precisa estar autenticado para acessar esta área.
+          </div>
+        `;
+      }
+      
+      // Redirecionar para a página de login após 2 segundos
+      setTimeout(() => {
+        window.location.href = '/login.html';
+      }, 2000);
+      
+      return false;
+    }
     
-    // Carregar logs
-    await carregarLogs();
+    // Verificar se o usuário é o admin autorizado
+    const storedAdminUID = localStorage.getItem('adminUID');
+    if (currentUser.uid !== ADMIN_UID && storedAdminUID !== ADMIN_UID) {
+      console.error('Usuário autenticado não é o administrador. Redirecionando...');
+      
+      if (errorMessages) {
+        errorMessages.innerHTML = `
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Acesso negado. Você não tem permissão para acessar esta área.
+          </div>
+        `;
+      }
+      
+      // Mostrar overlay de violação de segurança
+      showSecurityBreachOverlay('Tentativa de acesso não autorizado detectada e registrada. Esta ação foi reportada por motivos de segurança.');
+      
+      // Registrar no log de segurança se possível
+      try {
+        if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+          window.firestoreProducts.registrarLog(
+            'seguranca', 
+            'N/A', 
+            'Painel Admin', 
+            `Tentativa de acesso não autorizado por UID: ${currentUser.uid}, Email: ${currentUser.email || 'não disponível'}`
+          );
+        }
+      } catch (e) {
+        console.error('Erro ao registrar log de segurança:', e);
+      }
+      
+      // Redirecionar para a página principal após 3 segundos
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+      
+      return false;
+    }
     
-    // Carregar categorias
-    await carregarCategorias();
+    // Usuário confirmado como admin, prosseguir com carregamento
+    console.log('Usuário autenticado como administrador. Carregando dados...');
     
-    // Carregar tags
-    await carregarTags();
-    
-    // Atualizar estatísticas
-    await atualizarEstatisticas();
-    
-    // Atualizar gráficos do dashboard
-    updateDashboardCharts();
-    
-    // Debug logs já carregados
-    console.log('Debug logs não são carregados nesta versão');
-    
-    // Limpar mensagens de inicialização
     if (errorMessages) {
-      errorMessages.innerHTML = '';
+      errorMessages.innerHTML = `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          Autenticação confirmada. Carregando dados do sistema...
+        </div>
+      `;
+    }
+    
+    // Exibir informações do usuário admin na interface
+    const userDisplayName = document.getElementById('userDisplayName');
+    if (userDisplayName) {
+      userDisplayName.textContent = currentUser.displayName || currentUser.email || 'Administrador';
+    }
+    
+    try {
+      // Carregar produtos
+      await carregarProdutos();
+      
+      // Carregar logs
+      await carregarLogs();
+      
+      // Carregar categorias
+      await carregarCategorias();
+      
+      // Carregar tags
+      await carregarTags();
+      
+      // Atualizar estatísticas
+      await atualizarEstatisticas();
+      
+      // Atualizar gráficos do dashboard
+      updateDashboardCharts();
+      
+      // Limpar mensagens de inicialização
+      if (errorMessages) {
+        errorMessages.innerHTML = `
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            Dados carregados com sucesso. Bem-vindo ao painel administrativo!
+          </div>
+        `;
+        
+        // Remover a mensagem após 3 segundos
+        setTimeout(() => {
+          if (errorMessages.querySelector('.alert-success')) {
+            errorMessages.innerHTML = '';
+          }
+        }, 3000);
+      }
+      
+      // Reabilitar botões e restaurar seus textos originais
+      actionButtons.forEach(button => {
+        button.disabled = false;
+        if (button.hasAttribute('data-original-text')) {
+          button.innerHTML = button.getAttribute('data-original-text');
+          button.removeAttribute('data-original-text');
+        }
+      });
+      
+      console.log('Carregamento de dados concluído com sucesso');
+      return true;
+    } catch (error) {
+      console.error('Erro durante o carregamento de dados:', error);
+      
+      // Mostrar erro específico
+      if (errorMessages) {
+        errorMessages.innerHTML = `
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Erro ao carregar dados: ${error.message || 'Falha desconhecida'}
+            <button class="btn btn-sm btn-outline-danger ms-2" onclick="carregarDados()">
+              <i class="bi bi-arrow-clockwise"></i> Tentar novamente
+            </button>
+          </div>
+        `;
+      }
+      
+      // Reabilitar botões mas indicar estado de erro
+      actionButtons.forEach(button => {
+        button.disabled = false;
+        if (button.hasAttribute('data-original-text')) {
+          button.innerHTML = button.getAttribute('data-original-text');
+          button.removeAttribute('data-original-text');
+        }
+      });
+      
+      return false;
     }
     
     console.log('Dados carregados com sucesso');
@@ -1269,16 +2017,92 @@ function editarProduto(id) {
   }
 }
 
-// Função para salvar produto (criar novo ou atualizar existente)
+// Função para salvar produto (criar novo ou atualizar existente) com segurança avançada
 async function salvarProduto() {
-  // Verificar autenticação
+  // Verificação de segurança avançada com múltiplas camadas
   const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
   const currentUser = firebase.auth().currentUser;
   const storedAdminUID = localStorage.getItem('adminUID');
   
+  // Verificação 1: Usuário logado e com UID correto
   if ((!currentUser || currentUser.uid !== ADMIN_UID) && storedAdminUID !== ADMIN_UID) {
+    console.warn('Tentativa de salvar produto sem autenticação adequada');
+    
+    // Registrar tentativa no log de segurança
+    try {
+      if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+        window.firestoreProducts.registrarLog(
+          'seguranca', 
+          'N/A', 
+          'Painel Admin', 
+          `Tentativa de salvar produto sem autenticação adequada: UID ${currentUser ? currentUser.uid : 'não autenticado'}`
+        );
+      }
+    } catch (e) {
+      console.error('Erro ao registrar log de segurança:', e);
+    }
+    
     showToast('Acesso Negado', 'Apenas administradores podem salvar produtos.', 'error');
+    showSecurityBreachOverlay('Tentativa de salvar produto sem autorização detectada. Esta ação foi registrada por motivos de segurança.');
     return false;
+  }
+  
+  // Verificação 2: Token fresco (reautenticação recente)
+  try {
+    // Obter timestamp de autenticação do usuário
+    let tokenFresco = false;
+    
+    if (currentUser) {
+      const idTokenResult = await currentUser.getIdTokenResult();
+      const authTime = new Date(idTokenResult.claims.auth_time * 1000);
+      const agora = new Date();
+      const diferencaHoras = (agora - authTime) / (1000 * 60 * 60);
+      
+      // Se a autenticação foi há menos de 24 horas, considerar token válido
+      tokenFresco = diferencaHoras < 24;
+      
+      if (!tokenFresco) {
+        console.warn(`Token de autenticação muito antigo (${diferencaHoras.toFixed(2)} horas). Solicitando reautenticação.`);
+        showToast('Sessão Expirada', 'Por segurança, faça login novamente para continuar.', 'warning');
+        
+        // Forçar reautenticação
+        setTimeout(() => {
+          firebase.auth().signOut().then(() => {
+            window.location.href = '/login.html?reason=session_expired';
+          });
+        }, 3000);
+        
+        return false;
+      }
+    } else if (storedAdminUID === ADMIN_UID) {
+      // Se estiver usando adminUID no localStorage, verificar quando foi definido
+      const lastLoginTime = localStorage.getItem('lastLoginTime');
+      if (lastLoginTime) {
+        const loginTime = new Date(parseInt(lastLoginTime));
+        const agora = new Date();
+        const diferencaHoras = (agora - loginTime) / (1000 * 60 * 60);
+        
+        tokenFresco = diferencaHoras < 24;
+        
+        if (!tokenFresco) {
+          console.warn(`Sessão muito antiga (${diferencaHoras.toFixed(2)} horas). Solicitando reautenticação.`);
+          showToast('Sessão Expirada', 'Por segurança, faça login novamente para continuar.', 'warning');
+          
+          // Limpar dados de login e redirecionar
+          localStorage.removeItem('adminUID');
+          localStorage.removeItem('lastLoginTime');
+          
+          setTimeout(() => {
+            window.location.href = '/login.html?reason=session_expired';
+          }, 3000);
+          
+          return false;
+        }
+      }
+    }
+  } catch (authError) {
+    console.error('Erro ao verificar estado de autenticação:', authError);
+    // Continuar mesmo com erro na verificação de tempo do token
   }
   
   try {
@@ -1419,16 +2243,76 @@ async function salvarProduto() {
   }
 }
 
-// Função para excluir produto
+// Função para excluir produto com verificações de segurança avançadas
 async function excluirProduto(id, nome) {
-  // Verificar autenticação
+  // Constantes de segurança
   const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
   const currentUser = firebase.auth().currentUser;
   const storedAdminUID = localStorage.getItem('adminUID');
   
+  // Verificação 1: Usuário com privilégios de admin
   if ((!currentUser || currentUser.uid !== ADMIN_UID) && storedAdminUID !== ADMIN_UID) {
+    console.warn(`Tentativa de excluir produto sem privilégios adequados: ID=${id}, produto=${nome}`);
+    
+    // Registrar tentativa no log de segurança
+    try {
+      if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+        window.firestoreProducts.registrarLog(
+          'seguranca', 
+          id, 
+          nome || 'Produto sem nome', 
+          `Tentativa de exclusão não autorizada: UID ${currentUser ? currentUser.uid : 'não autenticado'}`
+        );
+      }
+    } catch (e) {
+      console.error('Erro ao registrar log de segurança:', e);
+    }
+    
     showToast('Acesso Negado', 'Apenas administradores podem excluir produtos.', 'error');
+    showSecurityBreachOverlay('Tentativa de excluir produto sem autorização detectada. Esta ação foi registrada por motivos de segurança.');
     return false;
+  }
+  
+  // Verificação 2: Token válido e recente
+  if (currentUser) {
+    try {
+      const idTokenResult = await currentUser.getIdTokenResult();
+      const authTime = new Date(idTokenResult.claims.auth_time * 1000);
+      const agora = new Date();
+      const diferencaHoras = (agora - authTime) / (1000 * 60 * 60);
+      
+      // Se a autenticação foi há mais de 24 horas, solicitar reautenticação
+      if (diferencaHoras >= 24) {
+        console.warn(`Token muito antigo (${diferencaHoras.toFixed(2)} horas) para operação crítica. Solicitando reautenticação.`);
+        showToast('Sessão Expirada', 'Por segurança, faça login novamente para operações críticas.', 'warning');
+        
+        // Registrar no log
+        try {
+          if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+            window.firestoreProducts.registrarLog(
+              'seguranca', 
+              id, 
+              nome || 'Produto sem nome', 
+              `Tentativa de exclusão com token expirado (${diferencaHoras.toFixed(2)} horas)`
+            );
+          }
+        } catch (logError) {
+          console.error('Erro ao registrar log de segurança:', logError);
+        }
+        
+        // Forçar reautenticação
+        setTimeout(() => {
+          firebase.auth().signOut().then(() => {
+            window.location.href = '/login.html?reason=session_expired&operation=delete';
+          });
+        }, 3000);
+        
+        return false;
+      }
+    } catch (tokenError) {
+      console.error('Erro ao verificar validade do token:', tokenError);
+      // Continuar mesmo com erro de verificação de token
+    }
   }
   
   // Confirmar exclusão

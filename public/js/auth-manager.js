@@ -198,17 +198,81 @@ async function checkAuthentication() {
   }
 }
 
-// Verificar se o usuário é admin
+// Verificar se o usuário é administrador com validação avançada
 function isAdminUser(user = currentUser) {
-  // Verificar pelo localStorage (login com UID do admin)
-  const storedAdminUID = localStorage.getItem('adminUID');
-  if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
+  try {
+    // Constantes importantes
+    const ADMIN_UID = AUTH_CONFIG.ADMIN_UID;
+    
+    // Verificar manipulação da constante AUTH_CONFIG
+    if (!ADMIN_UID || ADMIN_UID !== '96rupqrpWjbyKtSksDaISQ94y6l2') {
+      console.error('Violação de segurança: Tentativa de manipulação da constante AUTH_CONFIG');
+      // Registrar tentativa de manipulação (se possível)
+      if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+        window.firestoreProducts.registrarLog(
+          'seguranca', 
+          'N/A', 
+          'Verificação de Admin', 
+          'Tentativa de manipulação da constante AUTH_CONFIG'
+        );
+      }
+      return false;
+    }
+    
+    // Verificar se temos autenticação por localStorage UID com validação dupla
+    const storedAdminUID = localStorage.getItem('adminUID');
+    const storedAuthToken = localStorage.getItem('authToken');
+    const authTimestamp = localStorage.getItem('lastLoginTime');
+    
+    if (storedAdminUID === ADMIN_UID) {
+      // Verificação adicional: token deve existir e timestamp não pode ser muito antigo
+      if (!storedAuthToken) {
+        console.warn('Token de autenticação ausente para admin UID');
+        return false;
+      }
+      
+      // Verificar se o timestamp existe e não está expirado (24h)
+      if (authTimestamp) {
+        const lastLoginTime = parseInt(authTimestamp, 10);
+        const currentTime = Date.now();
+        const MAX_SESSION_TIME = 24 * 60 * 60 * 1000; // 24 horas em milissegundos
+        
+        if (isNaN(lastLoginTime) || (currentTime - lastLoginTime) > MAX_SESSION_TIME) {
+          console.warn('Sessão de admin expirada - necessário novo login');
+          // Limpar dados expirados
+          localStorage.removeItem('adminUID');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('lastLoginTime');
+          return false;
+        }
+      } else {
+        // Se não houver timestamp, considerar inválido
+        localStorage.removeItem('adminUID');
+        localStorage.removeItem('authToken');
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // Verificar pelo usuário atual (login normal)
+    if (!user) return false;
+    
+    // Verificação básica de UID
+    if (user.uid !== ADMIN_UID) return false;
+    
+    // Verificação adicional de email verificado (opcional, mas recomendado)
+    if (user.emailVerified === false) {
+      console.warn('Conta de administrador com email não verificado');
+      // Você pode decidir se isso deve impedir o acesso ou apenas registrar
+    }
+    
     return true;
+  } catch (error) {
+    console.error('Erro ao verificar admin:', error);
+    // Em caso de erro, considerar que não é admin por segurança
+    return false;
   }
-  
-  // Verificar pelo usuário atual (login normal)
-  if (!user) return false;
-  return user.uid === AUTH_CONFIG.ADMIN_UID;
 }
 
 // Adicionar listener para mudanças de autenticação
@@ -267,27 +331,135 @@ function logout() {
 
 // Função para verificar se uma função protegida pode ser executada
 // Útil para proteger funções admin como criar produto, editar estoque, etc.
+// Inclui registro de tentativas e verificações de segurança avançadas
 function canExecuteAdminFunction(operation = 'operação administrativa') {
-  // Verificar se temos autenticação via UID no localStorage
-  const storedAdminUID = localStorage.getItem('adminUID');
-  if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
-    console.log('Permissão concedida para operação administrativa via localStorage UID');
-    return true;
-  }
-  
-  // Verificar se tem um usuário logado
-  if (!currentUser) {
-    alert(`Você precisa estar logado para realizar esta ${operation}.`);
+  try {
+    // Verificar manipulação da constante AUTH_CONFIG
+    if (AUTH_CONFIG.ADMIN_UID !== '96rupqrpWjbyKtSksDaISQ94y6l2') {
+      console.error('Violação de segurança: Tentativa de manipulação da constante AUTH_CONFIG');
+      
+      // Registrar tentativa de manipulação (se possível)
+      if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+        window.firestoreProducts.registrarLog(
+          'seguranca', 
+          'N/A', 
+          'Verificação de Permissão', 
+          `Tentativa de manipulação da constante AUTH_CONFIG durante ${operation}`
+        );
+      }
+      
+      // Alertar sobre a tentativa
+      alert('Erro de segurança detectado. Esta ação foi registrada.');
+      return false;
+    }
+    
+    // Verificar se temos autenticação via UID no localStorage com validações extras
+    const storedAdminUID = localStorage.getItem('adminUID');
+    const storedAuthToken = localStorage.getItem('authToken');
+    const authTimestamp = localStorage.getItem('lastLoginTime');
+    
+    if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
+      // Verificar token e timestamp
+      if (!storedAuthToken || !authTimestamp) {
+        console.warn('Token ou timestamp ausente para execução de função admin');
+        alert('Sua sessão está incompleta. Faça login novamente.');
+        
+        // Limpar dados de autenticação incompletos
+        localStorage.removeItem('adminUID');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('lastLoginTime');
+        
+        return false;
+      }
+      
+      // Verificar expiração do timestamp (24h)
+      const lastLoginTime = parseInt(authTimestamp, 10);
+      const currentTime = Date.now();
+      const MAX_SESSION_TIME = 24 * 60 * 60 * 1000; // 24 horas em milissegundos
+      
+      if (isNaN(lastLoginTime) || (currentTime - lastLoginTime) > MAX_SESSION_TIME) {
+        console.warn('Sessão de admin expirada ao tentar executar operação');
+        alert('Sua sessão expirou. Faça login novamente para continuar.');
+        
+        // Limpar dados expirados
+        localStorage.removeItem('adminUID');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('lastLoginTime');
+        
+        return false;
+      }
+      
+      // Registrar operação (opcional)
+      if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+        window.firestoreProducts.registrarLog(
+          'admin', 
+          'N/A', 
+          'Operação Admin', 
+          `Operação administrativa "${operation}" executada via UID`
+        );
+      }
+      
+      console.log(`Permissão concedida para operação administrativa "${operation}" via localStorage UID`);
+      return true;
+    }
+    
+    // Verificar se tem um usuário logado via Firebase Auth
+    if (!currentUser) {
+      console.warn(`Tentativa de executar "${operation}" sem estar logado`);
+      alert(`Você precisa estar logado para realizar esta ${operation}.`);
+      return false;
+    }
+    
+    // Verificar se é admin
+    if (!isAdminUser()) {
+      console.warn(`Usuário ${currentUser.email} (${currentUser.uid}) tentou executar operação "${operation}" sem permissão`);
+      
+      // Registrar tentativa de acesso não autorizado
+      if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+        window.firestoreProducts.registrarLog(
+          'seguranca', 
+          'N/A', 
+          'Tentativa de Acesso', 
+          `Usuário ${currentUser.email} (${currentUser.uid}) tentou executar operação "${operation}" sem permissão`
+        );
+      }
+      
+      alert(`Apenas administradores podem realizar esta ${operation}.`);
+      return false;
+    }
+    
+    // Verificar integridade do token de autenticação
+    return firebase.auth().currentUser.getIdToken()
+      .then(token => {
+        if (!token) {
+          console.error('Token inválido para operação admin');
+          alert('Erro de autenticação. Faça login novamente.');
+          return false;
+        }
+        
+        // Registrar operação (opcional)
+        if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+          window.firestoreProducts.registrarLog(
+            'admin', 
+            'N/A', 
+            'Operação Admin', 
+            `Operação administrativa "${operation}" executada por ${currentUser.email}`
+          );
+        }
+        
+        console.log(`Permissão concedida para operação administrativa "${operation}" para ${currentUser.email}`);
+        return true;
+      })
+      .catch(error => {
+        console.error('Erro ao verificar token para operação admin:', error);
+        alert('Erro de autenticação. Faça login novamente.');
+        return false;
+      });
+  } catch (error) {
+    console.error(`Erro ao verificar permissão para ${operation}:`, error);
+    alert('Ocorreu um erro ao verificar suas permissões. Tente novamente.');
     return false;
   }
-  
-  // Verificar se é admin
-  if (!isAdminUser()) {
-    alert(`Apenas administradores podem realizar esta ${operation}.`);
-    return false;
-  }
-  
-  return true;
 }
 
 // Inicialização quando o DOM estiver pronto

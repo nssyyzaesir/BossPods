@@ -17,6 +17,8 @@
   --danger-color: #ff1159;
   --warning-color: #ffb100;
   --success-color: #00ffbb;
+  --security-color: #ff0048;
+  --security-glow: #ff3b6d;
   
   /* Efeitos e bordas */
   --border-radius: 4px;
@@ -26,10 +28,13 @@
   --neon-border: 1px solid var(--primary-color-light);
   --neon-glow: 0 0 5px var(--primary-color), 0 0 10px var(--primary-color), 0 0 15px var(--primary-color-light);
   --neon-blue-glow: 0 0 5px var(--secondary-color), 0 0 10px var(--secondary-color);
+  --neon-red-glow: 0 0 5px var(--danger-color), 0 0 10px var(--danger-color), 0 0 15px var(--danger-color);
+  --neon-security-glow: 0 0 5px var(--security-color), 0 0 10px var(--security-color), 0 0 15px var(--security-glow);
   
   /* Transições e animações */
   --transition-standard: all 0.3s ease;
   --transition-fast: all 0.15s ease;
+  --glitch-animation-duration: 3s;
 }
 
 /* Estilos para loading overlay */
@@ -67,19 +72,216 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 17, 89, 0.1);
-  background-image: linear-gradient(30deg, rgba(5, 5, 16, 0.95), rgba(255, 17, 89, 0.3));
+  background-color: rgba(5, 5, 16, 0.9);
+  background-image: 
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 0, 72, 0.1) 0px,
+      rgba(255, 0, 72, 0.1) 10px,
+      rgba(5, 5, 16, 0.9) 10px,
+      rgba(5, 5, 16, 0.9) 20px
+    );
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 10000;
-  color: var(--danger-color);
-  text-shadow: 0 0 10px rgba(255, 17, 89, 0.8);
-  font-size: 2rem;
-  font-weight: bold;
   text-align: center;
   animation: pulse-warning 1.5s infinite;
+  backdrop-filter: blur(3px);
+}
+
+.access-denied-overlay > div {
+  background-color: rgba(5, 5, 16, 0.8);
+  border: 2px solid var(--security-color);
+  box-shadow: var(--neon-red-glow);
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+}
+
+.access-denied-overlay h2 {
+  color: var(--security-color);
+  text-shadow: var(--neon-red-glow);
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
+}
+
+.access-denied-overlay p {
+  color: var(--text-light);
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.access-denied-overlay .cyber-hr {
+  border-color: var(--security-color);
+  opacity: 0.5;
+  box-shadow: 0 0 5px var(--security-color);
+}
+
+.access-denied-overlay i {
+  color: var(--security-color);
+  text-shadow: var(--neon-red-glow);
+}
+
+/* Overlay específico para violações de segurança críticas */
+.security-breach-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(5, 5, 16, 0.95);
+  z-index: 10001; /* maior que access-denied-overlay */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  backdrop-filter: blur(5px);
+}
+
+.security-breach-content {
+  position: relative;
+  max-width: 500px;
+  width: 90%;
+  padding: 2rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  border: 2px solid var(--security-color);
+  box-shadow: 0 0 15px var(--security-color), inset 0 0 5px var(--security-color);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.security-breach-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 0, 72, 0.05) 0px,
+      rgba(255, 0, 72, 0.05) 10px,
+      rgba(0, 0, 0, 0) 10px,
+      rgba(0, 0, 0, 0) 20px
+    );
+  pointer-events: none;
+  animation: glitch-background 2s infinite;
+}
+
+@keyframes glitch-background {
+  0% {
+    opacity: 0.3;
+  }
+  5% {
+    opacity: 0.5;
+  }
+  10% {
+    opacity: 0.3;
+  }
+  15% {
+    opacity: 0.5;
+  }
+  20% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+
+.security-breach-icon {
+  font-size: 4rem;
+  color: var(--security-color);
+  text-shadow: var(--neon-red-glow);
+  animation: security-pulse 1.5s infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes security-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.security-breach-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--security-color);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  position: relative;
+  animation: security-glitch-text 3s infinite;
+}
+
+@keyframes security-glitch-text {
+  0% {
+    text-shadow: 0 0 5px var(--security-color);
+  }
+  2% {
+    text-shadow: 0 0 10px var(--security-color);
+    transform: translate(2px, 0);
+  }
+  4% {
+    text-shadow: 0 0 5px var(--security-color);
+    transform: translate(-2px, 0);
+  }
+  6% {
+    text-shadow: 0 0 10px var(--security-color);
+    transform: translate(0, 0);
+  }
+  8% {
+    text-shadow: 0 0 5px var(--security-color);
+  }
+  100% {
+    text-shadow: 0 0 5px var(--security-color);
+  }
+}
+
+.security-breach-message {
+  color: var(--text-light);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.security-breach-action {
+  margin-top: 1.5rem;
+}
+
+.security-breach-btn {
+  background-color: var(--security-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px var(--security-color);
+}
+
+.security-breach-btn:hover {
+  background-color: #ff2a56;
+  box-shadow: 0 0 15px var(--security-color);
 }
 
 /* Feedback visual para botões */
