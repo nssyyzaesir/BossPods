@@ -133,15 +133,13 @@ async function checkAuthentication() {
   
   // Verificar se temos autenticação por UID de admin no localStorage
   // Isso permite login como admin sem estar autenticado no Firebase
-  if (isAdminRoute()) {
-    const storedAdminUID = localStorage.getItem('adminUID');
-    if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
-      console.log('Autenticação admin via localStorage UID encontrada');
-      authCheckComplete = true;
-      // Não temos um user real, então não atualizamos currentUser
-      // mas retornamos true para permitir acesso
-      return true;
-    }
+  const storedAdminUID = localStorage.getItem('adminUID');
+  if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
+    console.log('Autenticação admin via localStorage UID encontrada');
+    authCheckComplete = true;
+    // Permitir acesso a qualquer área protegida para admin (incluindo loja)
+    updateAuthUI(null); // Atualizar UI mesmo sem user object
+    return true;
   }
   
   try {
@@ -332,8 +330,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
         // Se for rota que requer login
         else if (isProtectedRoute() && !user) {
+          // Verificar se temos autenticação por UID (para admin)
+          const storedAdminUID = localStorage.getItem('adminUID');
+          if (storedAdminUID === AUTH_CONFIG.ADMIN_UID) {
+            console.log('Acesso à loja permitido via localStorage UID');
+            // Não redirecionar - permissão concedida via UID
+          }
           // Se estiver na página inicial, apenas mostrar overlay
-          if (path === '/' || path === '/index.html') {
+          else if (path === '/' || path === '/index.html') {
             const authOverlay = document.getElementById('authOverlay');
             if (authOverlay) authOverlay.style.display = 'flex';
           } else {
