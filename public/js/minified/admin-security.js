@@ -6,7 +6,8 @@
  */
 
 // Constantes de segurança
-var SECURITY_ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+// Usamos a constante global ADMIN_UID do arquivo constants.js
+var SECURITY_ADMIN_UID = ADMIN_UID;
 var AUTH_CHECK_INTERVAL = 60000; // 1 minuto
 var DEVTOOLS_CHECK_INTERVAL = 5000; // 5 segundos
 var TOKEN_REFRESH_INTERVAL = 600000; // 10 minutos
