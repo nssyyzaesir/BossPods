@@ -11,6 +11,7 @@
   "keywords": [],
   "dependencies": {
     "chart.js": "^4.4.8",
+    "express": "^5.1.0",
     "firebase": "^11.6.0",
     "webpack": "^5.99.5",
     "webpack-cli": "^6.0.1"
