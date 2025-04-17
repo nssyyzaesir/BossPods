@@ -15,15 +15,34 @@ var firebaseConfig = {
 // UID do Administrador
 var ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
 
-// Configurações de autenticação
-var AUTH_CONFIG = {
-  signInFlow: 'redirect',
-  signInOptions: [
-    firebase.auth.EmailAuthProvider.PROVIDER_ID
-  ],
-  callbacks: {
-    signInSuccessWithAuthResult: (authResult) => {
-      return false;
+// Função para criar configurações de autenticação quando o Firebase estiver disponível
+function getAuthConfig() {
+  return {
+    signInFlow: 'redirect',
+    signInOptions: [
+      firebase.auth.EmailAuthProvider.PROVIDER_ID
+    ],
+    callbacks: {
+      signInSuccessWithAuthResult: (authResult) => {
+        return false;
+      }
     }
-  }
-};
+  };
+}
+
+// Verificar se o Firebase está carregado e inicializado
+function waitForFirebase(callback) {
+  const checkInterval = setInterval(() => {
+    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+      clearInterval(checkInterval);
+      clearTimeout(timeoutId);
+      callback();
+    }
+  }, 100);
+  
+  // Timeout após 10 segundos
+  const timeoutId = setTimeout(() => {
+    clearInterval(checkInterval);
+    console.error('Timeout ao esperar pelo Firebase');
+  }, 10000);
+}
