@@ -6,6 +6,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// // Atualizado pra testar commit de novo - porra do Git
+
 // Inicializar Firebase com a variável de ambiente
 const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK);
 
