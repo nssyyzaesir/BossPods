@@ -1106,7 +1106,7 @@ async function carregarDados() {
       errorMessages.innerHTML = `
         <div class="alert alert-info">
           <i class="bi bi-info-circle-fill me-2"></i>
-          Verificando autenticação e carregando dados...
+          Carregando dados do sistema...
         </div>
       `;
     }
@@ -1119,15 +1119,8 @@ async function carregarDados() {
       button.innerHTML = '<i class="bi bi-hourglass-split"></i> Aguarde...';
     });
     
-    // Aguardar até que o Firebase Auth confirme o estado de autenticação e verificar se é admin
-    console.log('Aguardando inicialização completa do Firebase Auth e verificando permissões...');
-    const currentUser = await new Promise((resolve) => {
-      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-        unsubscribe(); // Parar de escutar após a primeira verificação
-        console.log('Estado de autenticação do Firebase confirmado');
-        resolve(user); // Resolver a promise com o usuário (ou null)
-      });
-    });
+    // Verificar usuário atual
+    const currentUser = firebase.auth().currentUser;
     
     // Verificar se o usuário está autenticado e é o admin
     if (!currentUser) {
@@ -1151,8 +1144,7 @@ async function carregarDados() {
     }
     
     // Verificar se o usuário é o admin autorizado
-    const storedAdminUID = localStorage.getItem('adminUID');
-    if (currentUser.uid !== ADMIN_UID && storedAdminUID !== ADMIN_UID) {
+    if (currentUser.uid !== ADMIN_UID) {
       console.error('Usuário autenticado não é o administrador. Redirecionando...');
       
       if (errorMessages) {
@@ -1192,13 +1184,13 @@ async function carregarDados() {
     // Usuário confirmado como admin, prosseguir com carregamento
     console.log('Usuário autenticado como administrador. Carregando dados...');
     
-    if (errorMessages) {
-      errorMessages.innerHTML = `
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle-fill me-2"></i>
-          Autenticação confirmada. Carregando dados do sistema...
-        </div>
-      `;
+    // Obter token de autenticação recente para garantir acesso
+    try {
+      await currentUser.getIdToken(true);
+      console.log('Token de autenticação atualizado');
+    } catch (tokenError) {
+      console.error('Erro ao atualizar token:', tokenError);
+      // Continuar mesmo com erro de token
     }
     
     // Exibir informações do usuário admin na interface
@@ -1208,22 +1200,33 @@ async function carregarDados() {
     }
     
     try {
-      // Carregar produtos
-      await carregarProdutos();
+      // Carregar dados em paralelo para maior eficiência
+      console.log('Iniciando carregamento de dados em paralelo...');
       
-      // Carregar logs
-      await carregarLogs();
+      const loadPromises = [
+        carregarProdutos().catch(err => {
+          console.error('Erro ao carregar produtos:', err);
+          return null;
+        }),
+        carregarLogs().catch(err => {
+          console.error('Erro ao carregar logs:', err);
+          return null;
+        }),
+        carregarCategorias().catch(err => {
+          console.error('Erro ao carregar categorias:', err);
+          return null;
+        }),
+        carregarTags().catch(err => {
+          console.error('Erro ao carregar tags:', err);
+          return null;
+        })
+      ];
       
-      // Carregar categorias
-      await carregarCategorias();
+      // Aguardar carregamento de todos os dados
+      await Promise.all(loadPromises);
       
-      // Carregar tags
-      await carregarTags();
-      
-      // Atualizar estatísticas
+      // Atualizar estatísticas e gráficos após carregamento dos dados
       await atualizarEstatisticas();
-      
-      // Atualizar gráficos do dashboard
       updateDashboardCharts();
       
       // Limpar mensagens de inicialização
@@ -2022,10 +2025,9 @@ async function salvarProduto() {
   // Verificação de segurança avançada com múltiplas camadas
   const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
   const currentUser = firebase.auth().currentUser;
-  const storedAdminUID = localStorage.getItem('adminUID');
   
   // Verificação 1: Usuário logado e com UID correto
-  if ((!currentUser || currentUser.uid !== ADMIN_UID) && storedAdminUID !== ADMIN_UID) {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) {
     console.warn('Tentativa de salvar produto sem autenticação adequada');
     
     // Registrar tentativa no log de segurança
@@ -2052,57 +2054,40 @@ async function salvarProduto() {
     // Obter timestamp de autenticação do usuário
     let tokenFresco = false;
     
-    if (currentUser) {
-      const idTokenResult = await currentUser.getIdTokenResult();
-      const authTime = new Date(idTokenResult.claims.auth_time * 1000);
-      const agora = new Date();
-      const diferencaHoras = (agora - authTime) / (1000 * 60 * 60);
+    const idTokenResult = await currentUser.getIdTokenResult();
+    const authTime = new Date(idTokenResult.claims.auth_time * 1000);
+    const agora = new Date();
+    const diferencaHoras = (agora - authTime) / (1000 * 60 * 60);
+    
+    // Se a autenticação foi há menos de 24 horas, considerar token válido
+    tokenFresco = diferencaHoras < 24;
+    
+    if (!tokenFresco) {
+      console.warn(`Token de autenticação muito antigo (${diferencaHoras.toFixed(2)} horas). Solicitando reautenticação.`);
+      showToast('Sessão Expirada', 'Por segurança, faça login novamente para continuar.', 'warning');
       
-      // Se a autenticação foi há menos de 24 horas, considerar token válido
-      tokenFresco = diferencaHoras < 24;
+      // Forçar reautenticação
+      setTimeout(() => {
+        firebase.auth().signOut().then(() => {
+          window.location.href = '/login.html?reason=session_expired';
+        });
+      }, 3000);
       
-      if (!tokenFresco) {
-        console.warn(`Token de autenticação muito antigo (${diferencaHoras.toFixed(2)} horas). Solicitando reautenticação.`);
-        showToast('Sessão Expirada', 'Por segurança, faça login novamente para continuar.', 'warning');
-        
-        // Forçar reautenticação
-        setTimeout(() => {
-          firebase.auth().signOut().then(() => {
-            window.location.href = '/login.html?reason=session_expired';
-          });
-        }, 3000);
-        
-        return false;
-      }
-    } else if (storedAdminUID === ADMIN_UID) {
-      // Se estiver usando adminUID no localStorage, verificar quando foi definido
-      const lastLoginTime = localStorage.getItem('lastLoginTime');
-      if (lastLoginTime) {
-        const loginTime = new Date(parseInt(lastLoginTime));
-        const agora = new Date();
-        const diferencaHoras = (agora - loginTime) / (1000 * 60 * 60);
-        
-        tokenFresco = diferencaHoras < 24;
-        
-        if (!tokenFresco) {
-          console.warn(`Sessão muito antiga (${diferencaHoras.toFixed(2)} horas). Solicitando reautenticação.`);
-          showToast('Sessão Expirada', 'Por segurança, faça login novamente para continuar.', 'warning');
-          
-          // Limpar dados de login e redirecionar
-          localStorage.removeItem('adminUID');
-          localStorage.removeItem('lastLoginTime');
-          
-          setTimeout(() => {
-            window.location.href = '/login.html?reason=session_expired';
-          }, 3000);
-          
-          return false;
-        }
-      }
+      return false;
     }
   } catch (authError) {
     console.error('Erro ao verificar estado de autenticação:', authError);
-    // Continuar mesmo com erro na verificação de tempo do token
+    // Mostrar mensagem de erro ao usuário
+    showToast('Erro de Autenticação', 'Não foi possível verificar sua identidade. Por favor, faça login novamente.', 'error');
+    
+    // Redirecionar para login
+    setTimeout(() => {
+      firebase.auth().signOut().then(() => {
+        window.location.href = '/login.html?reason=auth_error';
+      });
+    }, 3000);
+    
+    return false;
   }
   
   try {
@@ -2248,10 +2233,9 @@ async function excluirProduto(id, nome) {
   // Constantes de segurança
   const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
   const currentUser = firebase.auth().currentUser;
-  const storedAdminUID = localStorage.getItem('adminUID');
   
   // Verificação 1: Usuário com privilégios de admin
-  if ((!currentUser || currentUser.uid !== ADMIN_UID) && storedAdminUID !== ADMIN_UID) {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) {
     console.warn(`Tentativa de excluir produto sem privilégios adequados: ID=${id}, produto=${nome}`);
     
     // Registrar tentativa no log de segurança
@@ -2274,45 +2258,53 @@ async function excluirProduto(id, nome) {
   }
   
   // Verificação 2: Token válido e recente
-  if (currentUser) {
-    try {
-      const idTokenResult = await currentUser.getIdTokenResult();
-      const authTime = new Date(idTokenResult.claims.auth_time * 1000);
-      const agora = new Date();
-      const diferencaHoras = (agora - authTime) / (1000 * 60 * 60);
+  try {
+    const idTokenResult = await currentUser.getIdTokenResult();
+    const authTime = new Date(idTokenResult.claims.auth_time * 1000);
+    const agora = new Date();
+    const diferencaHoras = (agora - authTime) / (1000 * 60 * 60);
+    
+    // Se a autenticação foi há mais de 24 horas, solicitar reautenticação
+    if (diferencaHoras >= 24) {
+      console.warn(`Token muito antigo (${diferencaHoras.toFixed(2)} horas) para operação crítica. Solicitando reautenticação.`);
+      showToast('Sessão Expirada', 'Por segurança, faça login novamente para operações críticas.', 'warning');
       
-      // Se a autenticação foi há mais de 24 horas, solicitar reautenticação
-      if (diferencaHoras >= 24) {
-        console.warn(`Token muito antigo (${diferencaHoras.toFixed(2)} horas) para operação crítica. Solicitando reautenticação.`);
-        showToast('Sessão Expirada', 'Por segurança, faça login novamente para operações críticas.', 'warning');
-        
-        // Registrar no log
-        try {
-          if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
-            window.firestoreProducts.registrarLog(
-              'seguranca', 
-              id, 
-              nome || 'Produto sem nome', 
-              `Tentativa de exclusão com token expirado (${diferencaHoras.toFixed(2)} horas)`
-            );
-          }
-        } catch (logError) {
-          console.error('Erro ao registrar log de segurança:', logError);
+      // Registrar no log
+      try {
+        if (window.firestoreProducts && window.firestoreProducts.registrarLog) {
+          window.firestoreProducts.registrarLog(
+            'seguranca', 
+            id, 
+            nome || 'Produto sem nome', 
+            `Tentativa de exclusão com token expirado (${diferencaHoras.toFixed(2)} horas)`
+          );
         }
-        
-        // Forçar reautenticação
-        setTimeout(() => {
-          firebase.auth().signOut().then(() => {
-            window.location.href = '/login.html?reason=session_expired&operation=delete';
-          });
-        }, 3000);
-        
-        return false;
+      } catch (logError) {
+        console.error('Erro ao registrar log de segurança:', logError);
       }
-    } catch (tokenError) {
-      console.error('Erro ao verificar validade do token:', tokenError);
-      // Continuar mesmo com erro de verificação de token
+      
+      // Forçar reautenticação
+      setTimeout(() => {
+        firebase.auth().signOut().then(() => {
+          window.location.href = '/login.html?reason=session_expired&operation=delete';
+        });
+      }, 3000);
+      
+      return false;
     }
+  } catch (tokenError) {
+    console.error('Erro ao verificar validade do token:', tokenError);
+    // Mostrar mensagem de erro ao usuário
+    showToast('Erro de Autenticação', 'Não foi possível verificar sua identidade. Por favor, faça login novamente.', 'error');
+    
+    // Redirecionar para login
+    setTimeout(() => {
+      firebase.auth().signOut().then(() => {
+        window.location.href = '/login.html?reason=auth_error';
+      });
+    }, 3000);
+    
+    return false;
   }
   
   // Confirmar exclusão
