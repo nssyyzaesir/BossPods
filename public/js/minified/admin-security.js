@@ -436,16 +436,24 @@ function setupSecurityEnvironment() {
 
 // Inicializar quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-  // Esperar pelo Firebase ser inicializado
-  const checkFirebase = setInterval(() => {
-    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-      clearInterval(checkFirebase);
+  // Usar a função waitForFirebase do constants.js
+  if (typeof waitForFirebase === 'function') {
+    waitForFirebase(() => {
       setupSecurityEnvironment();
-    }
-  }, 500);
-  
-  // Timeout para Firebase
-  setTimeout(() => {
-    clearInterval(checkFirebase);
-  }, 10000);
+    });
+  } else {
+    // Fallback para o caso de waitForFirebase não estar disponível
+    console.warn('Função waitForFirebase não encontrada, usando método alternativo');
+    const checkFirebase = setInterval(() => {
+      if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+        clearInterval(checkFirebase);
+        setupSecurityEnvironment();
+      }
+    }, 500);
+    
+    // Timeout para Firebase
+    setTimeout(() => {
+      clearInterval(checkFirebase);
+    }, 10000);
+  }
 });

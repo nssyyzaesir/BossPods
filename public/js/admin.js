@@ -2023,7 +2023,7 @@ function editarProduto(id) {
 // Função para salvar produto (criar novo ou atualizar existente) com segurança avançada
 async function salvarProduto() {
   // Verificação de segurança avançada com múltiplas camadas
-  const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+  // Usando ADMIN_UID global do constants.js
   const currentUser = firebase.auth().currentUser;
   
   // Verificação 1: Usuário logado e com UID correto
@@ -2230,8 +2230,7 @@ async function salvarProduto() {
 
 // Função para excluir produto com verificações de segurança avançadas
 async function excluirProduto(id, nome) {
-  // Constantes de segurança
-  const ADMIN_UID = '96rupqrpWjbyKtSksDaISQ94y6l2';
+  // Usando ADMIN_UID global do constants.js
   const currentUser = firebase.auth().currentUser;
   
   // Verificação 1: Usuário com privilégios de admin
