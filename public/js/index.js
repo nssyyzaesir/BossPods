@@ -35,25 +35,47 @@ document.addEventListener('DOMContentLoaded', () => {
   // Botão para abrir o modal de login a partir do overlay
   if (openLoginBtn) {
     openLoginBtn.addEventListener('click', () => {
-      // Verificar se o Firebase está inicializado
-      if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-        // Abrir modal usando Bootstrap
-        loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-        loginModal.show();
-      } else {
-        console.log("Aguardando inicialização do Firebase antes de abrir o modal de login...");
-        // Mostrar uma notificação informando que o Firebase está sendo inicializado
-        showNotification("Sistema Iniciando", "Aguarde enquanto o sistema de autenticação é inicializado...", "info");
-        
-        // Verificar periodicamente até que o Firebase esteja pronto
-        const checkFirebaseInterval = setInterval(() => {
-          if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-            clearInterval(checkFirebaseInterval);
-            console.log("Firebase inicializado, abrindo modal de login");
-            loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-            loginModal.show();
+      console.log("Botão de login clicado!");
+      try {
+        // Verificar se tanto o Firebase quanto o Bootstrap estão inicializados
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof bootstrap !== 'undefined') {
+          // Verificar se o elemento do modal existe
+          const loginModalElement = document.getElementById('loginModal');
+          if (!loginModalElement) {
+            console.error("Elemento do modal não encontrado!");
+            showNotification("Erro", "Não foi possível abrir o modal de login. Elemento não encontrado.", "danger");
+            return;
           }
-        }, 300);
+          
+          console.log("Abrindo modal de login...");
+          // Inicializar modal usando Bootstrap
+          loginModal = new bootstrap.Modal(loginModalElement);
+          loginModal.show();
+        } else {
+          console.log("Aguardando inicialização das dependências...");
+          // Mostrar uma notificação informando que o sistema está sendo inicializado
+          showNotification("Sistema Iniciando", "Aguarde enquanto o sistema é inicializado...", "info");
+          
+          // Verificar periodicamente até que as dependências estejam prontas
+          const checkDependenciesInterval = setInterval(() => {
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof bootstrap !== 'undefined') {
+              clearInterval(checkDependenciesInterval);
+              console.log("Dependências inicializadas, abrindo modal de login");
+              
+              const loginModalElement = document.getElementById('loginModal');
+              if (loginModalElement) {
+                loginModal = new bootstrap.Modal(loginModalElement);
+                loginModal.show();
+              } else {
+                console.error("Elemento do modal não encontrado após inicialização!");
+                showNotification("Erro", "Não foi possível abrir o modal de login. Elemento não encontrado.", "danger");
+              }
+            }
+          }, 300);
+        }
+      } catch (error) {
+        console.error("Erro ao abrir modal de login:", error);
+        showNotification("Erro", "Ocorreu um erro ao abrir o modal de login: " + error.message, "danger");
       }
     });
   }
@@ -61,24 +83,47 @@ document.addEventListener('DOMContentLoaded', () => {
   // Botão para abrir o modal de login no header
   if (loginButton) {
     loginButton.addEventListener('click', () => {
-      // Verificar se o Firebase está inicializado
-      if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-        loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-        loginModal.show();
-      } else {
-        console.log("Aguardando inicialização do Firebase antes de abrir o modal de login...");
-        // Mostrar uma notificação informando que o Firebase está sendo inicializado
-        showNotification("Sistema Iniciando", "Aguarde enquanto o sistema de autenticação é inicializado...", "info");
-        
-        // Verificar periodicamente até que o Firebase esteja pronto
-        const checkFirebaseInterval = setInterval(() => {
-          if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-            clearInterval(checkFirebaseInterval);
-            console.log("Firebase inicializado, abrindo modal de login");
-            loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-            loginModal.show();
+      console.log("Botão de login no header clicado!");
+      try {
+        // Verificar se tanto o Firebase quanto o Bootstrap estão inicializados
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof bootstrap !== 'undefined') {
+          // Verificar se o elemento do modal existe
+          const loginModalElement = document.getElementById('loginModal');
+          if (!loginModalElement) {
+            console.error("Elemento do modal não encontrado!");
+            showNotification("Erro", "Não foi possível abrir o modal de login. Elemento não encontrado.", "danger");
+            return;
           }
-        }, 300);
+          
+          console.log("Abrindo modal de login pelo header...");
+          // Inicializar modal usando Bootstrap
+          loginModal = new bootstrap.Modal(loginModalElement);
+          loginModal.show();
+        } else {
+          console.log("Aguardando inicialização das dependências...");
+          // Mostrar uma notificação informando que o sistema está sendo inicializado
+          showNotification("Sistema Iniciando", "Aguarde enquanto o sistema é inicializado...", "info");
+          
+          // Verificar periodicamente até que as dependências estejam prontas
+          const checkDependenciesInterval = setInterval(() => {
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof bootstrap !== 'undefined') {
+              clearInterval(checkDependenciesInterval);
+              console.log("Dependências inicializadas, abrindo modal de login");
+              
+              const loginModalElement = document.getElementById('loginModal');
+              if (loginModalElement) {
+                loginModal = new bootstrap.Modal(loginModalElement);
+                loginModal.show();
+              } else {
+                console.error("Elemento do modal não encontrado após inicialização!");
+                showNotification("Erro", "Não foi possível abrir o modal de login. Elemento não encontrado.", "danger");
+              }
+            }
+          }, 300);
+        }
+      } catch (error) {
+        console.error("Erro ao abrir modal de login pelo header:", error);
+        showNotification("Erro", "Ocorreu um erro ao abrir o modal de login: " + error.message, "danger");
       }
     });
   }
