@@ -2,16 +2,13 @@
   "name": "workspace",
   "version": "1.0.0",
   "main": "script.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "scripts": {
-    "start": "node index.js"
-  }
-  "keywords": [],
+  "description": "",
   "author": "",
   "license": "ISC",
-  "description": "",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
   "dependencies": {
     "chart.js": "^4.4.8",
     "firebase": "^11.6.0",
